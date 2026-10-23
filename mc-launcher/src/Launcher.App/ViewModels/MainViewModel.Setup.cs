@@ -119,6 +119,7 @@ public sealed partial class MainViewModel
         ProgressPercent = 0;
         using var cts = new CancellationTokenSource();
         _runningCts = cts;
+        _setupClock.Restart();
         try
         {
             if (Account is null)
@@ -133,7 +134,7 @@ public sealed partial class MainViewModel
                 {
                     if (!IsSetupBusy) return;
                     ProgressPercent = p.Percent;
-                    SetupStatus = StatusText = $"{p.Stage} · {p.Percent:F0}%" + (p.Detail is null ? "" : $" · {p.Detail}");
+                    SetupStatus = StatusText = DescribeSetupProgress(p);
                 }), cts.Token);
             RefreshInstances();
             SelectedInstance = Instances.FirstOrDefault(i => i.InstanceId == version.Id);
@@ -164,5 +165,53 @@ public sealed partial class MainViewModel
             IsSetupOpen = false;
             if (launch) await LaunchAsync();
         }
+    }
+    /// <summary>安装向导的秒表：算「还要多久」需要一个起点，进度回调里没有时间信息。</summary>
+    private readonly System.Diagnostics.Stopwatch _setupClock = new();
+
+    /// <summary>
+    /// 把进度拼成一句话：「下载游戏 · 35% · 162.4 / 463 MB · 还剩 1 分 12 秒 · d8bfc754」。
+    /// <para>
+    /// 只有百分比时用户没法判断还要等 10 秒还是 10 分钟；字节数与剩余时间是这条链路上最容易补的信息。
+    /// 剩余时间用「已下载 / 已耗时」的全程平均速率估算——不追求精确，够让人决定要不要去泡杯茶。
+    /// </para>
+    /// </summary>
+    private string DescribeSetupProgress(FirstRunProgress progress)
+    {
+        var text = $"{progress.Stage} · {progress.Percent:F0}%";
+
+        if (progress.HasBytes)
+        {
+            text += $" · {progress.CompletedMegabytes:N1} / {progress.TotalMegabytes:N0} MB";
+
+            var elapsed = _setupClock.Elapsed.TotalSeconds;
+            if (elapsed > 3 && progress.CompletedBytes > 0)
+            {
+                var rate = progress.CompletedBytes / elapsed;
+                if (rate > 1024)
+                {
+                    var remaining = (progress.TotalBytes - progress.CompletedBytes) / rate;
+                    if (remaining > 1) text += $" · 还剩 {FormatRemaining(remaining)}";
+                }
+            }
+        }
+
+        if (progress.Detail is { Length: > 0 } detail) text += $" · {ShortenDetail(detail)}";
+        return text;
+    }
+
+    private static string FormatRemaining(double seconds)
+        => seconds < 60
+            ? $"{seconds:F0} 秒"
+            : seconds < 3600
+                ? $"{(int)(seconds / 60)} 分 {seconds % 60:F0} 秒"
+                : $"{(int)(seconds / 3600)} 小时 {(int)(seconds % 3600 / 60)} 分";
+
+    /// <summary>进度里的 Detail 可能是很长的相对路径，取最后一段并截断，避免把状态栏撑爆。</summary>
+    private static string ShortenDetail(string detail)
+    {
+        var cut = detail.LastIndexOfAny(['\\', '/']);
+        var name = cut >= 0 && cut + 1 < detail.Length ? detail[(cut + 1)..] : detail;
+        return name.Length <= 28 ? name : name[..27] + "…";
     }
 }
