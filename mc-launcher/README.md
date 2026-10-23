@@ -14,6 +14,7 @@ Minecraft Java 版 Windows 桌面启动器，使用 C#、.NET 10 和 WPF。
 - 微软设备码登录、多账号切换与移除、离线身份、DPAPI 令牌存储、本地诊断及独立更新器。
 - 网络设置：自动选择、直接连接、自定义 HTTP / HTTPS / SOCKS5 代理，保存后重启生效。
 - 首次安装向导：选择正式版、内存与身份，一键准备游戏和 Java。
+- 玻璃质感界面与四套即时切换主题；导入本地壁纸、调整显示强度、导入 / 导出 JSON 配色主题，支持页面进出动画。
 - 更新器清理上游已移除的文件：每次更新后记下装过的文件清单（`installed-files.json`），下一版清单里没有的会被移进 `.backup/<时间戳>/` 再删除，用户自己放进目录的文件不受影响。
 - 被安全软件拦住时的处置引导：启动失败或被拦截时自动识别（SmartScreen / Defender / 组策略 / 权限 / 病毒判定），给出四步可操作说明；版本页与诊断卡片都有「被安全软件拦住了？」入口。
 
@@ -26,6 +27,12 @@ Minecraft Java 版 Windows 桌面启动器，使用 C#、.NET 10 和 WPF。
 数据包下载到实例的 `.minecraft/datapacks`，使用时需自行移入目标世界的 `saves/<世界>/datapacks`。
 
 Modrinth 不需要 API Key。CurseForge 需要有效 Key，可通过 `CURSEFORGE_API_KEY` 或启动器数据目录 `settings.json` 的 `curseForgeApiKey` 提供。若 Key 无搜索权限，页面会明确提示，并保留按数字项目 ID 查询安装；此时无法获取该来源的热门列表。普通项目网页的 slug 链接不等于项目数字 ID。
+
+## 外观与主题
+
+点击左下角「外观与主题…」（`Ctrl+,`），选择深海玻璃、冰川微光、紫晶暮色或松林薄雾。可导入 24 MB 以内的 PNG / JPG / BMP 壁纸，调整强度；图片保存为本机副本，源文件保留。
+
+支持导入 / 导出 JSON 颜色主题，提供 [日落玻璃示例](docs/themes/sunset.json)。外观下次启动自动恢复，壁纸在首帧之后后台读取。主题格式、快捷键、参考与验证范围见 [外观说明](docs/appearance.md)。
 
 ## 账号管理
 

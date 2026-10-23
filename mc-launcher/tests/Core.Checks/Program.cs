@@ -1791,6 +1791,7 @@ await ResourceBrowserChecks.RunAsync(Check);
 await NetworkSettingsChecks.RunAsync(Check);
 await UpdateSigningChecks.RunAsync(Check);
 EmbeddedUpdaterChecks.Run(Check);
+AppearanceChecks.Run(Check);
 
 if (failures.Count == 0)
 {

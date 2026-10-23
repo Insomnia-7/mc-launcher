@@ -58,3 +58,8 @@ mc-launcher/**/*.key
 !/scripts/publish-launcher.ps1
 !/scripts/sign-windows-executable.ps1
 !/scripts/check-single-file-update.ps1
+
+# Per-user appearance preferences and imported images
+mc-launcher/**/appearance.json
+mc-launcher/**/appearance.json.*.tmp
+mc-launcher/**/appearance-data/

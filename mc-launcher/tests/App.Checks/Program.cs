@@ -106,6 +106,7 @@ internal static partial class UiCheck
         }
         Accounts();
         Network();
+        Appearance();
         var updateVm = (MainViewModel)Resolve(typeof(MainViewModel))!;
         updateVm.HasUpdate = true;
         Pump(updateVm.CheckUpdateCommand.ExecuteAsync(null));

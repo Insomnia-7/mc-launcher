@@ -10,15 +10,21 @@
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="MC Launcher" Height="640" Width="1000"
         MinHeight="560" MinWidth="820"
-        Background="{StaticResource BgBrush}"
+        Background="{DynamicResource BgBrush}"
         AllowDrop="True"
         DragOver="OnWindowDragOver"
         Drop="OnWindowDrop"
         WindowStartupLocation="CenterScreen">
 
-    <Grid x:Name="RootGrid">
+    <Window.InputBindings>
+      <KeyBinding Modifiers="Control" Key="D1" Command="{Binding ShowInstancesCommand}"/>
+      <KeyBinding Modifiers="Control" Key="D2" Command="{Binding ShowDownloadsCommand}"/>
+      <KeyBinding Modifiers="Control" Key="OemComma" Command="{Binding OpenAppearanceCommand}"/>
+      <KeyBinding Key="Escape" Command="{Binding CloseTopOverlayCommand}"/>
+    </Window.InputBindings>
+    <Grid x:Name="RootGrid" Background="{DynamicResource BgBrush}" TextElement.Foreground="{DynamicResource TextBrush}" TextElement.FontFamily="{StaticResource UiFontFamily}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="216" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -26,9 +32,15 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False">
+          <Rectangle Fill="{DynamicResource BackdropGlowBrush}"/>
+          <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}"><Image.Effect><BlurEffect Radius="9" RenderingBias="Performance"/></Image.Effect></Image>
+          <Rectangle Fill="{DynamicResource WallpaperTintBrush}"/>
+        </Grid>
         <!-- ══════════ 左栏 ══════════ -->
-        <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0">
+        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
             <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="16,18,14,16"><Grid.ColumnDefinitions><ColumnDefinition Width="43"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="32" Height="32" CornerRadius="10" Background="{DynamicResource SelectedBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" HorizontalAlignment="Left"><TextBlock Text="M" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="MC Launcher" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="JAVA EDITION" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,2,0,0"/></StackPanel></Grid>
                 <!-- 顶部两个分区按钮：游戏版本 / 下载 -->
                 <Grid DockPanel.Dock="Top" Margin="12,14,12,10">
                     <Grid.ColumnDefinitions>
@@ -43,8 +55,8 @@
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsInstanceSection}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -57,8 +69,8 @@
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsDownloadSection}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -70,6 +82,7 @@
 
                 <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="12,0,12,8" Height="32" Style="{StaticResource SecondaryButton}" />
 
+                <Button DockPanel.Dock="Bottom" Content="外观与主题…" Command="{Binding OpenAppearanceCommand}" Margin="12,0,12,8" Height="34" Style="{StaticResource SecondaryButton}" ToolTip="主题、壁纸 · Ctrl+,"/>
                 <!-- 版本列表 -->
                 <ListBox ItemsSource="{Binding Instances}"
                          SelectedItem="{Binding SelectedInstance}"
@@ -84,8 +97,8 @@
                     <ListBox.ContextMenu>
                         <!-- ContextMenu 不在主视觉树里，绑不到窗口的 DataContext，要从 PlacementTarget 借 -->
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                                     Background="{StaticResource FieldBrush}" Foreground="{StaticResource TextBrush}"
-                                     BorderBrush="{StaticResource LineBrush}">
+                                     Background="{DynamicResource FieldBrush}" Foreground="{DynamicResource TextBrush}"
+                                     BorderBrush="{DynamicResource LineBrush}">
                             <MenuItem Header="打开游戏目录" Command="{Binding OpenGameDirectoryCommand}" />
                             <MenuItem Header="打开版本目录" Command="{Binding OpenInstanceFolderCommand}" />
                             <MenuItem Header="打开日志目录" Command="{Binding OpenLogsCommand}" />
@@ -97,11 +110,11 @@
                         <DataTemplate>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="{Binding DisplayName}" FontSize="14"
-                                           FontFamily="Microsoft YaHei UI"
+                                           FontFamily="{StaticResource UiFontFamily}"
                                            TextTrimming="CharacterEllipsis" />
                                 <TextBlock Text="{Binding Subtitle}" FontSize="11"
-                                           Foreground="{StaticResource MutedBrush}"
-                                           FontFamily="Microsoft YaHei UI"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           FontFamily="{StaticResource UiFontFamily}"
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </DataTemplate>
@@ -118,7 +131,7 @@
                             <DataTemplate>
                                 <Grid>
                                     <!-- 分隔项只画一条线 -->
-                                    <Border Height="1" Background="{StaticResource LineBrush}" Margin="6,8"
+                                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="6,8"
                                             Visibility="{Binding IsSeparator, Converter={StaticResource BoolToVis}}" />
                                     <Button Command="{Binding SelectCommand}" CommandParameter="{Binding}"
                                             Height="44" HorizontalContentAlignment="Stretch"
@@ -128,7 +141,7 @@
                                                 <Setter Property="Background" Value="Transparent" />
                                                 <Setter Property="BorderThickness" Value="0" />
                                                 <Setter Property="Cursor" Value="Hand" />
-                                                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                 <Setter Property="Template">
                                                     <Setter.Value>
                                                         <ControlTemplate TargetType="Button">
@@ -138,7 +151,7 @@
                                                             </Border>
                                                             <ControlTemplate.Triggers>
                                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}" />
                                                                 </Trigger>
                                                             </ControlTemplate.Triggers>
                                                         </ControlTemplate>
@@ -146,14 +159,14 @@
                                                 </Setter>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                                        <Setter Property="Foreground" Value="#FFFFFF" />
+                                                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Button.Style>
                                         <TextBlock Text="{Binding Title}" FontSize="14"
-                                                   FontFamily="Microsoft YaHei UI"
+                                                   FontFamily="{StaticResource UiFontFamily}"
                                                    VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"
                                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
@@ -169,8 +182,8 @@
         <!-- ══════════ 右：版本页 ══════════ -->
         <ScrollViewer Grid.Row="0" Grid.Column="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Visibility="{Binding IsInstanceSection, Converter={StaticResource BoolToVis}}">
-            <Grid Margin="32,28,32,24" MaxWidth="1120" anim:PageTransition.AutoPlay="True">
+                      Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsInstanceSection}">
+            <Grid Margin="24,22,24,20" MaxWidth="1120">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -197,10 +210,10 @@
                         </Grid.ColumnDefinitions>
                         <!-- 头像：正版取皮肤头部，离线用首字母；右下小圆点表示登录状态 -->
                         <Grid Width="36" Height="36" Margin="0,0,12,0" VerticalAlignment="Center">
-                            <Border CornerRadius="8" Background="{StaticResource FieldBrush}" ClipToBounds="True">
+                            <Border CornerRadius="8" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
                                 <Grid>
                                     <TextBlock Text="{Binding AccountInitial}" FontSize="15" FontWeight="SemiBold"
-                                               Foreground="{StaticResource MutedBrush}"
+                                               Foreground="{DynamicResource MutedBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <Image Source="{Binding SkinHead}" Stretch="UniformToFill"
                                            RenderOptions.BitmapScalingMode="NearestNeighbor">
@@ -219,13 +232,13 @@
                             </Border>
                             <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom" Margin="0,0,-2,-2" BorderThickness="2"
-                                    BorderBrush="{StaticResource CardBrush}">
+                                    BorderBrush="{DynamicResource CardBrush}">
                                 <Border.Style>
                                     <Style TargetType="Border">
-                                        <Setter Property="Background" Value="{StaticResource MutedBrush}"/>
+                                        <Setter Property="Background" Value="{DynamicResource MutedBrush}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding HasAccount}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+                                                <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -233,8 +246,8 @@
                             </Border>
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="账号管理…" Command="{Binding OpenAccountsCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0"/>
@@ -245,12 +258,12 @@
                 </Border>
 
                 <TextBlock Text="{Binding LoginHint}" FontSize="11" Margin="2,8,0,0"
-                           Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
                            Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
 
             <Button Grid.Row="1" Content="启动游戏"
-                    Style="{StaticResource PrimaryButton}" anim:PressFeedback.Scale="0.97"
+                    Style="{StaticResource PrimaryButton}" Height="52" FontSize="17" anim:PressFeedback.Scale="0.97"
                     Command="{Binding LaunchCommand}"
                     Margin="0,0,0,12" />
 
@@ -280,8 +293,8 @@
                                  Minimum="0" Maximum="100"
                                  Value="{Binding ProgressPercent}"
                                  VerticalAlignment="Center"
-                                 Background="{StaticResource FieldBrush}"
-                                 Foreground="{StaticResource AccentBrush}"
+                                 Background="{DynamicResource FieldBrush}"
+                                 Foreground="{DynamicResource AccentBrush}"
                                  BorderThickness="0" />
 
                     <Button Grid.Column="1" Content="取消"
@@ -293,16 +306,16 @@
                 </Grid>
 
                 <!-- 启动失败诊断：把日志里的崩溃签名翻译成能照做的建议 -->
-                <Border Background="{StaticResource DangerSoftBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
+                <Border Background="{DynamicResource DangerSoftBrush}" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1"
                         CornerRadius="6" Padding="14,10" Margin="0,12,0,0"
                         Visibility="{Binding HasDiagnosis, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
                         <TextBlock Text="启动失败" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{StaticResource DangerBrush}" FontFamily="Microsoft YaHei UI" />
+                                   Foreground="{DynamicResource DangerBrush}" FontFamily="{StaticResource UiFontFamily}" />
                         <TextBlock Text="{Binding DiagnosisText}" FontSize="12" TextWrapping="Wrap"
                                    LineHeight="19" Margin="0,4,0,0"
-                                   Foreground="{StaticResource TextBrush}"
-                                   FontFamily="Microsoft YaHei UI" />
+                                   Foreground="{DynamicResource TextBrush}"
+                                   FontFamily="{StaticResource UiFontFamily}" />
                         <!-- 一键把「诊断 + 版本 + 游戏目录 + 时间」贴进剪贴板，省得用户手抄日志路径 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                             <Button Content="被拦截了？"
@@ -322,9 +335,9 @@
             <!-- 版本设置：平时收起不占地方，展开可改内存 / Java / 额外参数 -->
             <Expander Grid.Row="5" IsExpanded="{Binding IsSettingsOpen, Mode=TwoWay}"
                       HorizontalContentAlignment="Stretch" Margin="0,0,0,14"
-                      Foreground="{StaticResource MutedBrush}">
+                      Foreground="{DynamicResource MutedBrush}">
                 <Expander.Header>
-                    <TextBlock Text="版本设置" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+                    <TextBlock Text="版本设置" FontSize="13" Foreground="{DynamicResource MutedBrush}" />
                 </Expander.Header>
                 <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0">
                     <StackPanel>
@@ -335,7 +348,7 @@
                                 <ColumnDefinition Width="76" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="内存" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <Slider Grid.Column="1" Minimum="512" Maximum="32768"
                                     SmallChange="512" LargeChange="2048"
                                     TickFrequency="512" IsSnapToTickEnabled="True"
@@ -350,7 +363,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Java" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding JavaOptions}"
                                       SelectedItem="{Binding SelectedJava}" DisplayMemberPath="Title"
                                       Style="{StaticResource DarkComboBox}" />
@@ -362,7 +375,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="档位" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <ComboBox Grid.Column="1" SelectedIndex="{Binding JvmPresetIndex}"
                                       Style="{StaticResource DarkComboBox}"
                                       ToolTip="默认：不加额外 JVM 参数；快速：G1 调优（在 Java 21 上实测反而慢一点，慎用）；兼容：只加 -XX:+UseG1GC">
@@ -378,7 +391,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="下载源" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding DownloadSources}"
                                       SelectedIndex="{Binding DownloadSourceIndex}"
                                       Style="{StaticResource DarkComboBox}"
@@ -391,7 +404,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="JVM 参数" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <TextBox Grid.Column="1" Style="{StaticResource DarkTextBox}"
                                      Text="{Binding ExtraJvmArgs, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="-XX:+UseG1GC -XX:MaxGCPauseMillis=50 之类；空格分隔，带空格的参数用双引号包住" />
@@ -403,7 +416,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="游戏参数" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <TextBox Grid.Column="1" Style="{StaticResource DarkTextBox}"
                                      Text="{Binding ExtraGameArgs, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="追加到游戏参数末尾，例如 --width 1920 --height 1080" />
@@ -417,11 +430,11 @@
                                 <ColumnDefinition Width="72" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="窗口" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <TextBox Grid.Column="1" Style="{StaticResource DarkTextBox}"
                                      Text="{Binding WindowWidth, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Grid.Column="2" Text="×" Margin="8,0" VerticalAlignment="Center"
-                                       Foreground="{StaticResource MutedBrush}" />
+                                       Foreground="{DynamicResource MutedBrush}" />
                             <TextBox Grid.Column="3" Style="{StaticResource DarkTextBox}"
                                      Text="{Binding WindowHeight, UpdateSourceTrigger=PropertyChanged}" />
                         </Grid>
@@ -432,7 +445,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding SettingsHint}" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource MutedBrush}"
+                                       Foreground="{DynamicResource MutedBrush}"
                                        TextTrimming="CharacterEllipsis" />
                             <Button Grid.Column="1" Content="保存设置" Height="30" Width="92" FontSize="12"
                                     Style="{StaticResource SecondaryButton}"
@@ -443,10 +456,10 @@
             </Expander>
 
             <!-- 模组：本地扫描 + 上游更新检查；更新会删旧文件再下新版，走确认气泡 -->
-            <Expander Grid.Row="6" Margin="0,0,0,14" Foreground="{StaticResource MutedBrush}"
+            <Expander Grid.Row="6" Margin="0,0,0,14" Foreground="{DynamicResource MutedBrush}"
                       HorizontalContentAlignment="Stretch">
                 <Expander.Header>
-                    <TextBlock Text="模组" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+                    <TextBlock Text="模组" FontSize="13" Foreground="{DynamicResource MutedBrush}" />
                 </Expander.Header>
                 <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0">
                     <StackPanel>
@@ -459,7 +472,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{Binding ModSummary}" FontSize="12"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                       Foreground="{StaticResource TextBrush}" />
+                                       Foreground="{DynamicResource TextBrush}" />
                             <Button Grid.Column="1" Content="刷新" Height="28" MinWidth="64" FontSize="12"
                                     Style="{StaticResource SecondaryButton}"
                                     Command="{Binding RefreshModsCommand}" />
@@ -469,7 +482,7 @@
                         </Grid>
 
                         <TextBlock Text="{Binding ModWarnings}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"
-                                   Foreground="{StaticResource WarnBrush}"
+                                   Foreground="{DynamicResource WarnBrush}"
                                    Visibility="{Binding HasModWarnings, Converter={StaticResource BoolToVis}}" />
 
                         <ItemsControl ItemsSource="{Binding InstalledMods}" MaxHeight="220">
@@ -489,16 +502,16 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" CornerRadius="4" Height="20" VerticalAlignment="Center"
-                                                Background="{StaticResource LineBrush}">
+                                                Background="{DynamicResource LineBrush}">
                                             <TextBlock Text="{Binding StateText}" FontSize="11" HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" />
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
                                         </Border>
                                         <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="12"
                                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                   Foreground="{StaticResource TextBrush}" />
+                                                   Foreground="{DynamicResource TextBrush}" />
                                         <TextBlock Grid.Column="2" Text="{Binding Meta}" FontSize="11"
                                                    VerticalAlignment="Center" Margin="12,0,0,0"
-                                                   Foreground="{StaticResource MutedBrush}" />
+                                                   Foreground="{DynamicResource MutedBrush}" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -515,10 +528,10 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="12"
                                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                   Foreground="{StaticResource TextBrush}" />
+                                                   Foreground="{DynamicResource TextBrush}" />
                                         <TextBlock Grid.Column="1" Text="{Binding VersionText}" FontSize="12"
                                                    VerticalAlignment="Center" Margin="12,0,12,0"
-                                                   Foreground="{StaticResource AccentBrush}" />
+                                                   Foreground="{DynamicResource AccentBrush}" />
                                         <Button Grid.Column="2" Content="更新" Height="26" MinWidth="60" FontSize="12"
                                                 Style="{StaticResource SecondaryButton}"
                                                 Command="{Binding DataContext.UpdateModCommand,
@@ -536,7 +549,7 @@
                     VerticalAlignment="Top">
                 <StackPanel>
                     <TextBlock Text="{Binding EmptyStateHint}" Style="{StaticResource BodyText}"
-                               Foreground="{StaticResource MutedBrush}"
+                               Foreground="{DynamicResource MutedBrush}"
                                TextWrapping="Wrap" LineHeight="22" />
                     <!-- 杀软误报是最常见的「打不开 / 启动就退」，把处置步骤做成随时能点的入口 -->
                     <Button Content="被安全软件拦住了？"
@@ -544,15 +557,15 @@
                             Height="24" Padding="0" FontSize="12" Margin="0,10,0,0"
                             HorizontalAlignment="Left" Cursor="Hand"
                             Background="Transparent" BorderThickness="0"
-                            Foreground="{StaticResource AccentBrush}" />
+                            Foreground="{DynamicResource AccentBrush}" />
                 </StackPanel>
             </Border>
             </Grid>
         </ScrollViewer>
 
         <!-- ══════════ 右：下载页 ══════════ -->
-        <Grid Grid.Row="0" Grid.Column="1" Margin="32,28,32,20" MaxWidth="1120" anim:PageTransition.AutoPlay="True"
-              Visibility="{Binding IsDownloadSection, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="0" Grid.Column="1" Margin="24,22,24,18" MaxWidth="1120" anim:PageVisibility.TransitionKey="{Binding Download.SelectedCategory}"
+              Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsDownloadSection}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -565,7 +578,7 @@
             <!-- 标题 + 当前目标 -->
             <StackPanel Grid.Row="0" Margin="0,0,0,14">
                 <TextBlock Text="{Binding Download.SelectedCategory.Title, FallbackValue='下载中心'}"
-                           Style="{StaticResource BodyText}" FontSize="24" />
+                           Style="{StaticResource H1Text}" />
                 <TextBlock Text="{Binding Download.SelectedCategory.Hint}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
                 <TextBlock Text="{Binding Download.TargetText}"
@@ -574,15 +587,15 @@
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
                             Visibility="{Binding Download.IsVersionMode, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="下载源" FontSize="12" VerticalAlignment="Center"
-                               Foreground="{StaticResource MutedBrush}" Margin="0,0,10,0" />
+                               Foreground="{DynamicResource MutedBrush}" Margin="0,0,10,0" />
                     <Button Content="官方" Height="26" Padding="14,0" FontSize="12"
                             Command="{Binding Download.UseDownloadSourceCommand}" CommandParameter="official">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Download.IsOfficialSource}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -595,8 +608,8 @@
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Download.IsBmclapiSource}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -606,38 +619,40 @@
             </StackPanel>
 
             <!-- All content kinds share source/category/version/sort and server-side paging. -->
-            <StackPanel Grid.Row="1" Margin="0,0,0,10"
+            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="14,12" Margin="0,0,0,10"
                         Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
+              <StackPanel>
                 <TextBlock Text="名称 / 关键词（留空查看热门）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
                 <Grid IsEnabled="{Binding Download.CanEditSearch}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions>
-                    <TextBox Height="32" Margin="0,0,8,0" VerticalContentAlignment="Center" Padding="8,0"
-                             Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}" BorderThickness="0"
+                    <TextBox Style="{StaticResource DarkTextBox}" Height="34" Margin="0,0,8,0" VerticalContentAlignment="Center" Padding="8,0"
+                             Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" BorderThickness="0"
                              ToolTip="{Binding Download.SearchHint}" Text="{Binding Download.Query, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding Download.SearchCommand}"/></TextBox.InputBindings>
                     </TextBox>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Download.Sources}" SelectedItem="{Binding Download.SelectedSource}" ToolTip="下载来源"/>
                 </Grid>
-                <WrapPanel Margin="0,8,0,0" IsEnabled="{Binding Download.CanEditSearch}">
-                    <StackPanel Width="150" Margin="0,0,8,5"><TextBlock Text="游戏版本（可输入）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
-                        <ComboBox Height="28" IsEditable="True" ItemsSource="{Binding Download.GameVersions}" Text="{Binding Download.GameVersionFilter, UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
-                    <StackPanel Width="140" Margin="0,0,8,5"><TextBlock Text="内容分类" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
-                        <ComboBox Height="28" ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" DisplayMemberPath="Name"/></StackPanel>
-                    <StackPanel Width="115" Margin="0,0,8,5" Visibility="{Binding Download.ShowsLoaderFilter, Converter={StaticResource BoolToVis}}"><TextBlock Text="加载器" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
-                        <ComboBox Height="28" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}"/></StackPanel>
-                    <StackPanel Width="135" Margin="0,0,0,5"><TextBlock Text="排序" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
-                        <ComboBox Height="28" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" DisplayMemberPath="Name" ToolTip="{Binding Download.SortHint}"/></StackPanel>
-                </WrapPanel>
+                <Grid Margin="0,8,0,0" IsEnabled="{Binding Download.CanEditSearch}"><Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="0.85*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,8,5"><TextBlock Text="游戏版本（可输入）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="32" IsEditable="True" ItemsSource="{Binding Download.GameVersions}" Text="{Binding Download.GameVersionFilter, UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,8,5"><TextBlock Text="内容分类" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="32" ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" DisplayMemberPath="Name"/></StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,0,8,5" Visibility="{Binding Download.ShowsLoaderFilter, Converter={StaticResource BoolToVis}}"><TextBlock Text="加载器" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="32" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}"/></StackPanel>
+                    <StackPanel Grid.Column="3" Margin="0,0,0,5"><TextBlock Text="排序" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="32" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" DisplayMemberPath="Name" ToolTip="{Binding Download.SortHint}"/></StackPanel>
+                </Grid>
                 <WrapPanel Margin="0,4,0,0">
-                    <Button Content="搜索" Height="28" Padding="16,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.SearchCommand}"/>
-                    <Button Content="重置条件" Height="28" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.ResetFiltersCommand}"/>
-                    <Button Content="热门推荐" Height="28" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.PopularCommand}"/>
-                    <Button Content="安装已有整合包…" Height="28" Padding="12,0" Margin="0,0,0,4" Style="{StaticResource SecondaryButton}" Command="{Binding ImportModpackCommand}"/>
+                    <Button Content="搜索" Height="32" Padding="20,0" Margin="0,0,8,4" Style="{StaticResource PrimaryButton}" FontSize="13" Command="{Binding Download.SearchCommand}"/>
+                    <Button Content="重置条件" Height="32" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.ResetFiltersCommand}"/>
+                    <Button Content="热门推荐" Height="32" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.PopularCommand}"/>
+                    <Button Content="安装已有整合包…" Height="32" Padding="12,0" Margin="0,0,0,4" Style="{StaticResource SecondaryButton}" Command="{Binding ImportModpackCommand}"/>
                 </WrapPanel>
-            </StackPanel>
+              </StackPanel>
+            </Border>
 
             <!-- CurseForge 未配置提示 -->
-            <Border Grid.Row="2" Background="{StaticResource PanelBrush}" CornerRadius="8"
+            <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="8"
                     Padding="12,8" Margin="0,0,0,10"
                     Visibility="{Binding Download.ShowsCurseForgeHint, Converter={StaticResource BoolToVis}}">
                 <TextBlock Style="{StaticResource CaptionText}" TextWrapping="Wrap" LineHeight="18"
@@ -645,13 +660,13 @@
             </Border>
 
             <!-- 最新版本（PCL 样式：最新正式版 + 最新预览版） -->
-            <Border Grid.Row="2" Background="{StaticResource PanelBrush}" CornerRadius="8"
+            <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="8"
                     Padding="14,10" Margin="0,0,0,10"
                     Visibility="{Binding Download.IsVersionMode, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock Text="最新版本" FontSize="12" Margin="0,0,0,6"
-                               Foreground="{StaticResource MutedBrush}"
-                               FontFamily="Microsoft YaHei UI" />
+                               Foreground="{DynamicResource MutedBrush}"
+                               FontFamily="{StaticResource UiFontFamily}" />
                     <ItemsControl ItemsSource="{Binding Download.LatestVersions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -671,7 +686,7 @@
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}" />
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -679,7 +694,7 @@
                                             </Setter>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -691,12 +706,12 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Id}" FontSize="13.5"
                                                    VerticalAlignment="Center"
-                                                   Foreground="{StaticResource TextBrush}"
-                                                   FontFamily="Microsoft YaHei UI" />
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontFamily="{StaticResource UiFontFamily}" />
                                         <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="11"
                                                    VerticalAlignment="Center" Margin="8,0,2,0"
-                                                   Foreground="{StaticResource MutedBrush}"
-                                                   FontFamily="Microsoft YaHei UI" />
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   FontFamily="{StaticResource UiFontFamily}" />
                                     </Grid>
                                 </Button>
                             </DataTemplate>
@@ -718,7 +733,7 @@
             <Grid Grid.Row="4">
                 <ListBox ItemsSource="{Binding Download.Results}"
                          SelectedItem="{Binding Download.SelectedResult}"
-                         ItemContainerStyle="{StaticResource InstanceItem}"
+                         ItemContainerStyle="{StaticResource ResourceItem}"
                          Background="Transparent" BorderThickness="0"
                          Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -726,30 +741,30 @@
                          VirtualizingPanel.VirtualizationMode="Recycling">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Height="56">
+                            <Grid Height="60">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Background="{StaticResource SelectedBrush}"
-                                        CornerRadius="4" Padding="7,2" VerticalAlignment="Center"
+                                <Border Grid.Column="0" Background="{DynamicResource SelectedBrush}"
+                                        CornerRadius="10" Width="40" Height="40" Padding="5,2" VerticalAlignment="Center"
                                         Margin="0,0,10,0" MinWidth="30">
-                                    <TextBlock Text="{Binding Badge}" FontSize="11"
-                                               Foreground="{StaticResource AccentBrush}"
+                                    <TextBlock Text="{Binding Badge}" FontSize="12"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                HorizontalAlignment="Center" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontSize="14"
-                                               FontFamily="Microsoft YaHei UI"
+                                    <TextBlock Text="{Binding Title}" ToolTip="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                               FontFamily="{StaticResource UiFontFamily}"
                                                TextTrimming="CharacterEllipsis" />
-                                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
-                                               FontFamily="Microsoft YaHei UI"
+                                    <TextBlock FontSize="12" Foreground="{DynamicResource MutedBrush}"
+                                               FontFamily="{StaticResource UiFontFamily}"
                                                TextTrimming="CharacterEllipsis">
                                         <Run Text="{Binding Author}" /><Run Text=" · " /><Run Text="{Binding MetaText}" />
                                     </TextBlock>
-                                    <TextBlock Text="{Binding Description}" FontSize="11"
-                                               Foreground="{StaticResource MutedBrush}"
-                                               FontFamily="Microsoft YaHei UI"
+                                    <TextBlock Text="{Binding Description}" FontSize="12"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               FontFamily="{StaticResource UiFontFamily}"
                                                TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </Grid>
@@ -767,8 +782,8 @@
                                 <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,2">
                                     <Expander.Header>
                                         <TextBlock Text="{Binding Header}" FontSize="12.5" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextBrush}"
-                                                   FontFamily="Microsoft YaHei UI" />
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontFamily="{StaticResource UiFontFamily}" />
                                     </Expander.Header>
                                                     <ItemsControl ItemsSource="{Binding Versions}">
                                                         <ItemsControl.ItemTemplate>
@@ -793,7 +808,7 @@
                                                                                         <ControlTemplate.Triggers>
                                                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                                                 <Setter TargetName="Bd" Property="Background"
-                                                                                                        Value="{StaticResource HoverBrush}" />
+                                                                                                        Value="{DynamicResource HoverBrush}" />
                                                                                             </Trigger>
                                                                                         </ControlTemplate.Triggers>
                                                                                     </ControlTemplate>
@@ -801,7 +816,7 @@
                                                                             </Setter>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                                    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+                                                                                    <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
                                                                                 </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
@@ -813,13 +828,13 @@
                                                                         </Grid.ColumnDefinitions>
                                                                         <TextBlock Grid.Column="0" Text="{Binding Id}" FontSize="13"
                                                                                    VerticalAlignment="Center"
-                                                                                   Foreground="{StaticResource TextBrush}"
-                                                                                   FontFamily="Microsoft YaHei UI"
+                                                                                   Foreground="{DynamicResource TextBrush}"
+                                                                                   FontFamily="{StaticResource UiFontFamily}"
                                                                                    TextTrimming="CharacterEllipsis" />
                                                                         <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="11"
                                                                                    VerticalAlignment="Center" Margin="8,0,2,0"
-                                                                                   Foreground="{StaticResource MutedBrush}"
-                                                                                   FontFamily="Microsoft YaHei UI" />
+                                                                                   Foreground="{DynamicResource MutedBrush}"
+                                                                                   FontFamily="{StaticResource UiFontFamily}" />
                                                                     </Grid>
                                                                 </Button>
                                                             </DataTemplate>
@@ -834,10 +849,10 @@
 
             <!-- 进度 -->
             <StackPanel Grid.Row="5" Margin="0,12,0,0">
-                <ProgressBar Height="4" Minimum="0" Maximum="100"
+                <ProgressBar Height="4" Minimum="0" Maximum="100" Visibility="{Binding Download.IsBusy, Converter={StaticResource BoolToVis}}"
                              Value="{Binding Download.ProgressPercent}"
-                             Background="{StaticResource PanelBrush}"
-                             Foreground="{StaticResource AccentBrush}"
+                             Background="{DynamicResource PanelBrush}"
+                             Foreground="{DynamicResource AccentBrush}"
                              BorderThickness="0" Margin="0,0,0,10" />
 
                 <Grid>
@@ -874,21 +889,21 @@
         </Grid>
 
         <!-- 底部状态条 -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{StaticResource PanelBrush}" Height="30">
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" Height="30">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Margin="16,0" VerticalAlignment="Center"
-                           FontSize="12" Foreground="{StaticResource MutedBrush}"
-                           FontFamily="Microsoft YaHei UI"
+                           FontSize="12" Foreground="{DynamicResource MutedBrush}"
+                           FontFamily="{StaticResource UiFontFamily}"
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,12,0" VerticalAlignment="Center"
                             Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding UpdateText}" FontSize="12" VerticalAlignment="Center"
-                               Foreground="{StaticResource AccentBrush}"
-                               FontFamily="Microsoft YaHei UI" Margin="0,0,10,0" />
+                               Foreground="{DynamicResource AccentBrush}"
+                               FontFamily="{StaticResource UiFontFamily}" Margin="0,0,10,0" />
                     <Button Content="立即更新" Command="{Binding ApplyUpdateCommand}"
                             Style="{StaticResource SecondaryButton}"
                             Height="22" FontSize="11" Padding="12,0" MinWidth="72" />
@@ -896,20 +911,22 @@
             </Grid>
         </Border>
 
+        <views:AppearanceView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="97" Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAppearanceOpen}"/>
+
         <views:NetworkSettingsView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
-                                   Visibility="{Binding IsNetworkOpen, Converter={StaticResource BoolToVis}}" />
+                                   Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsNetworkOpen}" />
 
         <views:FirstRunView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
-                            Visibility="{Binding IsSetupOpen, Converter={StaticResource BoolToVis}}" />
+                            Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsSetupOpen}" />
 
         <views:AccountManagerView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="95"
-                                  Visibility="{Binding IsAccountsOpen, Converter={StaticResource BoolToVis}}" />
+                                  Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAccountsOpen}" />
 
         <!-- 确认覆盖层：不用 Popup（PlacementTarget 容易跑出窗口），直接在窗口内盖一层 -->
         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="100"
               Visibility="{Binding IsConfirmOpen, Converter={StaticResource BoolToVis}}">
-            <Border Background="#C8000000" MouseLeftButtonDown="OnConfirmBackdropClick" />
-            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+            <Border Background="{DynamicResource OverlayBrush}" MouseLeftButtonDown="OnConfirmBackdropClick" />
+            <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                     CornerRadius="10" Padding="22,18" Width="460" MaxHeight="440"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border.Effect>
@@ -917,15 +934,15 @@
                 </Border.Effect>
                 <StackPanel>
                     <TextBlock Text="{Binding ConfirmTitle}" FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"
-                               FontFamily="Microsoft YaHei UI" />
+                               Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap"
+                               FontFamily="{StaticResource UiFontFamily}" />
                     <TextBlock Text="{Binding ConfirmMessage}" FontSize="12" TextWrapping="Wrap"
-                               Foreground="{StaticResource MutedBrush}" LineHeight="19"
-                               Margin="0,8,0,0" FontFamily="Microsoft YaHei UI" />
+                               Foreground="{DynamicResource MutedBrush}" LineHeight="19"
+                               Margin="0,8,0,0" FontFamily="{StaticResource UiFontFamily}" />
                     <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0"
                                   Visibility="{Binding HasConfirmDetail, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="{Binding ConfirmDetail}" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{StaticResource MutedBrush}" LineHeight="17"
+                                   Foreground="{DynamicResource MutedBrush}" LineHeight="17"
                                    FontFamily="Consolas, Microsoft YaHei UI" />
                     </ScrollViewer>
                     <Grid Margin="0,18,0,0">

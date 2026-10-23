@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "日落玻璃",
+  "colors": {
+    "BgBrush": "#251D2C",
+    "PanelBrush": "#E831283A",
+    "CardBrush": "#D03D3146",
+    "FieldBrush": "#ED483A51",
+    "HoverBrush": "#DA5A4864",
+    "LineBrush": "#806F5B7A",
+    "TextBrush": "#FFF3ED",
+    "MutedBrush": "#DCC8CE",
+    "AccentBrush": "#F5BEA6",
+    "AccentFillBrush": "#97614F",
+    "WallpaperTintBrush": "#45251D2C"
+  }
+}

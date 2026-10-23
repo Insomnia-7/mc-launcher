@@ -1,0 +1,25 @@
+<UserControl x:Class="Launcher.App.Views.AppearanceView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <Grid Background="{DynamicResource OverlayBrush}" KeyboardNavigation.TabNavigation="Cycle">
+  <Border Background="{DynamicResource PanelBrush}" Style="{StaticResource CardBorder}" MaxWidth="620" MaxHeight="494" Margin="24" Padding="22" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+   <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel Margin="0,0,0,16"><TextBlock Text="让它成为你的启动器" Style="{StaticResource H1Text}" FontSize="23"/><TextBlock Text="玻璃质感 · 即时切换 · 本地壁纸" Style="{StaticResource CaptionText}" Margin="0,6,0,0"/></StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+     <StackPanel IsEnabled="{Binding CanEditAppearance}">
+      <TextBlock Text="主题配色" Style="{StaticResource H2Text}" Margin="0,0,0,8"/>
+      <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="主题配色">
+       <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+       <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Height" Value="65"/><Setter Property="Padding" Value="4"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Tile" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="10" Margin="3"><ContentPresenter Margin="10,7"/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="Tile" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tile" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+       <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="34" Height="34" CornerRadius="9" Background="{Binding Swatch}" BorderThickness="1" BorderBrush="{Binding Accent}"><Border Height="4" Width="17" CornerRadius="2" VerticalAlignment="Bottom" Margin="0,0,0,7" Background="{Binding Accent}"/></Border><TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/></Grid></DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+      <WrapPanel Margin="0,8,0,14"><Button Content="导入主题…" Command="{Binding ImportThemeCommand}" Style="{StaticResource SecondaryButton}" Height="32" Margin="0,0,8,0"/><Button Content="导出当前主题…" Command="{Binding ExportThemeCommand}" Style="{StaticResource GhostButton}" Height="32"/></WrapPanel>
+      <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="背景壁纸" Style="{StaticResource H2Text}" VerticalAlignment="Center"/><Button Grid.Column="1" Content="导入图片…" Command="{Binding ImportWallpaperCommand}" Style="{StaticResource SecondaryButton}" Height="32" Margin="0,0,8,0"/><Button Grid.Column="2" Content="恢复背景" Command="{Binding RemoveWallpaperCommand}" Style="{StaticResource GhostButton}" Height="32"/></Grid>
+      <Grid Margin="0,6,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="48"/></Grid.ColumnDefinitions><TextBlock Text="壁纸强度" Style="{StaticResource CaptionText}" VerticalAlignment="Center"/><Slider Grid.Column="1" Minimum="0" Maximum="0.85" Value="{Binding WallpaperOpacity}" SmallChange="0.05" VerticalAlignment="Center" AutomationProperties.Name="壁纸强度"/><TextBlock Grid.Column="2" Text="{Binding WallpaperOpacity,StringFormat={}{0:P0}}" Style="{StaticResource CaptionText}" TextAlignment="Right" VerticalAlignment="Center"/></Grid>
+      <TextBlock Text="PNG / JPG / BMP，最大 24 MB。主题使用 JSON 颜色文件。" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+     </StackPanel>
+    </ScrollViewer>
+    <Grid Grid.Row="2" Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="{Binding AppearanceHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,0,12,0" VerticalAlignment="Center"/><Button Grid.Column="1" Content="完成" Command="{Binding CloseAppearanceCommand}" Style="{StaticResource PrimaryButton}" Height="34" MinWidth="82"/></Grid>
+   </Grid>
+  </Border>
+ </Grid>
+</UserControl>

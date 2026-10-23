@@ -11,6 +11,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+        ContentRendered += async (_,_) => await viewModel.LoadAppearanceWallpaperAsync();
+        Closing += (_,_) => viewModel.FlushAppearance();
     }
 
     /// <summary>点确认气泡外面的遮罩等于取消，和系统对话框的行为一致。</summary>

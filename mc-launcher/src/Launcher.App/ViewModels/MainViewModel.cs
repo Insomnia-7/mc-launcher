@@ -121,6 +121,7 @@ public sealed partial class MainViewModel : ObservableObject
         Download.InstancesChanged += RefreshInstances;
 
         StatusText = $"就绪 · 游戏目录 {GameRoot}";
+        InitializeAppearance();
         InitializeSetup(meta);
         RefreshAccountChoices(selectCurrent: true);
         RefreshInstances();
