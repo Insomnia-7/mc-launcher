@@ -163,6 +163,7 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.LogInformation("游戏目录由环境变量指定，本次切换只在当前进程内生效");
 
         GameRootProblem = string.Empty;
+        SetupError = string.Empty;
         OnPropertyChanged(nameof(GameRoot));
         RefreshInstances();
         Download.RefreshTarget();

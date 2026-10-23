@@ -65,6 +65,9 @@
                 <StackPanel Grid.Row="2" Margin="0,10,0,0">
                     <TextBlock Text="{Binding SetupError}" Style="{StaticResource OptionalText}" Foreground="#FF9292" TextWrapping="Wrap" Margin="0,0,0,6" />
                     <Button Content="网络设置…" Command="{Binding OpenNetworkCommand}" Style="{StaticResource SecondaryButton}" Height="28" Padding="12,0" HorizontalAlignment="Left" Margin="0,0,0,6" />
+                    <!-- 游戏目录不可用时，向导自己的「重试」只会一次次撞同一面墙，先换目录 -->
+                    <Button Content="换个游戏目录…" Command="{Binding ChooseGameRootCommand}" Style="{StaticResource SecondaryButton}" Height="28" Padding="12,0" HorizontalAlignment="Left" Margin="0,0,0,6"
+                            Visibility="{Binding HasGameRootProblem, Converter={StaticResource BoolToVis}}" />
                     <TextBlock Text="{Binding SetupStatus}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" />
                     <ProgressBar Value="{Binding ProgressPercent}" Height="4" Margin="0,12,0,0" Minimum="0" Maximum="100"
                                  Visibility="{Binding IsSetupBusy, Converter={StaticResource BoolToVis}}"
