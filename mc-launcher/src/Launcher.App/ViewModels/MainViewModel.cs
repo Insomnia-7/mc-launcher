@@ -1569,6 +1569,9 @@ public sealed class InstanceCard(
     public string Subtitle { get; } = subtitle;
     public bool IsLoader { get; } = baseVersion != versionId;
     public bool IsModpack { get; } = isModpack;
+
+    /// <summary>给 UI 自动化 / 屏幕阅读器用的可读名字（默认会念成类型名）。</summary>
+    public override string ToString() => DisplayName;
 }
 
 /// <summary>版本设置里的 Java 下拉项；<see cref="Auto"/> 表示按版本要求自动挑。</summary>

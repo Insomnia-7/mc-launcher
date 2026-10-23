@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using Launcher.Application.Install;
+using Launcher.Application.Instances;
 using Launcher.Domain.Versions;
 
 namespace Launcher.Application.Export;
@@ -162,18 +163,32 @@ public sealed class InstanceExportService
     {
         var metadata = InstanceMetadata.TryRead(gameRoot, instanceId);
         var settings = InstanceSettings.Load(gameRoot, instanceId);
-        var version = await ReadVersionAsync(gameRoot, instanceId, ct).ConfigureAwait(false);
+
+        // 实例 id 与版本目录可能不同（同一加载器装第二个包会得到 …-2 后缀），
+        // 所以先从注册表拿真正的 versionId，再读版本 json。
+        var registration = InstanceRegistry.LoadOrMigrate(gameRoot).Instances
+            .FirstOrDefault(i => string.Equals(i.Id, instanceId, StringComparison.OrdinalIgnoreCase));
+        var versionId = registration?.VersionId ?? instanceId;
+        var version = await ReadVersionAsync(gameRoot, versionId, ct).ConfigureAwait(false);
+
+        // 版本 json 里可能没有 inheritsFrom（我们生成的加载器 profile 就是这种），
+        // 那就退回按版本 id 反解出游戏版本与加载器。
+        var parsed = VersionIdParser.Parse(versionId, version?.InheritsFrom);
+        var minecraft = registration?.MinecraftVersion
+                        ?? version?.InheritsFrom
+                        ?? (parsed.IsLoader ? parsed.GameVersion : version?.Id);
+        var loader = registration?.Loader ?? (parsed.IsLoader ? parsed.Title(versionId) : null);
 
         return new
         {
             format = 1,
             exportedAt = DateTimeOffset.Now.ToString("o"),
-            versionId = instanceId,
-            name = metadata?.Name ?? instanceId,
-            packVersion = metadata?.PackVersion,
-            source = metadata?.Source,
-            loader = metadata?.Loader,
-            minecraft = metadata?.MinecraftVersion ?? version?.InheritsFrom ?? (version?.Id),
+            versionId,
+            name = registration?.Name ?? metadata?.Name ?? instanceId,
+            packVersion = registration?.PackVersion ?? metadata?.PackVersion,
+            source = registration?.Source ?? metadata?.Source,
+            loader,
+            minecraft,
             inheritsFrom = version?.InheritsFrom,
             mainClass = version?.MainClass,
             memoryMb = settings.MemoryMb,
