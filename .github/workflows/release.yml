@@ -36,6 +36,14 @@ jobs:
     runs-on: windows-latest
     environment: release-signing
 
+    # 代码签名（Authenticode）用的两个 secret 放在 job 级：GitHub 不允许在 step 的
+    # if: 里直接读 secrets，只能先落到 env 再用 env.X != '' 判断。没配就等于空串，
+    # 签名步骤会整步跳过，其它步骤不受影响。
+    env:
+      CODE_SIGNING_PFX_BASE64: ${{ secrets.CODE_SIGNING_PFX_BASE64 }}
+      CODE_SIGNING_PFX_PASSWORD: ${{ secrets.CODE_SIGNING_PFX_PASSWORD }}
+      CODE_SIGNING_TIMESTAMP_URL: ${{ vars.CODE_SIGNING_TIMESTAMP_URL }}
+
     steps:
       - name: 取代码
         uses: actions/checkout@v4
@@ -116,6 +124,39 @@ jobs:
             -p:DebugSymbols=false
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # 代码签名（可选）：配了 CODE_SIGNING_PFX_BASE64 + CODE_SIGNING_PFX_PASSWORD 才执行。
+      # 顺序很关键——必须在这里签完 exe，再去生成 update.json，否则清单里的 sha256
+      # 算的是没签名的文件，客户端下载后校验必然失败。
+      # 没证书时不签，SmartScreen 会提示「未知发布者」，这属于预期行为。
+      - name: 代码签名（可选）
+        if: env.CODE_SIGNING_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $pfx = Join-Path $env:RUNNER_TEMP 'code-signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:CODE_SIGNING_PFX_BASE64))
+
+          $stamp = if ([string]::IsNullOrWhiteSpace($env:CODE_SIGNING_TIMESTAMP_URL)) {
+            'http://timestamp.digicert.com'
+          } else { $env:CODE_SIGNING_TIMESTAMP_URL }
+
+          # signtool 在 Windows SDK 里，runner 上不一定在 PATH
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $signtool) { $signtool = 'signtool' }
+
+          $targets = @('out/MCLauncher.exe', 'out/updater/mclupd.exe') |
+            Where-Object { Test-Path $_ }
+          if (-not $targets) { throw '没找到要签名的 exe' }
+
+          foreach ($exe in $targets) {
+            & $signtool sign /fd SHA256 /tr $stamp /td SHA256 /f $pfx /p $env:CODE_SIGNING_PFX_PASSWORD $exe
+            if ($LASTEXITCODE -ne 0) { throw "签名失败：$exe" }
+            & $signtool verify /pa /v $exe
+            if ($LASTEXITCODE -ne 0) { throw "签名校验失败：$exe" }
+            Write-Host "已签名并验证：$exe"
+          }
+
       # Release 资产是拍平的：一旦 out/** 里出现两个同名文件，上传就会互相覆盖/报 422。
       # 这里提前拦住，别等传到一半才炸。
       - name: 检查资产名唯一
@@ -134,6 +175,24 @@ jobs:
             exit 1
           }
           Write-Host 'out/** 里的文件名互不重复，可以按拍平资产上传'
+
+      # 便携版整包：winget / Scoop 这类包管理器要一个 zip，普通用户也更好下载。
+      # 故意放到 dist/ 而不是 out/ —— out/ 是更新清单的扫描目录，把 zip 放进去会让
+      # 更新器把「整包 zip」当成一个要替换的文件，每次更新都重下 40 MB。
+      # 所以这一步必须排在「生成 update.json」之前、且产物落在 out/ 之外。
+      - name: 打包便携版 zip
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $zip = "dist/MCLauncher-$($env:VERSION)-win-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path (Join-Path out '*') -DestinationPath $zip -CompressionLevel Optimal
+          $size = (Get-Item $zip).Length
+          Write-Host "$zip $size bytes"
+          if ($size -lt 1MB) { throw "便携包太小（$size bytes），八成打包失败" }
 
       # GitHub Release 会把资产名拍平（out/updater/mclupd.exe 变成资产 mclupd.exe），
       # 所以这里必须带 -FlattenAssetUrls，否则 updater/mclupd.exe 的下载地址会 404。
@@ -209,4 +268,6 @@ jobs:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
-          files: out/**
+          files: |
+            out/**
+            dist/*.zip

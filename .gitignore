@@ -12,6 +12,7 @@
 !/scripts/
 /scripts/*
 !/scripts/make-update-manifest.ps1
+!/scripts/make-winget-manifest.ps1
 !/scripts/README-release.md
 
 # ── 启动器目录里的构建产物与临时文件也不入库 ──

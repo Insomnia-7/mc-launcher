@@ -188,6 +188,44 @@ mclupd --staging <有 update.json 的目录> --target <启动器目录>
 - 发布签名是**从签名版本起生效**的：更早的客户端不认识 `update.json.sig`，首次迁移必须让用户从发布页完整装一次新版本。
 - Release 资产名拍平是 GitHub 的行为，不是这套脚本的选择；换托管方式时记得去掉 `-FlattenAssetUrls`。
 - 清单不含 `entry` 字段：重启目标由客户端传 `--restart`（默认 `MCLauncher.exe`）决定。
-- 更新器只做「替换 + 重启」，不处理删除旧文件（例如某个 dll 在新版本里被删掉，它会留在安装目录里）。
+- 更新器会按 `installed-files.json` 账本删除「上游已移除」的文件（先移进本次 `.backup/<时间戳>/` 再删，可回滚）；
+  账本只记启动器自己装过的路径，用户自己放进去的文件永远不动。
 - CI 出的 `mclupd.exe` 是单文件包，本地 `dotnet build` 出来的是多文件（`mclupd.exe` + 若干 dll）。
-  两者都能用；更新后旧的 `updater\*.dll` 不会被删掉，但单文件包不会去读它们，不影响运行。
+  两者都能用；更新后旧的 `updater\*.dll` 会被账本清理掉，单文件包也不会去读它们。
+
+## 代码签名（可选，Authenticode）
+
+没配 secret 时 workflow 会整步跳过，`MCLauncher.exe` 保持未签名 —— 用户那边会看到 SmartScreen 的「未知发布者」。
+
+配了之后 CI 会签 `out/MCLauncher.exe` 与 `out/updater/mclupd.exe`，位置在「打包便携版 zip」**之前**、
+「生成 update.json」**之前**。顺序不能改：清单里的 sha256 必须覆盖**签名后**的字节，否则客户端校验必然失败。
+
+需要的 repository secret / variable：
+
+| 名字 | 类型 | 内容 |
+| --- | --- | --- |
+| `CODE_SIGNING_PFX_BASE64` | secret | `.pfx` 的 base64（`[Convert]::ToBase64String([IO.File]::ReadAllBytes('cert.pfx'))`） |
+| `CODE_SIGNING_PFX_PASSWORD` | secret | pfx 密码 |
+| `CODE_SIGNING_TIMESTAMP_URL` | variable | 可选，默认 `http://timestamp.digicert.com` |
+
+签名用的是 runner 上 Windows SDK 自带的 `signtool`（脚本会自动找 `Windows Kits\10\bin\*\x64\signtool.exe`）。
+
+## 便携版 zip 与 winget
+
+workflow 现在会额外产出 `dist/MCLauncher-<版本>-win-x64.zip`（整个 `out/` 打成一个包，含 `updater/`），
+作为 Release 资产上传。它**故意放在 `dist/` 而不是 `out/`**：`out/` 是更新清单的扫描目录，
+把整包 zip 放进去会让更新器每次更新都重下整个包。
+
+给 winget 提 PR 时用这个 zip：
+
+```powershell
+pwsh -NoProfile -File scripts/make-winget-manifest.ps1 `
+    -ZipPath dist/MCLauncher-0.1.2-win-x64.zip -Version 0.1.2
+```
+
+脚本按 winget-pkgs 的目录布局写到 `dist/winget/i/Insomnia-7/MCLauncher/<版本>/`，生成 version / installer / locale 三个 yaml
+（`InstallerType: zip` + `NestedInstallerType: portable`，命令别名 `mclauncher`），把那个目录整体拷进
+`microsoft/winget-pkgs` 的 `manifests/i/Insomnia-7/MCLauncher/<版本>/` 就能提 PR。
+
+**必须用发布产物（或从 Release 下载回来的 zip）生成**：`InstallerSha256` 要和线上那个文件逐字节一致，
+本地随手打的 zip 哈希不同，PR 的自动校验会失败。
