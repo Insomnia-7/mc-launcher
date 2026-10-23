@@ -22,7 +22,12 @@ public sealed record DownloadEntry(
     string RelativePath,
     long Size,
     string? Sha1,
-    DownloadKind Kind)
+    DownloadKind Kind,
+    /// <summary>
+    /// 备用地址：镜像源在改写 URL 时把官方地址记在这里。下载器在第一次失败后会切到它重试，
+    /// 这样「镜像 404 / 卡住 / 限流」不会把整批安装拖死。
+    /// </summary>
+    string? FallbackUrl = null)
 {
     public string FileName => Path.GetFileName(RelativePath);
 }

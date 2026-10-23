@@ -53,7 +53,9 @@ public sealed class RewritingDownloader : IDownloader
                 continue;
             }
 
-            rewritten[i] = entry with { Url = url };
+            // 改写成镜像时把官方地址记进 FallbackUrl：单条失败后下载器会自己切回去，
+            // 不用等整批抛异常再重来（那样一批里只要有一个慢文件就全批失败）。
+            rewritten[i] = entry with { Url = url, FallbackUrl = entry.FallbackUrl ?? entry.Url };
             changed = true;
         }
 

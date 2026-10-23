@@ -1668,6 +1668,30 @@ Console.WriteLine("== 27. 实例身份解耦：同加载器两个包 / 旧数据
     finally { TryDelete(legacy); }
 }
 
+Console.WriteLine("== 28. 下载条目备用地址：镜像失败可按条切回官方 ==");
+{
+    var sink = new CapturingDownloader();
+    var rewriter = new RewritingDownloader(sink, new PrefixRewriter());
+
+    var rewritten = new DownloadEntry("https://official.test/libraries/a.jar", "libraries/a.jar", 10, "aa", DownloadKind.Library);
+    var untouched = new DownloadEntry("https://elsewhere.test/b.jar", "libraries/b.jar", 20, null, DownloadKind.Library);
+    var presetFallback = new DownloadEntry("https://official.test/c.jar", "libraries/c.jar", 30, null, DownloadKind.Library, "https://fallback.test/c.jar");
+
+    await rewriter.DownloadAsync([rewritten, untouched, presetFallback], "root");
+
+    Check("改写成镜像时把官方地址记进 FallbackUrl",
+        sink.LastEntries[0].Url == "https://mirror.test/libraries/a.jar"
+            && sink.LastEntries[0].FallbackUrl == "https://official.test/libraries/a.jar",
+        $"Url={sink.LastEntries[0].Url} FallbackUrl={sink.LastEntries[0].FallbackUrl}");
+    Check("没被改写的条目不设 FallbackUrl",
+        sink.LastEntries[1].Url == "https://elsewhere.test/b.jar" && sink.LastEntries[1].FallbackUrl is null);
+    Check("已有 FallbackUrl 的条目不被镜像覆盖",
+        sink.LastEntries[2].Url == "https://mirror.test/c.jar"
+            && sink.LastEntries[2].FallbackUrl == "https://fallback.test/c.jar");
+    Check("DownloadEntry 默认 FallbackUrl 为 null（旧调用点零改动）",
+        new DownloadEntry("u", "p", 1, null, DownloadKind.Asset).FallbackUrl is null);
+}
+
 Console.WriteLine();
 if (failures.Count == 0)
 {
@@ -2117,4 +2141,29 @@ sealed class StubCurseForgeClient : ICurseForgeClient
         Task.FromResult<string?>("https://cdn.example/cf-resolved.jar");
 
     public CfUrlRef? ParseUrl(string url) => null;
+}
+
+/// <summary>记录下载器收到的条目，用于验证镜像改写与 FallbackUrl 语义。</summary>
+sealed class CapturingDownloader : IDownloader
+{
+    public IReadOnlyList<DownloadEntry> LastEntries { get; private set; } = [];
+
+    public Task<DownloadSummary> DownloadAsync(
+        IReadOnlyList<DownloadEntry> entries,
+        string rootDirectory,
+        IProgress<DownloadProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        LastEntries = entries;
+        return Task.FromResult(new DownloadSummary(entries.Count, entries.Count, 0, 0, TimeSpan.Zero));
+    }
+}
+
+/// <summary>把 official.test 前缀换成 mirror.test 的固定改写器（只给第 28 组用）。</summary>
+sealed class PrefixRewriter : IUrlRewriter
+{
+    public string Rewrite(string url) =>
+        url.StartsWith("https://official.test/", StringComparison.Ordinal)
+            ? "https://mirror.test/" + url["https://official.test/".Length..]
+            : url;
 }

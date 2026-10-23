@@ -139,6 +139,8 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
 
         var partPath = target + ".part";
         Exception? lastError = null;
+        var url = entry.Url;
+        var switchedToFallback = false;
 
         for (var attempt = 1; attempt <= _options.MaxRetries; attempt++)
         {
@@ -153,7 +155,15 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                     else written = existing;
                 }
 
-                written = await FetchIntoAsync(entry.Url, partPath, written, ct).ConfigureAwait(false);
+                // 上一次尝试失败且这条有备用地址（镜像改写前记下的官方 URL）→ 换回官方再试。
+                // 只切一次，之后固定用官方：镜像 404 / 超时 / 限流都算，官方源不该被镜像连累。
+                if (lastError is not null && !switchedToFallback && entry.FallbackUrl is { Length: > 0 })
+                {
+                    url = entry.FallbackUrl;
+                    switchedToFallback = true;
+                }
+
+                written = await FetchIntoAsync(url, partPath, written, ct).ConfigureAwait(false);
 
                 var actualSize = new FileInfo(partPath).Length;
                 if (entry.Size > 0 && actualSize != entry.Size)
@@ -209,7 +219,7 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
             _ => string.Empty,
         };
 
-        throw new IOException($"下载失败（{_options.MaxRetries} 次尝试）{hint}：{entry.Url}", lastError);
+        throw new IOException($"下载失败（{_options.MaxRetries} 次尝试）{hint}：{url}", lastError);
     }
 
     private async Task<long> FetchIntoAsync(string url, string partPath, long alreadyHave, CancellationToken ct)
