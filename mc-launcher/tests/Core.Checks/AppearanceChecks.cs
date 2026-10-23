@@ -30,7 +30,10 @@ internal static class AppearanceChecks
             Check("导出主题可重新导入",AppearanceStore.Import(exported).Name=="我的主题");
             Check("导出主题不包含壁纸记录和用户配置",!File.ReadAllText(exported).Contains("wallpaper",StringComparison.OrdinalIgnoreCase) && !File.ReadAllText(exported).Contains(root));
             Check("稀疏自定义颜色继承完整基线",ThemeCatalog.Resolve(custom)["TextBrush"]==ThemeCatalog.BuiltIns[0].Definition.Colors["TextBrush"]);
-            Check("旧外观配置默认启用流畅动画",loaded.MotionMode=="smooth");
+            var legacy=System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(AppearanceStore.SettingsPath(root)))!.AsObject();
+            legacy.Remove("motionMode"); File.WriteAllText(AppearanceStore.SettingsPath(root),legacy.ToJsonString());
+            var legacyLoaded=AppearanceStore.Read(root);
+            Check("旧外观配置默认启用流畅动画且保留主题",legacyLoaded.MotionMode=="smooth" && legacyLoaded.ThemeId=="custom" && legacyLoaded.WallpaperOpacity==0.7);
             AppearanceStore.Write(root,settings with { MotionMode="off" });
             Check("动画模式保存与恢复",AppearanceStore.Read(root).MotionMode=="off");
             AppearanceStore.Write(root,settings);
