@@ -1,0 +1,179 @@
+{
+  "schema": "launcher-bench/1",
+  "generatedAt": "2026-10-24T02:03:01.1114967+08:00",
+  "machine": {
+    "cpuName": "AMD Ryzen 7 5700X 8-Core Processor",
+    "totalRamMb": 32692,
+    "processorCount": 16,
+    "osDescription": "Microsoft Windows 10.0.26300",
+    "osVersion": "Microsoft Windows NT 10.0.26300.0",
+    "architecture": "X64",
+    "frameworkDescription": ".NET 10.0.13",
+    "hostName": "DESKTOP-5KG677K",
+    "userName": "HBJ"
+  },
+  "target": {
+    "exe": "D:\\work\\deepseek-harness\\default-workspace\\mc-launcher\\src\\Launcher.App\\bin\\Release\\net10.0-windows\\MCLauncher.exe",
+    "fileVersion": "0.1.1.0",
+    "productVersion": "0.1.2+c2078bd4368a0d0addce78764fb071152e686d3c",
+    "sizeBytes": 162304,
+    "lastWriteUtc": "2026-10-23T17:58:14.8169418+00:00"
+  },
+  "options": {
+    "runs": 15,
+    "settleMs": 400,
+    "timeoutMs": 20000
+  },
+  "runs": [
+    {
+      "index": 1,
+      "handleMs": 734,
+      "workingSetMb": 125,
+      "privateMb": 72.3,
+      "peakWorkingSetMb": 125,
+      "status": "ok"
+    },
+    {
+      "index": 2,
+      "handleMs": 724,
+      "workingSetMb": 125.1,
+      "privateMb": 72.3,
+      "peakWorkingSetMb": 125.1,
+      "status": "ok"
+    },
+    {
+      "index": 3,
+      "handleMs": 749,
+      "workingSetMb": 126.9,
+      "privateMb": 72.4,
+      "peakWorkingSetMb": 126.9,
+      "status": "ok"
+    },
+    {
+      "index": 4,
+      "handleMs": 717,
+      "workingSetMb": 126.9,
+      "privateMb": 72.5,
+      "peakWorkingSetMb": 126.9,
+      "status": "ok"
+    },
+    {
+      "index": 5,
+      "handleMs": 728,
+      "workingSetMb": 124.9,
+      "privateMb": 72.1,
+      "peakWorkingSetMb": 124.9,
+      "status": "ok"
+    },
+    {
+      "index": 6,
+      "handleMs": 726,
+      "workingSetMb": 126.9,
+      "privateMb": 72.5,
+      "peakWorkingSetMb": 126.9,
+      "status": "ok"
+    },
+    {
+      "index": 7,
+      "handleMs": 751,
+      "workingSetMb": 126.7,
+      "privateMb": 72.2,
+      "peakWorkingSetMb": 126.7,
+      "status": "ok"
+    },
+    {
+      "index": 8,
+      "handleMs": 841,
+      "workingSetMb": 127,
+      "privateMb": 72.5,
+      "peakWorkingSetMb": 127,
+      "status": "ok"
+    },
+    {
+      "index": 9,
+      "handleMs": 764,
+      "workingSetMb": 125.2,
+      "privateMb": 72.4,
+      "peakWorkingSetMb": 125.2,
+      "status": "ok"
+    },
+    {
+      "index": 10,
+      "handleMs": 743,
+      "workingSetMb": 125.2,
+      "privateMb": 72.7,
+      "peakWorkingSetMb": 125.2,
+      "status": "ok"
+    },
+    {
+      "index": 11,
+      "handleMs": 766,
+      "workingSetMb": 125.1,
+      "privateMb": 72.4,
+      "peakWorkingSetMb": 125.1,
+      "status": "ok"
+    },
+    {
+      "index": 12,
+      "handleMs": 807,
+      "workingSetMb": 132.6,
+      "privateMb": 77.3,
+      "peakWorkingSetMb": 132.6,
+      "status": "ok"
+    },
+    {
+      "index": 13,
+      "handleMs": 768,
+      "workingSetMb": 125.2,
+      "privateMb": 72.5,
+      "peakWorkingSetMb": 125.2,
+      "status": "ok"
+    },
+    {
+      "index": 14,
+      "handleMs": 835,
+      "workingSetMb": 132.8,
+      "privateMb": 77.5,
+      "peakWorkingSetMb": 132.8,
+      "status": "ok"
+    },
+    {
+      "index": 15,
+      "handleMs": 813,
+      "workingSetMb": 132.4,
+      "privateMb": 77,
+      "peakWorkingSetMb": 132.4,
+      "status": "ok"
+    }
+  ],
+  "summary": {
+    "handleMs": {
+      "count": 15,
+      "min": 717,
+      "median": 751,
+      "max": 841,
+      "mean": 764.4
+    },
+    "workingSetMb": {
+      "count": 15,
+      "min": 124.9,
+      "median": 126.7,
+      "max": 132.8,
+      "mean": 127.19333333333333
+    },
+    "privateMb": {
+      "count": 15,
+      "min": 72.1,
+      "median": 72.5,
+      "max": 77.5,
+      "mean": 73.37333333333332
+    },
+    "peakWorkingSetMb": {
+      "count": 15,
+      "min": 124.9,
+      "median": 126.7,
+      "max": 132.8,
+      "mean": 127.19333333333333
+    }
+  }
+}

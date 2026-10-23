@@ -65,7 +65,7 @@
                     </Button>
                 </Grid>
 
-                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="12,0,12,12" Height="34" Style="{StaticResource SecondaryButton}" />
+                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="12,0,12,12" Height="36" Style="{StaticResource SecondaryButton}" />
 
                 <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="12,0,12,8" Height="32" Style="{StaticResource SecondaryButton}" />
 
@@ -83,8 +83,8 @@
                     <ListBox.ContextMenu>
                         <!-- ContextMenu 不在主视觉树里，绑不到窗口的 DataContext，要从 PlacementTarget 借 -->
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                                     Background="#2A2A30" Foreground="{StaticResource TextBrush}"
-                                     BorderBrush="#3C3C44">
+                                     Background="{StaticResource FieldBrush}" Foreground="{StaticResource TextBrush}"
+                                     BorderBrush="{StaticResource LineBrush}">
                             <MenuItem Header="打开游戏目录" Command="{Binding OpenGameDirectoryCommand}" />
                             <MenuItem Header="打开版本目录" Command="{Binding OpenInstanceFolderCommand}" />
                             <MenuItem Header="打开日志目录" Command="{Binding OpenLogsCommand}" />
@@ -117,7 +117,7 @@
                             <DataTemplate>
                                 <Grid>
                                     <!-- 分隔项只画一条线 -->
-                                    <Border Height="1" Background="#3C3C44" Margin="6,8"
+                                    <Border Height="1" Background="{StaticResource LineBrush}" Margin="6,8"
                                             Visibility="{Binding IsSeparator, Converter={StaticResource BoolToVis}}" />
                                     <Button Command="{Binding SelectCommand}" CommandParameter="{Binding}"
                                             Height="44" HorizontalContentAlignment="Stretch"
@@ -181,13 +181,13 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <StackPanel Grid.Row="0" Margin="0,0,0,22">
                 <TextBlock Text="{Binding SelectedInstance.DisplayName, FallbackValue='还没有版本'}"
-                           Style="{StaticResource BodyText}" FontSize="24"
+                           Style="{StaticResource H1Text}"
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding SelectedInstance.Subtitle, FallbackValue='先装一个版本'}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
-                <Border Background="{StaticResource PanelBrush}" CornerRadius="6" Padding="12,9" Margin="0,16,0,0">
+                <Border Style="{StaticResource CardBorder}" Padding="14,10" Margin="0,16,0,0">
                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                             <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
@@ -220,7 +220,7 @@
                 <Button Grid.Column="0" Content="导入本地整合包（.mrpack / .zip）"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ImportModpackCommand}" />
-                <Button Grid.Column="2" Content="导出备份…" MinWidth="104"
+                <Button Grid.Column="2" Content="导出备份…" MinWidth="118" Padding="16,0"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding ExportInstanceCommand}" />
             </Grid>
@@ -237,7 +237,7 @@
                                  Minimum="0" Maximum="100"
                                  Value="{Binding ProgressPercent}"
                                  VerticalAlignment="Center"
-                                 Background="{StaticResource PanelBrush}"
+                                 Background="{StaticResource FieldBrush}"
                                  Foreground="{StaticResource AccentBrush}"
                                  BorderThickness="0" />
 
@@ -250,12 +250,12 @@
                 </Grid>
 
                 <!-- 启动失败诊断：把日志里的崩溃签名翻译成能照做的建议 -->
-                <Border Background="#33D9534F" BorderBrush="#D9534F" BorderThickness="1"
+                <Border Background="{StaticResource DangerSoftBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
                         CornerRadius="6" Padding="14,10" Margin="0,12,0,0"
                         Visibility="{Binding HasDiagnosis, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
                         <TextBlock Text="启动失败" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FF8A80" FontFamily="Microsoft YaHei UI" />
+                                   Foreground="{StaticResource DangerBrush}" FontFamily="Microsoft YaHei UI" />
                         <TextBlock Text="{Binding DiagnosisText}" FontSize="12" TextWrapping="Wrap"
                                    LineHeight="19" Margin="0,4,0,0"
                                    Foreground="{StaticResource TextBrush}"
@@ -283,7 +283,7 @@
                 <Expander.Header>
                     <TextBlock Text="版本设置" FontSize="13" Foreground="{StaticResource MutedBrush}" />
                 </Expander.Header>
-                <Border Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="16,14" Margin="0,10,0,0">
+                <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
@@ -405,7 +405,7 @@
                 <Expander.Header>
                     <TextBlock Text="模组" FontSize="13" Foreground="{StaticResource MutedBrush}" />
                 </Expander.Header>
-                <Border Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="16,14" Margin="0,10,0,0">
+                <Border Style="{StaticResource CardBorder}" Margin="0,10,0,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -426,7 +426,7 @@
                         </Grid>
 
                         <TextBlock Text="{Binding ModWarnings}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"
-                                   Foreground="#FFE08A3C"
+                                   Foreground="{StaticResource WarnBrush}"
                                    Visibility="{Binding HasModWarnings, Converter={StaticResource BoolToVis}}" />
 
                         <ItemsControl ItemsSource="{Binding InstalledMods}" MaxHeight="220">
@@ -446,7 +446,7 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" CornerRadius="4" Height="20" VerticalAlignment="Center"
-                                                Background="#FF3C3C44">
+                                                Background="{StaticResource LineBrush}">
                                             <TextBlock Text="{Binding StateText}" FontSize="11" HorizontalAlignment="Center"
                                                        VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" />
                                         </Border>
@@ -489,7 +489,7 @@
                 </Border>
             </Expander>
 
-            <Border Grid.Row="7" Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="16"
+            <Border Grid.Row="7" Style="{StaticResource CardBorder}"
                     VerticalAlignment="Top">
                 <StackPanel>
                     <TextBlock Text="{Binding EmptyStateHint}" Style="{StaticResource BodyText}"
@@ -866,7 +866,7 @@
         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="100"
               Visibility="{Binding IsConfirmOpen, Converter={StaticResource BoolToVis}}">
             <Border Background="#C8000000" MouseLeftButtonDown="OnConfirmBackdropClick" />
-            <Border Background="#FF30303A" BorderBrush="#5A5A66" BorderThickness="1"
+            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                     CornerRadius="10" Padding="22,18" Width="460" MaxHeight="440"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border.Effect>
