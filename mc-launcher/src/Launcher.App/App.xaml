@@ -5,16 +5,20 @@
         <!-- 视觉基线：深色单色阶（5 级）+ 一个强调色 + 三个语义色
              规则：背景永远用 Bg，卡片用 Card，输入框/次级块用 Field，
              分隔线一律 Line，正文 Text、次要信息 Muted。不要再写裸 #RRGGBB。 -->
-        <SolidColorBrush x:Key="BgBrush" Color="#121317" />
-        <SolidColorBrush x:Key="PanelBrush" Color="#181A20" />
-        <SolidColorBrush x:Key="CardBrush" Color="#1F222A" />
-        <SolidColorBrush x:Key="FieldBrush" Color="#22252E" />
-        <SolidColorBrush x:Key="HoverBrush" Color="#272B35" />
-        <SolidColorBrush x:Key="LineBrush" Color="#2C3038" />
-        <SolidColorBrush x:Key="TextBrush" Color="#E9EBF2" />
-        <SolidColorBrush x:Key="MutedBrush" Color="#9BA2B2" />
+        <SolidColorBrush x:Key="BgBrush" Color="#0C0E12" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#15181D" />
+        <SolidColorBrush x:Key="CardBrush" Color="#1C2028" />
+        <SolidColorBrush x:Key="FieldBrush" Color="#252A33" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#2E3440" />
+        <SolidColorBrush x:Key="LineBrush" Color="#3E4552" />
+        <SolidColorBrush x:Key="TextBrush" Color="#E8EBF2" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#A8B0C0" />
         <SolidColorBrush x:Key="AccentBrush" Color="#5B8DEF" />
         <SolidColorBrush x:Key="AccentHoverBrush" Color="#6E9BF2" />
+        <SolidColorBrush x:Key="FaintBrush" Color="#78808F" />
+        <!-- 实心按钮用 AccentFill（白字 4.74:1 达 AA）；Accent 只用于文字/图标（对 bg 5.98:1） -->
+        <SolidColorBrush x:Key="AccentFillBrush" Color="#4370CC" />
+        <SolidColorBrush x:Key="AccentPressedBrush" Color="#3B67C4" />
         <SolidColorBrush x:Key="SelectedBrush" Color="#2E5B8DEF" />
         <SolidColorBrush x:Key="SuccessBrush" Color="#4CAF7D" />
         <SolidColorBrush x:Key="WarnBrush" Color="#E0A54A" />
@@ -107,7 +111,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="10">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="10" BorderThickness="1" BorderBrush="Transparent">
                             <Border.Effect>
                                 <DropShadowEffect Color="#5B8DEF" BlurRadius="18" ShadowDepth="2"
                                                   Opacity="0.35" RenderingBias="Quality" />
