@@ -63,6 +63,13 @@ try
         var staged = StagePath(options.Staging, file.Path);
         if (!File.Exists(staged))
         {
+            // 暂存里没有是正常的：下载器会跳过「目标文件已经符合清单」的条目
+            // （版本间大量 dll 完全没变），那种文件本来就不需要替换。
+            if (await TargetMatchesAsync(options.Target, file))
+            {
+                continue;
+            }
+
             Console.Error.WriteLine($"缺少暂存文件：{file.Path}");
             return 2;
         }
@@ -95,6 +102,24 @@ try
     {
         var staged = StagePath(options.Staging, file.Path);
         var target = TargetPath(options.Target, file.Path);
+
+        if (!File.Exists(staged))
+        {
+            // 校验阶段已经确认目标本身符合清单：这个文件不需要动
+            log.AppendLine($"已是最新 {file.Path}");
+            continue;
+        }
+
+        // 更新器自己的 exe 正在运行，Windows 不允许覆盖它。
+        // 清单里的 mclupd 与当前运行的是同一版本（CI 一起发布），跳过即可；
+        // 真要换更新器本身，下次由新版启动器重新暂存后再走一遍。
+        if (Environment.ProcessPath is { Length: > 0 } self &&
+            string.Equals(Path.GetFullPath(target), Path.GetFullPath(self), StringComparison.OrdinalIgnoreCase))
+        {
+            log.AppendLine($"跳过自身 {file.Path}");
+            continue;
+        }
+
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
 
         if (File.Exists(target))
@@ -115,7 +140,7 @@ try
                 copied = true;
                 log.AppendLine($"替换 {file.Path}");
             }
-            catch (IOException) when (attempt < 5)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempt < 5)
             {
                 await Task.Delay(300 * attempt);
             }
@@ -175,6 +200,30 @@ static async Task<string> Sha256Async(string path)
     await using var stream = File.OpenRead(path);
     using var sha = SHA256.Create();
     return Convert.ToHexStringLower(await sha.ComputeHashAsync(stream));
+}
+
+// 目标文件是否已经是清单要求的那个版本（下载器按这个判定跳过下载）
+static async Task<bool> TargetMatchesAsync(string targetRoot, UpdateFile file)
+{
+    var path = TargetPath(targetRoot, file.Path);
+    if (!File.Exists(path))
+    {
+        return false;
+    }
+
+    var info = new FileInfo(path);
+    if (file.Size > 0 && info.Length != file.Size)
+    {
+        return false;
+    }
+
+    if (string.IsNullOrWhiteSpace(file.Sha256))
+    {
+        return true;
+    }
+
+    var actual = await Sha256Async(path);
+    return string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase);
 }
 
 internal sealed record UpdaterOptions(
