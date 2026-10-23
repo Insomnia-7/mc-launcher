@@ -120,7 +120,10 @@ internal static partial class UiCheck
 
         var overlay=AppearanceDescendants(window).OfType<Launcher.App.Views.AppearanceView>().Single();
         vm.OpenAppearanceCommand.Execute(null);
-        Pump(Task.Delay(70));
+        // 固定 70 ms 太脆：弹窗入场由渲染帧驱动，慢机或忙碌的 CI 上首帧可能晚到。
+        // 等到透明度真的离开初值（最多 600 ms）再断言「中间帧」，语义不变但不会假失败。
+        var dialogDeadline = Environment.TickCount64 + 600;
+        while (overlay.Opacity <= 0.001 && Environment.TickCount64 < dialogDeadline) Pump(Task.Delay(16));
         var surface=(FrameworkElement)overlay.FindName("DialogSurface");
         var transform=(TransformGroup)surface.RenderTransform;
         var scale=transform.Children.OfType<ScaleTransform>().Last();

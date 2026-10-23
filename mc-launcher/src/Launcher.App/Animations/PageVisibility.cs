@@ -57,7 +57,10 @@ public static class PageVisibility
             content.Scale.ScaleX = content.Scale.ScaleY = dialog ? .975 : 1;
 
             // Collapsed pages may not yet have been loaded or arranged. Never skip their animation.
-            root.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            // Render（7）而不是 Loaded（6）：Loaded 优先级低于 Normal，在持续有 Normal 级工作的进程里
+            // （例如自动化检查的忙轮询）会被饿死，弹窗就一直停在 opacity=0 的初态；Render 每帧都会轮到，
+            // 而且仍在布局之后执行，语义上依旧满足「布局稳定后再入场」。
+            root.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
             {
                 if (state.Token != token || !GetIsActive(root)) return;
                 if (!MotionPreferences.Enabled) { Reset(root, content); return; }
