@@ -102,6 +102,8 @@ public sealed partial class MainViewModel
     [RelayCommand(CanExecute = nameof(CanInstallSetup))]
     private async Task InstallSetupAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "安装游戏");
+        if (operation is null) { SetupError = StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         SetupError = string.Empty;
         if (SetupVersion is not { } version) { SetupError = "请先选择一个正式版。"; return; }
         if (!int.TryParse(SetupMemoryText, out var memory) || memory is < InstanceSettings.MinMemoryMb or > InstanceSettings.MaxMemoryMb)
@@ -150,6 +152,7 @@ public sealed partial class MainViewModel
             IsSetupBusy = false;
             ProgressPercent = 0;
         }
+        operation.Dispose();
         if (succeeded)
         {
             IsSetupOpen = false;

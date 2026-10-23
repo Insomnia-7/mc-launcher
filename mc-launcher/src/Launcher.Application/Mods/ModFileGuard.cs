@@ -27,7 +27,9 @@ public sealed record ModMetadata(
 /// </summary>
 public static partial class ModFileGuard
 {
-    private static readonly ConcurrentDictionary<string, ModMetadata?> MetadataCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, CachedMetadata> MetadataCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private sealed record CachedMetadata(long Length, long Modified, ModMetadata? Value);
 
     /// <summary>元数据清单文件 → 对应加载器名（同时决定 <see cref="ModMetadata.LoaderKind"/>）。</summary>
     private static readonly (string Entry, string LoaderKind)[] MetadataEntries =
@@ -104,50 +106,29 @@ public static partial class ModFileGuard
     /// </summary>
     public static ModMetadata? ReadMetadata(string jarPath)
     {
-        var info = new FileInfo(jarPath);
-        var key = $"{jarPath}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
-
-        if (MetadataCache.TryGetValue(key, out var cached))
-        {
-            return cached;
-        }
-
-        ModMetadata? metadata = null;
-
         try
         {
-            using var zip = ZipFile.OpenRead(jarPath);
-
+            var key = Path.GetFullPath(jarPath);
+            var info = new FileInfo(key);
+            if (!info.Exists) { MetadataCache.TryRemove(key, out _); return null; }
+            if (MetadataCache.TryGetValue(key, out var cached) && cached.Length == info.Length && cached.Modified == info.LastWriteTimeUtc.Ticks)
+                return cached.Value;
+            ModMetadata? metadata = null;
+            using var zip = ZipFile.OpenRead(key);
             foreach (var (entryName, loaderKind) in MetadataEntries)
             {
-                var entry = zip.GetEntry(entryName)
-                            ?? zip.Entries.FirstOrDefault(e =>
-                                e.FullName.Equals(entryName, StringComparison.OrdinalIgnoreCase));
-
-                if (entry is null)
-                {
-                    continue;
-                }
-
+                var entry = zip.GetEntry(entryName) ?? zip.Entries.FirstOrDefault(e => e.FullName.Equals(entryName, StringComparison.OrdinalIgnoreCase));
+                if (entry is null) continue;
                 using var stream = entry.Open();
                 using var reader = new StreamReader(stream);
                 var text = reader.ReadToEnd();
-
-                metadata = entryName.EndsWith(".toml", StringComparison.OrdinalIgnoreCase)
-                    ? ParseToml(text, loaderKind)
-                    : ParseJson(text, loaderKind);
-
+                metadata = entryName.EndsWith(".toml", StringComparison.OrdinalIgnoreCase) ? ParseToml(text, loaderKind) : ParseJson(text, loaderKind);
                 break;
             }
+            MetadataCache[key] = new CachedMetadata(info.Length, info.LastWriteTimeUtc.Ticks, metadata);
+            return metadata;
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            // jar 坏了或被占用：当作读不出元数据，退回按文件名判断。
-            metadata = null;
-        }
-
-        MetadataCache[key] = metadata;
-        return metadata;
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { return null; }
     }
 
     private static ModMetadata ParseToml(string text, string loaderKind)

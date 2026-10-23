@@ -136,7 +136,7 @@ public sealed class CurseForgePackSource : IModpackSource
                         match?.Sha1,
                         null,
                         [url],
-                        true);
+                        true) { SourceProjectId = reference.ProjectId.ToString(), SourceFileId = reference.FileId.ToString() };
                 }
             }
             catch (OperationCanceledException)

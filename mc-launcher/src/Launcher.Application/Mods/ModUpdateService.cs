@@ -16,6 +16,9 @@ public sealed record ModUpdateCandidate(
     long? Size,
     string Source)
 {
+    public string? ProjectId { get; init; }
+    public string? VersionId { get; init; }
+    public string? CurrentSha1 { get; init; }
     public const string SourceModrinth = "modrinth";
     public const string SourceCurseForge = "curseforge";
     public const string SourceNone = "none";
@@ -28,7 +31,7 @@ public sealed record ModUpdateCandidate(
         ? HasUpdate
             ? $"{ModId} {CurrentVersion ?? "?"} → {LatestVersion}（{Source}）"
             : $"{ModId} 已是最新（{LatestVersion}，{Source}）"
-        : $"{ModId} 查不到上游（离线 / 404 / 没有 API Key）";
+        : $"{ModId} 无法确认更新（来源未匹配或网络不可用）";
 }
 
 /// <summary>一次更新检查的汇总。<see cref="Candidates"/> 与扫描结果一一对应，顺序稳定。</summary>
@@ -47,8 +50,8 @@ public sealed record ModUpdateReport(IReadOnlyList<ModUpdateCandidate> Candidate
 }
 
 /// <summary>
-/// 按 <see cref="InstalledModScanner"/> 的扫描结果查上游最新版：先 Modrinth（用 modId 当 project id / slug），
-/// 404 或不可用时再用 CurseForge（modId 必须是数字项目 ID）。两边都不通只记为失败，绝不抛。
+/// 按 <see cref="InstalledModScanner"/> 的扫描结果查上游最新版：优先使用经哈希验证的来源记录，
+/// 未记录的文件通过 Modrinth 文件哈希匹配。无法确认项目来源时只记为不可更新。
 ///
 /// 并发上限 4，每个文件最多各查一次；<c>ct</c> 一路透传，取消时立刻中断。
 /// </summary>
@@ -69,7 +72,8 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
         var subdirectory = category.InstanceSubdirectory() ?? "mods";
         var directory = Path.Combine(gameRoot, "instances", instanceId, ".minecraft", subdirectory);
         var environment = InstanceEnvironment.Resolve(gameRoot, instanceId);
-        var scan = InstalledModScanner.Scan(directory, ct);
+        var scan = await Task.Run(() => InstalledModScanner.Scan(directory, ct), ct).ConfigureAwait(false);
+        var origins = ModSourceStore.Load(directory);
 
         if (scan.Mods.Count == 0)
         {
@@ -88,6 +92,7 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
         var tasks = scan.Mods.Select((mod, index) => RunAsync(mod, index));
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
+        progress?.Report(ModInstallProgress.Of(Stage, 100, $"{scan.Mods.Count}/{scan.Mods.Count}"));
         return new ModUpdateReport(results);
 
         async Task RunAsync(InstalledMod mod, int index)
@@ -95,7 +100,7 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
             await gate.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                results[index] = await ResolveAsync(mod, environment, category, ct).ConfigureAwait(false);
+                results[index] = await ResolveAsync(mod, environment, category, origins.GetValueOrDefault(mod.FileName), ct).ConfigureAwait(false);
             }
             finally
             {
@@ -110,95 +115,43 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
         }
     }
 
-    private async Task<ModUpdateCandidate> ResolveAsync(
-        InstalledMod mod,
-        InstanceEnvironment environment,
-        DownloadCategory category,
-        CancellationToken ct)
+    private async Task<ModUpdateCandidate> ResolveAsync(InstalledMod mod, InstanceEnvironment environment,
+        DownloadCategory category, ModOrigin? recorded, CancellationToken ct)
     {
-        // 资源包 / 光影与加载器无关，按加载器过滤会一个都查不到
-        var loader = category.UsesLoader() ? environment.LoaderSlug : null;
-
-        if (string.IsNullOrWhiteSpace(mod.ModId))
-        {
-            return Unresolved(mod);
-        }
-
         try
         {
-            var versions = await modrinth
-                .GetVersionsAsync(mod.ModId, environment.GameVersion, loader, ct)
-                .ConfigureAwait(false);
-
-            if (versions.Count > 0)
+            var hash = await ModSourceStore.HashAsync(mod.FullPath, ct).ConfigureAwait(false);
+            var origin = recorded?.Sha1.Equals(hash, StringComparison.OrdinalIgnoreCase) == true ? recorded : null;
+            if (origin?.ProjectId is null)
             {
-                var latest = versions[0];
-                var file = latest.PrimaryFile;
-                return new ModUpdateCandidate(
-                    mod.ModId,
-                    mod.FileName,
-                    mod.Version,
-                    latest.VersionNumber,
-                    IsNewer(latest.VersionNumber, mod.Version),
-                    file?.Url,
-                    file?.Size,
-                    ModUpdateCandidate.SourceModrinth);
+                var matched = await modrinth.GetVersionByHashAsync(hash, ct).ConfigureAwait(false);
+                if (matched is null) return Unresolved(mod);
+                origin = new("modrinth", matched.ProjectId, matched.Id, matched.VersionNumber, hash, mod.Bytes);
+            }
+            var loader = category.UsesLoader() ? environment.LoaderSlug : null;
+            var current = origin.VersionNumber ?? mod.Version;
+            var displayId = mod.ModId ?? mod.FileName;
+            if (origin.Source == ModUpdateCandidate.SourceModrinth)
+            {
+                var versions = await modrinth.GetVersionsAsync(origin.ProjectId!, environment.GameVersion, loader, ct).ConfigureAwait(false);
+                if (versions.FirstOrDefault() is not { } latest || latest.PrimaryFile is not { } file) return Unresolved(mod);
+                return new(displayId, mod.FileName, current, latest.VersionNumber, IsNewer(latest.VersionNumber, current), file.Url, file.Size, origin.Source)
+                { ProjectId = origin.ProjectId, VersionId = latest.Id, CurrentSha1 = hash };
+            }
+            if (origin.Source == ModUpdateCandidate.SourceCurseForge && curseForge.IsConfigured && int.TryParse(origin.ProjectId, out var projectId))
+            {
+                var files = await curseForge.GetFilesAsync(projectId, environment.GameVersion, loader, ct).ConfigureAwait(false);
+                var latest = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.DownloadUrl)) ?? files.FirstOrDefault();
+                if (latest is null) return Unresolved(mod);
+                var url = latest.DownloadUrl ?? await curseForge.GetDownloadUrlAsync(projectId, latest.Id, ct).ConfigureAwait(false);
+                var version = VersionToken(string.IsNullOrWhiteSpace(latest.DisplayName) ? latest.FileName : latest.DisplayName);
+                return new(displayId, mod.FileName, VersionToken(current), version, IsNewer(version, VersionToken(current)), url, latest.FileLength, origin.Source)
+                { ProjectId = origin.ProjectId, VersionId = latest.Id.ToString(), CurrentSha1 = hash };
             }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            // 404 / 限流 / 网络抖动 / 包不是 mod：换下一个源
-        }
-
-        if (curseForge.IsConfigured
-            && int.TryParse(mod.ModId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var projectId))
-        {
-            try
-            {
-                var files = await curseForge
-                    .GetFilesAsync(projectId, environment.GameVersion, loader, ct)
-                    .ConfigureAwait(false);
-
-                var latest = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.DownloadUrl))
-                             ?? files.FirstOrDefault();
-
-                if (latest is not null)
-                {
-                    var url = latest.DownloadUrl;
-                    if (string.IsNullOrWhiteSpace(url))
-                    {
-                        url = await curseForge.GetDownloadUrlAsync(projectId, latest.Id, ct).ConfigureAwait(false);
-                    }
-
-                    // CF 的 displayName 常是「JourneyMap 5.9.7 for 1.20.1」，取第一个版本号样的 token 来比
-                    var raw = string.IsNullOrWhiteSpace(latest.DisplayName) ? latest.FileName : latest.DisplayName;
-                    var latestVersion = VersionToken(raw);
-
-                    return new ModUpdateCandidate(
-                        mod.ModId,
-                        mod.FileName,
-                        mod.Version,
-                        latestVersion,
-                        IsNewer(latestVersion, mod.Version),
-                        url,
-                        latest.FileLength,
-                        ModUpdateCandidate.SourceCurseForge);
-                }
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                // 没有 API Key / 403 / 项目不存在：记为失败
-            }
-        }
-
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException or System.Text.Json.JsonException or InvalidOperationException or OperationCanceledException)
+        { /* 来源失效、文件改变或网络错误：该文件不可确认更新。 */ }
         return Unresolved(mod);
     }
 

@@ -1453,6 +1453,13 @@ Console.WriteLine("== 26. 更新检查：Modrinth 优先 / CurseForge 兜底 / �
             },
         };
 
+        var origins = new Dictionary<string, ModOrigin>();
+        foreach (var (file, source, project, version) in new[]
+        {
+            ("updatable.jar", "modrinth", "updatablemod", "1.0.0"), ("current.jar", "modrinth", "currentmod", "2.0.0"),
+            ("cfonly.jar", "curseforge", "12345", "3.0.0"), ("cfresolved.jar", "curseforge", "54321", "1.0.0"),
+        }) origins[file] = new(source, project, "old", version, await ModSourceStore.HashAsync(Path.Combine(modsDir, file)), new FileInfo(Path.Combine(modsDir, file)).Length);
+        await ModSourceStore.SaveAsync(modsDir, origins);
         var service = new ModUpdateService(modrinth, curseForge);
         var recorder = new RecordingProgress<ModInstallProgress>();
         var report = await service.CheckAsync(root, instanceId, DownloadCategory.Mod, recorder);
@@ -1465,7 +1472,7 @@ Console.WriteLine("== 26. 更新检查：Modrinth 优先 / CurseForge 兜底 / �
         Check("更新：版本相同 → 不算更新",
             byFile["current.jar"] is { HasUpdate: false, LatestVersion: "2.0.0", Source: "modrinth" },
             byFile["current.jar"].Describe());
-        Check("更新：Modrinth 查不到时用 CurseForge 兜底",
+        Check("更新：按记录的 CurseForge 项目查询",
             byFile["cfonly.jar"] is { HasUpdate: true, LatestVersion: "3.1.0", Source: "curseforge" },
             byFile["cfonly.jar"].Describe());
         Check("更新：CF 没给 DownloadUrl 时换临时下载地址",
@@ -1697,6 +1704,7 @@ Console.WriteLine("== 28. 下载条目备用地址：镜像失败可按条切回
 Console.WriteLine();
 await FirstRunChecks.RunAsync(Check);
 await OptimizationChecks.RunAsync(Check);
+await FollowupChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

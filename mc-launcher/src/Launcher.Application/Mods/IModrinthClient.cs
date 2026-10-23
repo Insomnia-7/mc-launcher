@@ -4,6 +4,9 @@ namespace Launcher.Application.Mods;
 
 public interface IModrinthClient
 {
+    /// <summary>按实际文件 SHA-1 匹配所属版本；未收录返回 null。</summary>
+    Task<ModrinthVersion?> GetVersionByHashAsync(string sha1, CancellationToken ct = default) => Task.FromResult<ModrinthVersion?>(null);
+
     /// <summary>按资源类型搜索。<paramref name="category"/> 决定 project_type，原版版本不走这里。</summary>
     Task<ModrinthSearchResponse> SearchAsync(
         string query,

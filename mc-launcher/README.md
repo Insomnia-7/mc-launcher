@@ -7,6 +7,7 @@ Windows Minecraft Java 版启动器，使用 C# / .NET 10 / WPF。
 - 原版安装与启动，自动准备 Java。
 - Fabric、Quilt、Forge、NeoForge；Modrinth / CurseForge / MultiMC·Prism 整合包导入。
 - Modrinth 与 CurseForge 资源获取、模组前置补全、实例隔离和独立设置。
+- 模组更新先准备后替换，失败恢复旧文件；保留真实平台来源，同一游戏目录的写任务统一互斥。
 - 微软设备码登录、离线身份、DPAPI 令牌存储、本地诊断及独立更新器。
 - **首次安装向导**：选择正式版、内存与身份，一键准备游戏和 Java，可选择完成后启动。
 
@@ -33,7 +34,7 @@ dotnet tests/Core.Checks/bin/Release/net10.0/Core.Checks.dll
 dotnet tests/Architecture.Check/bin/Release/net10.0/Architecture.Check.dll
 ```
 
-核心检查现为 359 项。首次安装相关检查在 `tests/Core.Checks/FirstRunChecks.cs`。
+核心检查现为 439 项。首次安装相关检查在 `tests/Core.Checks/FirstRunChecks.cs`。
 如默认 `dotnet` 版本较旧，本机可使用 `<dotnet-sdk>\dotnet.exe`。
 
 ## 路线与交接
@@ -42,4 +43,4 @@ dotnet tests/Architecture.Check/bin/Release/net10.0/Architecture.Check.dll
 多账号切换界面、更新清单签名和许可证选择仍待处理。
 
 
-最新的性能与稳定性修复、实测数据及后续发现见 [代码审查与优化记录](docs/review-and-optimization-2026-10-23.md)。
+代码审查见 [优化记录](docs/review-and-optimization-2026-10-23.md)，六项后续问题的实现与验证见 [修复交接](docs/followup-fixes-2026-10-23.md)。

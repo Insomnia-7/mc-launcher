@@ -12,12 +12,12 @@ public static class LaunchPlanBuilder
         VersionJson version,
         PlatformContext ctx,
         LaunchContext launch,
-        string javaPath)
+        string javaPath, ClassPathResult? preparedClassPath = null)
     {
         if (string.IsNullOrWhiteSpace(version.MainClass))
             throw new InvalidOperationException($"版本 {version.Id} 没有 mainClass，无法构建启动命令");
 
-        var classPath = ClassPathBuilder.Build(version, ctx, launch.LibrariesRoot, launch.ClientJarPath);
+        var classPath = preparedClassPath ?? ClassPathBuilder.Build(version, ctx, launch.LibrariesRoot, launch.ClientJarPath);
         var nativesDirectory = ResolveNativesDirectory(launch);
 
         var variables = BuildVariables(version, ctx, launch, classPath, nativesDirectory);

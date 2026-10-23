@@ -99,10 +99,10 @@ public static class LaunchPreflight
         VersionJson version,
         PlatformContext ctx,
         LaunchContext launch,
-        CancellationToken ct = default)
+        CancellationToken ct = default, ClassPathResult? preparedClassPath = null)
     {
         // classpath 拼装是纯 CPU（要跑 rules、去重、Forge patched client 判断），丢给线程池别堵调用方
-        var classPath = await Task.Run(
+        var classPath = preparedClassPath ?? await Task.Run(
             () => ClassPathBuilder.Build(version, ctx, launch.LibrariesRoot, launch.ClientJarPath),
             ct).ConfigureAwait(false);
 

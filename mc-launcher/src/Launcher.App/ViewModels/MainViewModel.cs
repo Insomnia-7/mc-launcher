@@ -45,7 +45,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly DownloadSourceProvider _downloadSource;
     private readonly IUpdateClient _updateClient;
     private readonly ISecretProtector? _secretProtector;
-    private readonly ModInstallService _modInstaller;
+    private readonly ModUpdateInstaller _modUpdateInstaller;
     private readonly ModUpdateService _modUpdates;
     private readonly InstanceExportService _exportService;
     private AccountLibrary? _library;
@@ -77,11 +77,12 @@ public sealed partial class MainViewModel : ObservableObject
         IUpdateClient updateClient,
         ISecretProtector? secretProtector,
         ModUpdateService modUpdates,
-        InstanceExportService exportService)
+        InstanceExportService exportService,
+        ModUpdateInstaller modUpdateInstaller)
     {
         _logger = logger;
         _secretProtector = secretProtector;
-        _modInstaller = modInstallService;
+        _modUpdateInstaller = modUpdateInstaller;
         _modUpdates = modUpdates;
         _exportService = exportService;
         _installer = installer;
@@ -106,7 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
             modrinth, curseForge, modInstallService, curseForgeInstallService, modpackDownloadService,
             installer, meta, downloadLogger,
             () => GameRoot,
-            () => SelectedInstance?.VersionId);
+            () => SelectedInstance?.InstanceId);
 
         Download.InstancesChanged += RefreshInstances;
 
@@ -184,6 +185,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ApplyUpdateAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "更新启动器");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (_pendingUpdate is not { } manifest || IsUpdating)
             return;
 
@@ -602,7 +605,7 @@ public sealed partial class MainViewModel : ObservableObject
         AskConfirm(
             "更新模组",
             $"把「{row.Title}」从 {row.Candidate.CurrentVersion ?? "当前版本"} 换到 {row.Candidate.LatestVersion ?? "最新版"}？",
-            $"会删掉旧的 {row.FileName}，再下载 {row.Candidate.LatestVersion}。\n"
+            $"会先准备并校验新版与缺失前置，再替换 {row.FileName}。下载失败不会删除旧文件。\n"
             + "如果这个模组是整合包自带的，更新后可能和整合包其他模组对不上版本，出问题可以重新导入整合包复原。",
             "更新",
             () => _ = ApplyModUpdateAsync(instance, row));
@@ -610,6 +613,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task ApplyModUpdateAsync(InstanceCard instance, ModUpdateRow row)
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "更新模组");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (IsBusy) { StatusText = "还有别的任务在跑，等它结束"; return; }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
@@ -617,18 +622,10 @@ public sealed partial class MainViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var modsDirectory = Path.Combine(GameRoot, "instances", instance.InstanceId, ".minecraft", "mods");
-            var oldPath = Path.Combine(modsDirectory, row.FileName);
-            if (File.Exists(oldPath))
-            {
-                File.Delete(oldPath);
-                StatusText = $"已删除旧文件 {row.FileName}，正在下载新版本…";
-            }
-
             var progress = new Progress<ModInstallProgress>(p =>
                 StatusText = $"{p.Stage} {p.Percent:N0}%{(p.Detail is null ? string.Empty : " · " + p.Detail)}");
-            var report = await _modInstaller.InstallAsync(
-                GameRoot, instance.InstanceId, DownloadCategory.Mod, row.ModId, progress, cts.Token).ConfigureAwait(true);
+            var report = await _modUpdateInstaller.UpdateAsync(
+                GameRoot, instance.InstanceId, row.Candidate, progress, cts.Token).ConfigureAwait(true);
 
             StatusText = $"「{row.Title}」更新完成：{Path.GetFileName(report.FileName)}（{report.FileBytes / 1024d / 1024d:N1} MB）";
             await RefreshModsAsync().ConfigureAwait(true);
@@ -653,6 +650,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportInstanceAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "导出备份");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (IsBusy || Download.IsBusy) { StatusText = "请等待当前任务结束后再导出"; return; }
         if (SelectedInstance is not { } instance)
         {
@@ -725,6 +724,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SaveSettings()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "保存实例设置");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (SelectedInstance is not { } instance)
         {
             SettingsHint = "先选一个版本";
@@ -983,6 +984,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstall))]
     private async Task InstallAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "安装游戏");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         IsBusy = true;
         ProgressPercent = 0;
         StatusText = $"开始安装 {DefaultVersion}…";
@@ -1027,6 +1030,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "准备游戏启动");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (SelectedInstance is not { } instance) return;
 
         // 同一版本已经开着就拦住：再启一份会抢 logs/latest.log 和 natives 目录
@@ -1119,7 +1124,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             // 启动前体检：缺库 / 缺 natives / 缺资源索引时，先给一句人话，
             // 比让 java 抛一屏 ClassNotFoundException 强。
-            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, prepared, cts.Token);
+            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, prepared, cts.Token, prep.ClassPath);
             if (!preflight.IsReady)
             {
                 StatusText = preflight.Summary();
@@ -1127,7 +1132,7 @@ public sealed partial class MainViewModel : ObservableObject
                 return;
             }
 
-            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, prepared, java.ExecutablePath);
+            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, prepared, java.ExecutablePath, prep.ClassPath);
 
             // 游戏目录不可写时，Minecraft 会在 log4j 初始化阶段就崩（写不了 logs/latest.log），
             // 提前探测比让用户看崩溃报告强。
@@ -1285,6 +1290,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath)
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "删除实例");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         try
         {
             if (Directory.Exists(instancePath)) Directory.Delete(instancePath, recursive: true);
@@ -1380,6 +1387,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>按路径导入整合包：菜单、对话框、拖拽三个入口最后都落到这里。</summary>
     public async Task ImportModpackFileAsync(string path)
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "导入整合包");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (IsBusy)
         {
             StatusText = "有任务在跑，等它结束再导入";
@@ -1458,6 +1467,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>拖 .jar 进窗口 = 装进当前版本的 mods。资源包 / 光影包请走下载页。</summary>
     public async Task DropJarAsync(string jarPath)
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "导入模组");
+        if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (SelectedInstance is not { } instance)
         {
             StatusText = "先选一个版本，再把 .jar 拖进来";

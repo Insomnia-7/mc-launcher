@@ -20,13 +20,13 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
     /// <summary>依赖递归深度上限，防止环和"装一个 mod 下 40 个库"。</summary>
     private const int MaxDependencyDepth = 3;
 
-    public async Task<ModInstallReport> InstallAsync(
+    internal async Task<PreparedModInstall> PrepareAsync(
         string gameRoot,
         string instanceId,
         DownloadCategory category,
         string projectIdOrSlug,
         IProgress<ModInstallProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool strict = false, string? versionId = null)
     {
         var subdirectory = category.InstanceSubdirectory()
             ?? throw new InvalidOperationException($"{category.Title()} 不能装进版本目录");
@@ -44,33 +44,38 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
             .GetVersionsAsync(projectIdOrSlug, environment.GameVersion, loader, ct)
             .ConfigureAwait(false);
 
-        var version = versions.FirstOrDefault()
+        var version = (versionId is null ? versions.FirstOrDefault() : versions.FirstOrDefault(v => v.Id == versionId))
             ?? throw new InvalidOperationException(
                 $"这个项目没有适配 {environment.Describe()} 的版本（Modrinth 上没有匹配的发布）");
 
         var file = version.PrimaryFile
             ?? throw new InvalidOperationException($"版本 {version.VersionNumber} 没有可下载的文件");
 
-        var entries = new List<(DownloadEntry Entry, string ModId)>
+        var entries = new List<PlannedModFile>
         {
-            (new DownloadEntry(file.Url, file.Filename, file.Size, file.Hashes?.Sha1, DownloadKind.Mod),
-                version.ProjectId is { Length: > 0 } primaryId ? primaryId : projectIdOrSlug),
+            new(new DownloadEntry(file.Url, file.Filename, file.Size, file.Hashes?.Sha1, DownloadKind.Mod),
+                new("modrinth", version.ProjectId, version.Id, version.VersionNumber, file.Hashes?.Sha1 ?? "", file.Size), projectIdOrSlug),
         };
 
         // 必需依赖：只做广度扩散，深度用 visited 控住
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { version.ProjectId };
-        var dependencyCount = 0;
 
-        var pending = new Queue<(string ProjectId, int Depth)>();
+        var pending = new Queue<(string ProjectId, string? VersionId, int Depth)>();
         foreach (var dependency in version.RequiredDependencies)
         {
-            if (dependency.ProjectId is { Length: > 0 } id) pending.Enqueue((id, 1));
+            if (dependency.ProjectId is { Length: > 0 } id) pending.Enqueue((id, dependency.VersionId, 1));
+            else if (strict) throw new InvalidOperationException("必需前置缺少可确认的项目 ID。");
         }
 
         while (pending.Count > 0)
         {
-            var (projectId, depth) = pending.Dequeue();
-            if (depth > MaxDependencyDepth || !visited.Add(projectId)) continue;
+            var (projectId, dependencyVersionId, depth) = pending.Dequeue();
+            if (!visited.Add(projectId)) continue;
+            if (depth > MaxDependencyDepth)
+            {
+                if (strict) throw new InvalidOperationException("必需前置超过支持的递归深度，已保留旧模组。");
+                continue;
+            }
 
             progress?.Report(ModInstallProgress.Of("解析依赖", 0, projectId));
 
@@ -80,80 +85,41 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
                     .GetVersionsAsync(projectId, environment.GameVersion, loader, ct)
                     .ConfigureAwait(false);
 
-                var dependencyFile = dependencyVersions.FirstOrDefault()?.PrimaryFile;
-                if (dependencyFile is null) continue;
+                var chosen = dependencyVersionId is null ? dependencyVersions.FirstOrDefault() : dependencyVersions.FirstOrDefault(v => v.Id == dependencyVersionId);
+                var dependencyFile = chosen?.PrimaryFile;
+                if (dependencyFile is null)
+                {
+                    if (strict) throw new InvalidOperationException($"必需前置没有适配版本：{projectId}");
+                    continue;
+                }
 
-                entries.Add((new DownloadEntry(
+                entries.Add(new(new DownloadEntry(
                     dependencyFile.Url,
                     dependencyFile.Filename,
                     dependencyFile.Size,
                     dependencyFile.Hashes?.Sha1,
-                    DownloadKind.Mod), projectId));
-                dependencyCount++;
+                    DownloadKind.Mod), new("modrinth", projectId, chosen!.Id, chosen.VersionNumber, dependencyFile.Hashes?.Sha1 ?? "", dependencyFile.Size), RequiresExactVersion: dependencyVersionId is not null));
 
-                foreach (var nested in dependencyVersions[0].RequiredDependencies)
+                foreach (var nested in chosen!.RequiredDependencies)
                 {
-                    if (nested.ProjectId is { Length: > 0 } nestedId) pending.Enqueue((nestedId, depth + 1));
+                    if (nested.ProjectId is { Length: > 0 } nestedId) pending.Enqueue((nestedId, nested.VersionId, depth + 1));
+                    else if (strict) throw new InvalidOperationException("必需前置缺少可确认的项目 ID。");
                 }
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException) when (!strict)
             {
-                // 单个依赖解析失败不该拖垮整次安装，主文件已经就位
+                // 普通安装保留原有容错；事务更新不允许漏掉必需前置。
             }
         }
 
-        // 整合包常给 jar 加「[中文名] 」前缀，也常自带旧版本；同一个 mod 装两份会让 Forge
-        // 报 duplicate mod 直接起不来。先按名字比，模组再按 jar 内的 modId 比。
-        var skipped = 0;
-        var pendingDownloads = new List<DownloadEntry>(entries.Count);
-        foreach (var (entry, modId) in entries)
-        {
-            if (ModFileGuard.FindExisting(targetDirectory, entry.RelativePath) is not null
-                || (category.NeedsModIdGuard()
-                    && ModFileGuard.FindExistingByModId(targetDirectory, modId, projectIdOrSlug) is not null))
-            {
-                skipped++;
-                continue;
-            }
-
-            pendingDownloads.Add(entry);
-        }
-
-        if (pendingDownloads.Count == 0)
-        {
-            progress?.Report(ModInstallProgress.Of("完成", 100, $"{file.Filename} 已在版本里，跳过"));
-            return new ModInstallReport(
-                version.Name, version.VersionNumber, file.Filename, file.Size,
-                targetDirectory, 0, skipped);
-        }
-
-        var adapter = progress is null
-            ? null
-            : new DownloadProgressAdapter(progress, $"下载{category.Title()}");
-
-        await downloader
-            .DownloadAsync(pendingDownloads, targetDirectory, adapter, ct)
-            .ConfigureAwait(false);
-
-        progress?.Report(ModInstallProgress.Of("完成", 100, file.Filename));
-
-        return new ModInstallReport(
-            version.Name,
-            version.VersionNumber,
-            file.Filename,
-            file.Size,
-            targetDirectory,
-            dependencyCount,
-            skipped);
+        return new PreparedModInstall(version.Name, version.VersionNumber, file.Filename, file.Size, targetDirectory, entries);
     }
 
-    private sealed class DownloadProgressAdapter(IProgress<ModInstallProgress> outer, string stage)
-        : IProgress<DownloadProgress>
+    public async Task<ModInstallReport> InstallAsync(string gameRoot, string instanceId, DownloadCategory category,
+        string projectIdOrSlug, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default)
     {
-        public void Report(DownloadProgress value) =>
-            outer.Report(ModInstallProgress.Of(
-                stage,
-                value.Percent,
-                $"{value.CompletedFiles}/{value.TotalFiles} · {value.CompletedBytes / 1024.0 / 1024.0:F1} MB"));
+        var plan = await PrepareAsync(gameRoot, instanceId, category, projectIdOrSlug, progress, ct).ConfigureAwait(false);
+        var skipped = await ModInstallExecutor.InstallAsync(plan, category, downloader, progress, ct).ConfigureAwait(false);
+        return new(plan.Title, plan.Version, plan.RootFile, plan.RootSize, plan.TargetDirectory, plan.Files.Count - 1, skipped);
     }
 }

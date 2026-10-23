@@ -12,13 +12,13 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
 {
     private const int MaxDependencyDepth = 3;
 
-    public async Task<CfInstallReport> InstallAsync(
+    internal async Task<PreparedModInstall> PrepareAsync(
         string gameRoot,
         string instanceId,
         DownloadCategory category,
         int modId,
         IProgress<ModInstallProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool strict = false, string? versionId = null)
     {
         if (!curseForge.IsConfigured)
         {
@@ -39,10 +39,10 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
         progress?.Report(new ModInstallProgress("解析", 0, $"{env.Describe()} · 查询项目 {modId}"));
 
         var rootName = $"CurseForge #{modId}";
-        var files = await curseForge.GetFilesAsync(modId, env.GameVersion, env.LoaderSlug, ct)
+        var files = await curseForge.GetFilesAsync(modId, env.GameVersion, category.UsesLoader() ? env.LoaderSlug : null, ct)
             .ConfigureAwait(false);
 
-        var main = files.FirstOrDefault(f => f.IsRelease) ?? files.FirstOrDefault()
+        var main = (versionId is null ? files.FirstOrDefault(f => f.IsRelease) ?? files.FirstOrDefault() : files.FirstOrDefault(f => f.Id.ToString() == versionId))
             ?? throw new InvalidOperationException(
                 $"CurseForge 上没有 {modId} 在 {env.Describe()} 下可用的文件。");
 
@@ -65,6 +65,8 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
             var (_, currentFile, depth) = queue.Dequeue();
             if (depth >= MaxDependencyDepth)
             {
+                if (strict && currentFile.RequiredDependencies.Any(d => !visited.Contains(d.ModId)))
+                    throw new InvalidOperationException("必需前置超过支持的递归深度，已保留旧模组。");
                 continue;
             }
 
@@ -76,13 +78,13 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
                 }
 
                 var dependencyFiles = await curseForge
-                    .GetFilesAsync(dependency.ModId, env.GameVersion, env.LoaderSlug, ct)
+                    .GetFilesAsync(dependency.ModId, env.GameVersion, category.UsesLoader() ? env.LoaderSlug : null, ct)
                     .ConfigureAwait(false);
 
                 var chosen = dependencyFiles.FirstOrDefault(f => f.IsRelease) ?? dependencyFiles.FirstOrDefault();
                 if (chosen is null)
                 {
-                    // 拿不到匹配版本的依赖就跳过，避免整单失败
+                    if (strict) throw new InvalidOperationException($"必需前置没有适配版本：{dependency.ModId}");
                     continue;
                 }
 
@@ -101,7 +103,7 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
         progress?.Report(new ModInstallProgress("解析", 5,
             $"{rootName} {main.DisplayName}，附带 {planned.Count - 1} 个依赖"));
 
-        var entries = new List<(DownloadEntry Entry, string? Slug)>(planned.Count);
+        var entries = new List<PlannedModFile>(planned.Count);
         for (var i = 0; i < planned.Count; i++)
         {
             var (file, ownerModId, name, slug) = planned[i];
@@ -117,65 +119,24 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
                     $"CurseForge 未提供 {name}（fileId={file.Id}）的下载地址，作者可能禁止第三方分发。");
             }
 
-            entries.Add((new DownloadEntry(
+            entries.Add(new(new DownloadEntry(
                 url,
                 file.FileName,
                 file.FileLength,
                 file.Sha1,
-                DownloadKind.Mod), slug));
+                DownloadKind.Mod), new("curseforge", ownerModId.ToString(), file.Id.ToString(), file.DisplayName, file.Sha1 ?? "", file.FileLength), slug));
 
             progress?.Report(new ModInstallProgress("解析", 5 + i * 95d / planned.Count, name));
         }
 
-        // 同一个 mod 已经装过（哪怕被整合包改了前缀名、或是别的版本）就不再下一份
-        var skipped = 0;
-        var pendingDownloads = new List<DownloadEntry>(entries.Count);
-        foreach (var (entry, slug) in entries)
-        {
-            if (ModFileGuard.FindExisting(modsDirectory, entry.RelativePath) is not null
-                || (category.NeedsModIdGuard()
-                    && ModFileGuard.FindExistingByModId(modsDirectory, slug) is not null))
-            {
-                skipped++;
-                continue;
-            }
-
-            pendingDownloads.Add(entry);
-        }
-
-        if (pendingDownloads.Count == 0)
-        {
-            progress?.Report(new ModInstallProgress("完成", 100, $"{main.FileName} 已在版本里，跳过"));
-            return new CfInstallReport(rootName, main.FileName, main.FileLength, modsDirectory, 0, skipped);
-        }
-
-        var adapter = progress is null
-            ? null
-            : new DownloadProgressAdapter(progress, "下载");
-
-        var summary = await downloader
-            .DownloadAsync(pendingDownloads, modsDirectory, adapter, ct)
-            .ConfigureAwait(false);
-
-        progress?.Report(new ModInstallProgress("完成", 100,
-            $"{rootName} {main.DisplayName} · {summary.DownloadedFiles} 个文件 {summary.DownloadedBytes / 1024d / 1024d:F1} MB"));
-
-        return new CfInstallReport(
-            rootName,
-            main.FileName,
-            main.FileLength,
-            modsDirectory,
-            pendingDownloads.Count - 1,
-            skipped);
+        return new(rootName, main.DisplayName, main.FileName, main.FileLength, modsDirectory, entries);
     }
 
-    /// <summary>把 <see cref="DownloadProgress"/> 适配成 <see cref="ModInstallProgress"/>。</summary>
-    private sealed class DownloadProgressAdapter(IProgress<ModInstallProgress> outer, string stage)
-        : IProgress<DownloadProgress>
+    public async Task<CfInstallReport> InstallAsync(string gameRoot, string instanceId, DownloadCategory category,
+        int modId, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default)
     {
-        public void Report(DownloadProgress value) => outer.Report(new ModInstallProgress(
-            stage,
-            value.Percent,
-            $"{value.CompletedBytes / 1024d / 1024d:F1} / {value.TotalBytes / 1024d / 1024d:F1} MB · {value.CurrentFile}"));
+        var plan = await PrepareAsync(gameRoot, instanceId, category, modId, progress, ct).ConfigureAwait(false);
+        var skipped = await ModInstallExecutor.InstallAsync(plan, category, downloader, progress, ct).ConfigureAwait(false);
+        return new(plan.Title, plan.RootFile, plan.RootSize, plan.TargetDirectory, Math.Max(0, plan.Files.Count - skipped - 1), skipped);
     }
 }

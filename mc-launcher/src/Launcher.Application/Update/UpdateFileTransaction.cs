@@ -6,7 +6,7 @@ namespace Launcher.Application.Update;
 public static class UpdateFileTransaction
 {
     public static async Task ApplyAsync(IReadOnlyList<UpdateFile> files, string staging, string targetRoot,
-        string backupRoot, string? runningExecutable = null, Action<string>? log = null, CancellationToken ct = default)
+        string backupRoot, string? runningExecutable = null, Action<string>? log = null, CancellationToken ct = default, IReadOnlyList<string>? removeFiles = null)
     {
         var changed = new List<(string Target, string? Backup)>();
         try
@@ -41,6 +41,17 @@ public static class UpdateFileTransaction
                 await ReplaceAsync(staged, target, ct).ConfigureAwait(false);
                 changed.Add((target, backup));
                 log?.Invoke($"替换 {file.Path}");
+            }
+            foreach (var relative in removeFiles ?? [])
+            {
+                ct.ThrowIfCancellationRequested();
+                var target = Resolve(targetRoot, relative);
+                if (!File.Exists(target)) continue;
+                var backup = Resolve(backupRoot, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
+                File.Move(target, backup);
+                changed.Add((target, backup));
+                log?.Invoke($"移除旧文件 {relative}");
             }
         }
         catch (Exception failure)

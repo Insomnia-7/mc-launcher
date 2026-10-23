@@ -1,5 +1,6 @@
 using Launcher.Application.Abstractions;
 using Launcher.Application.Instances;
+using Launcher.Application.Mods;
 using Launcher.Domain.Install;
 using Launcher.Domain.Loaders;
 
@@ -145,6 +146,15 @@ public sealed class ModpackInstaller(
             // ④ overrides：整包内嵌的配置、资源、地图等
             progress?.Report(ModpackImportProgress.Of("解压 overrides", 0));
             var overrideFiles = await source.ExtractOverridesAsync(instanceDirectory, progress, ct).ConfigureAwait(false);
+
+            // 导入清单的实际文件保留来源；overrides 改写了内容时，不绑定不匹配的来源。
+            var sourceLabel = pack.SourceLabel.ToLowerInvariant();
+            foreach (var group in files.Where(f => f.ClientRequired && sourceLabel is "modrinth" or "curseforge").GroupBy(f => Path.GetDirectoryName(LongPath.Combine(instanceDirectory, f.Path))!))
+            {
+                await ModSourceStore.RecordAsync(group.Key, group.Select(f => new PlannedModFile(
+                    new DownloadEntry(f.PrimaryUrl ?? "", Path.GetFileName(f.Path), f.FileSize, f.Sha1, DownloadKind.ModpackFile),
+                    new ModOrigin(sourceLabel, f.SourceProjectId, f.SourceFileId, null, f.Sha1 ?? "", f.FileSize))), ct).ConfigureAwait(false);
+            }
 
             // ⑤ 记下实例身份：界面显示「通天之路 1.3.5」而不是 1.20.1-forge-47.4.18
             var metadata = new InstanceMetadata(

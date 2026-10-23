@@ -182,6 +182,7 @@ base.OnStartup(e);
             sp.GetRequiredService<IModrinthClient>(),
             sp.GetRequiredService<ICurseForgeClient>()));
         services.AddSingleton<InstanceExportService>();
+        services.AddSingleton<ModUpdateInstaller>();
 
         // 自更新：清单地址优先看环境变量，其次 settings.json 的 updateUrl
         services.AddSingleton<IUpdateClient>(_ =>

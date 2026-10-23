@@ -573,6 +573,8 @@ public sealed partial class DownloadViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstall))]
     private async Task InstallAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装资源");
+        if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
         if (SelectedResult is not { } item || SelectedCategory is null) return;
 
         var category = item.Category;
@@ -696,6 +698,8 @@ public sealed partial class DownloadViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstallVersion))]
     private async Task InstallVersionAsync()
     {
+        using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装游戏版本");
+        if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
         if (SelectedVersion is not { } version) return;
 
         IsBusy = true;

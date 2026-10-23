@@ -443,7 +443,8 @@ static async Task<int> RunAsync(string[] args)
             var resolvedVersionId = InstanceRegistry.ResolveVersionId(gameRoot, versionId);
             var version = await LoadMergedAsync(gameRoot, resolvedVersionId);
             var context = CreateContext(gameRoot, version, preset, extraJvmText, instanceId);
-            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, context, javaPath);
+            var classPath = ClassPathBuilder.Build(version, PlatformContext.Current, context.LibrariesRoot, context.ClientJarPath);
+            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, context, javaPath, classPath);
 
             Console.WriteLine($"[plan] {versionId} → mainClass={plan.MainClass}  preset={JvmPresets.Key(preset)}");
             Console.WriteLine($"  jvm args ({plan.JvmArguments.Count}):");
@@ -453,7 +454,7 @@ static async Task<int> RunAsync(string[] args)
             Console.WriteLine($"  argfile 行数: {plan.ToArgFileContent().Split('\n').Length}");
             Console.WriteLine($"  classpath 长度: {plan.JvmArguments.LastOrDefault()?.Length ?? 0} 字符");
 
-            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, context);
+            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, context, preparedClassPath: classPath);
             Console.WriteLine("[preflight] " + preflight.Describe());
             return 0;
         }
@@ -473,8 +474,8 @@ static async Task<int> RunAsync(string[] args)
             // 以前 CLI 直接 Build(plan)，natives 用的是 legacy 目录，1.12 及更老的版本会缺 DLL。
             var preparation = await LaunchPreparer.PrepareAsync(version, PlatformContext.Current, context, gameRoot, CancellationToken.None);
             context = preparation.Context;
-            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, context, javaPath);
-            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, context);
+            var plan = LaunchPlanBuilder.Build(version, PlatformContext.Current, context, javaPath, preparation.ClassPath);
+            var preflight = await LaunchPreflight.CheckAsync(version, PlatformContext.Current, context, preparedClassPath: preparation.ClassPath);
             if (preflight.IsReady)
             {
                 Console.WriteLine("[preflight] " + preflight.Summary());

@@ -11,6 +11,9 @@ public sealed record ModpackFile(
     IReadOnlyList<string> Downloads,
     bool ClientRequired)
 {
+    public string? SourceProjectId { get; init; }
+    public string? SourceFileId { get; init; }
+
     public string? PrimaryUrl => Downloads.Count > 0 ? Downloads[0] : null;
 
     public string FileName => System.IO.Path.GetFileName(Path);

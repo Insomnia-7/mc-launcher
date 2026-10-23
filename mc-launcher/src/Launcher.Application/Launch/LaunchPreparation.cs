@@ -10,6 +10,7 @@ namespace Launcher.Application.Launch;
 /// <param name="Natives">解压/复用结果，可拿去写日志（<see cref="NativesProvision.Summary"/>）。</param>
 public sealed record LaunchPreparation(LaunchContext Context, NativesProvision Natives)
 {
+    public ClassPathResult? ClassPath { get; init; }
     /// <summary>给人看的一行结论。</summary>
     public string Summary() => Natives.Summary();
 }
@@ -47,6 +48,6 @@ public static class LaunchPreparer
             .ProvisionAsync(gameRoot, version.Id, classPath.NativeJars, ct)
             .ConfigureAwait(false);
 
-        return new LaunchPreparation(launch with { NativesDirectory = natives.Directory }, natives);
+        return new LaunchPreparation(launch with { NativesDirectory = natives.Directory }, natives) { ClassPath = classPath };
     }
 }
