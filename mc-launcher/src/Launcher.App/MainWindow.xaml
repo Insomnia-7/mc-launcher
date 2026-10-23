@@ -188,12 +188,54 @@
                 <TextBlock Text="{Binding SelectedInstance.Subtitle, FallbackValue='先装一个版本'}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
                 <Border Style="{StaticResource CardBorder}" Padding="14,10" Margin="0,16,0,0">
-                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 头像：正版取皮肤头部，离线用首字母；右下小圆点表示登录状态 -->
+                        <Grid Width="36" Height="36" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <Border CornerRadius="8" Background="{StaticResource FieldBrush}" ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="{Binding AccountInitial}" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{StaticResource MutedBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Image Source="{Binding SkinHead}" Stretch="UniformToFill"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasSkinHead}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Grid>
+                            </Border>
+                            <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom" Margin="0,0,-2,-2" BorderThickness="2"
+                                    BorderBrush="{StaticResource CardBrush}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{StaticResource MutedBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasAccount}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                             <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="账号管理…" Command="{Binding OpenAccountsCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0"/>
                             <Button Content="取消登录" Command="{Binding LoginCancelCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0" Margin="8,0,0,0"
                                     Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}"/>
