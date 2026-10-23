@@ -185,64 +185,16 @@
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding SelectedInstance.Subtitle, FallbackValue='先装一个版本'}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
-                <!-- 正版账号：没登录时显示离线身份，登录中显示设备码 -->
                 <Border Background="{StaticResource PanelBrush}" CornerRadius="6" Padding="12,9" Margin="0,16,0,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding AccountText}" FontSize="13"
-                                       Foreground="{StaticResource TextBrush}" />
-                            <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0"
-                                       Foreground="{StaticResource MutedBrush}"
-                                       TextTrimming="CharacterEllipsis" />
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding LoginCode}" FontFamily="Consolas" FontSize="17"
-                                       FontWeight="SemiBold" Margin="0,0,12,0" VerticalAlignment="Center"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}" />
-
-                            <Button Content="登录微软账号" Margin="0,0,8,0"
-                                    Command="{Binding LoginCommand}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-                                        <Setter Property="Height" Value="30" />
-                                        <Setter Property="Width" Value="108" />
-                                        <Setter Property="FontSize" Value="12" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsLoggingIn}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding HasAccount}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-
-                            <Button Content="退出登录" Command="{Binding LogoutCommand}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-                                        <Setter Property="Height" Value="30" />
-                                        <Setter Property="Width" Value="72" />
-                                        <Setter Property="FontSize" Value="12" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsLoggingIn}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding HasAccount}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                            <Button Content="账号管理…" Command="{Binding OpenAccountsCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0"/>
+                            <Button Content="取消登录" Command="{Binding LoginCancelCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0" Margin="8,0,0,0"
+                                    Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -887,6 +839,9 @@
 
         <views:FirstRunView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
                             Visibility="{Binding IsSetupOpen, Converter={StaticResource BoolToVis}}" />
+
+        <views:AccountManagerView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="95"
+                                  Visibility="{Binding IsAccountsOpen, Converter={StaticResource BoolToVis}}" />
 
         <!-- 确认覆盖层：不用 Popup（PlacementTarget 容易跑出窗口），直接在窗口内盖一层 -->
         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="100"

@@ -17,7 +17,7 @@ using Launcher.Application.Mods;
 using Launcher.Domain.Content;
 using Microsoft.Extensions.Logging.Abstractions;
 
-internal static class UiCheck
+internal static partial class UiCheck
 {
     private static readonly SetupProxy State = new();
     private static int _checks;
@@ -85,6 +85,7 @@ internal static class UiCheck
         secondVm.Download.RefreshTarget();
         Check("下载资源使用所选实例目录而非共用版本 ID", secondVm.Download.TargetText.Contains("setup-test-2"));
         Browser(secondVm);
+        Accounts();
         Console.WriteLine($"[ok] {_checks} 项 WPF 流程检查通过");
         window.Close();
         app.Shutdown();
@@ -180,6 +181,7 @@ internal static class UiCheck
     {
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Microsoft.Extensions.Logging.ILogger<>))
             return typeof(NullLogger<>).MakeGenericType(type.GenericTypeArguments).GetField("Instance")!.GetValue(null);
+        if (type == typeof(ISecretProtector)) return new AccountTestProtector();
         if (type == typeof(DownloadSourceProvider)) return new DownloadSourceProvider(AppPaths.DataDirectory);
         if (type.IsInterface)
         {
@@ -195,6 +197,11 @@ public class SetupProxy : DispatchProxy
 {
     public SetupProxy? Shared;
     public int Downloads;
+    public int AuthRequests, RefreshRequests;
+    public bool FailAccountSave, FailLogin, DelayLogin, FailRefresh, CancelRefresh, WrongRefreshIdentity;
+    public string? RefreshedUuid;
+    public TaskCompletionSource<Launcher.Application.Auth.DeviceCodeSession>? LoginStart;
+
     public bool FailJava;
     public int Searches;
     public ResourceSearchRequest? LastRequest;
@@ -211,6 +218,23 @@ public class SetupProxy : DispatchProxy
         var state = Shared ?? this;
         switch (method!.Name)
         {
+            case "StartDeviceCodeAsync":
+                state.AuthRequests++;
+                if (state.FailLogin) return Task.FromException<Launcher.Application.Auth.DeviceCodeSession>(new IOException("模拟登录网络故障"));
+                if (state.DelayLogin)
+                {
+                    state.LoginStart = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    ((CancellationToken)args![0]!).Register(() => state.LoginStart.TrySetCanceled());
+                    return state.LoginStart.Task;
+                }
+                return Task.FromCanceled<Launcher.Application.Auth.DeviceCodeSession>(new CancellationToken(true));
+            case "RefreshAsync":
+                state.AuthRequests++; state.RefreshRequests++;
+                var account = (Launcher.Application.Auth.MicrosoftAccount)args![0]!; state.RefreshedUuid = account.Uuid;
+                if (state.FailRefresh) return Task.FromException<Launcher.Application.Auth.MicrosoftAccount>(new IOException("模拟验证失败"));
+                if (state.CancelRefresh) return Task.FromCanceled<Launcher.Application.Auth.MicrosoftAccount>(new CancellationToken(true));
+                return Task.FromResult(account with { Uuid = state.WrongRefreshIdentity ? "wrong-identity" : account.Uuid,
+                    AccessToken="fixture-renewed-access",RefreshToken="fixture-rotated-refresh",ExpiresAt=DateTimeOffset.UtcNow.AddDays(1) });
             case "GetManifestAsync": return Task.FromResult(new VersionManifest { Latest = new LatestVersions { Release = "setup-test" }, Versions = [new() { Id="older", Type="release" }, new() { Id="snapshot", Type="snapshot" }, new() { Id="setup-test", Type="release" }, new() { Id="24w14potato",Type="snapshot" }, new() { Id="b1.7.3",Type="old_beta" }, new() { Id="a1.2.6",Type="old_alpha" }] });
             case "GetVersionAsync": return Task.FromResult(new VersionJson { Id = "setup-test", MainClass = "test.Main", JavaVersion = new JavaVersionRef { MajorVersion = 21 } });
             case "DownloadAsync": state.Downloads++; return Task.FromResult(new DownloadSummary(0,0,0,0,TimeSpan.Zero));

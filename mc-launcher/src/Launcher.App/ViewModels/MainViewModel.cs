@@ -98,8 +98,8 @@ public sealed partial class MainViewModel : ObservableObject
         // 直接写 backing field：初始化不该触发"写回 settings.json"
         _downloadSourceIndex = (int)downloadSource.Current;
         _library = AccountLibrary.Load(AppPaths.DataDirectory, _secretProtector);
-        Account = _library.Selected;
-        OfflineName = _library.OfflineIdentity.Name;
+        _account = _library.Selected;
+        _offlineName = _library.OfflineIdentity.Name;
 
         GameRoot = AppPaths.GameRoot;
 
@@ -113,6 +113,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         StatusText = $"就绪 · 游戏目录 {GameRoot}";
         InitializeSetup(meta);
+        RefreshAccountChoices(selectCurrent: true);
         RefreshInstances();
         IsSetupOpen = Instances.Count == 0;
         _logger.LogInformation("主视图初始化完成：{Count} 个版本，游戏目录 {GameRoot}", Instances.Count, GameRoot);
@@ -790,19 +791,14 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnOfflineNameChanged(string value)
     {
         if (_library is null) return;
-
-        try
+        if (!OfflineIdentityFactory.IsValidName(value))
+        { ReportAccountStatus("离线用户名只能 3–16 位字母、数字或下划线"); return; }
+        if (CommitAccounts(library => library.SetOfflineName(value), "离线用户名已保存"))
         {
-            _library.SetOfflineName(value);
-            _library.Save(AppPaths.DataDirectory, _secretProtector);
-            StatusText = $"离线用户名改成了 {_library.OfflineIdentity.Name}";
+            OnPropertyChanged(nameof(AccountText));
+            OnPropertyChanged(nameof(SetupIdentityText));
+            SetupOfflineName = value;
         }
-        catch (ArgumentException)
-        {
-            StatusText = "离线用户名只能 3–16 位字母、数字或下划线";
-        }
-
-        OnPropertyChanged(nameof(AccountText));
     }
 
     partial void OnAccountChanged(MicrosoftAccount? value)
@@ -817,12 +813,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         InstallSetupCommand.NotifyCanExecuteChanged();
         CloseSetupCommand.NotifyCanExecuteChanged();
+        LaunchCommand.NotifyCanExecuteChanged();
+        NotifyAccountActions();
     }
 
-    [RelayCommand(IncludeCancelCommand = true)]
+    [RelayCommand(IncludeCancelCommand = true, CanExecute = nameof(CanManageAccountCommands))]
     private async Task LoginAsync(CancellationToken cancellationToken)
     {
-        if (IsLoggingIn) return;
+        if (!CanManageAccounts) return;
 
         IsLoggingIn = true;
         LoginCode = string.Empty;
@@ -830,21 +828,21 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            StatusText = "正在申请登录代码…";
+            ReportAccountStatus("正在申请登录代码…");
             var session = await _auth.StartDeviceCodeAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             LoginCode = session.UserCode;
             CopyToClipboard(session.UserCode);
             LoginHint = $"已在浏览器打开 {session.VerificationUri}，代码 {session.UserCode} 已复制到剪贴板，粘贴进去即可";
             OpenInBrowser(session.VerificationUri);
-            StatusText = "等待你在浏览器里确认…";
+            ReportAccountStatus("等待你在浏览器里完成授权，可点击「取消登录」。");
 
             var progress = new Progress<string>(message => LoginHint = message);
             var account = await _auth.WaitForLoginAsync(session, progress, cancellationToken);
 
-            _library?.AddOrUpdate(account);
-            _library?.Save(AppPaths.DataDirectory, _secretProtector);
-            Account = account;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SaveSignedInAccount(account)) return;
 
             LoginCode = string.Empty;
             LoginHint = string.Empty;
@@ -853,19 +851,20 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            StatusText = "已取消登录";
+            ReportAccountStatus("已取消登录，原有身份保持不变");
             LoginCode = string.Empty;
             LoginHint = string.Empty;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "微软登录失败");
-            StatusText = "登录失败：" + ErrorText.Describe(ex);
+            ReportAccountStatus("登录失败：" + ErrorText.Describe(ex));
             LoginCode = string.Empty;
             LoginHint = string.Empty;
         }
         finally
         {
+            LoginCode = string.Empty; LoginHint = string.Empty;
             IsLoggingIn = false;
         }
     }
@@ -897,39 +896,28 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private void Logout()
-    {
-        if (Account is { } current)
-        {
-            _library?.Remove(current.Uuid);
-            _library?.Save(AppPaths.DataDirectory, _secretProtector);
-        }
-
-        Account = null;
-        StatusText = "已退出正版账号，回到离线身份";
-    }
-
-    /// <summary>启动前把要过期的令牌换掉；续期失败就退回离线，不让登录状态挡住进游戏。</summary>
+    /// <summary>Refresh only the selected identity; failure never silently changes the player identity.</summary>
     private async Task<MicrosoftAccount?> EnsureFreshAccountAsync(CancellationToken ct)
     {
-        if (Account is null) return null;
-        if (!Account.NeedsRefresh) return Account;
-
+        ct.ThrowIfCancellationRequested();
+        if (Account is not { } current) return null;
+        if (!current.NeedsRefresh) return current;
         try
         {
-            StatusText = "正版令牌快过期了，正在续期…";
-            var fresh = await _auth.RefreshAsync(Account, ct);
-            _library?.AddOrUpdate(fresh);
-            _library?.Save(AppPaths.DataDirectory, _secretProtector);
-            Account = fresh;
+            StatusText = "正在验证当前正版账号…";
+            var fresh = await _auth.RefreshAsync(current, ct);
+            ct.ThrowIfCancellationRequested();
+            if (!string.Equals(fresh.Uuid, current.Uuid, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("续期返回的身份与当前账号不一致");
+            if (!CommitAccounts(library => library.AddOrUpdate(fresh), "账号验证完成"))
+                throw new InvalidOperationException("无法保存续期后的登录信息，请检查数据目录后重试");
             return fresh;
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "续期失败，本次用离线身份启动");
-            StatusText = "续期失败，本次按离线身份启动";
-            return null;
+            _logger.LogWarning("正版账号验证失败：{ErrorType}", ex.GetType().Name);
+            throw new InvalidOperationException("正版账号验证失败，请重新登录，或在账号管理中主动选择离线身份。", ex);
         }
     }
     public string EmptyStateHint =>
@@ -946,6 +934,7 @@ public sealed partial class MainViewModel : ObservableObject
         ImportModpackCommand.NotifyCanExecuteChanged();
         LaunchCommand.NotifyCanExecuteChanged();
         CanCancel = value;
+        NotifyAccountActions();
     }
 
     /// <summary>
@@ -1025,11 +1014,12 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private bool CanLaunch() => !IsBusy && SelectedInstance is not null;
+    private bool CanLaunch() => !IsBusy && !IsLoggingIn && SelectedInstance is not null;
 
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync()
     {
+        if (!CanLaunch()) return;
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "准备游戏启动");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (SelectedInstance is not { } instance) return;

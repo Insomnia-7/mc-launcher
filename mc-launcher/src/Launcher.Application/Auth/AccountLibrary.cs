@@ -61,6 +61,9 @@ public sealed class AccountLibrary
     /// <summary>离线身份。永远有值：没配过就是默认名 <c>Developer</c>。</summary>
     public OfflineIdentity OfflineIdentity => _offline;
 
+    /// <summary>Independent editable snapshot; callers can save it before publishing a UI state change.</summary>
+    public AccountLibrary Copy() => new([.. _accounts], _selectedUuid, _offline.Name);
+
     public static string PathFor(string dataDirectory) => Path.Combine(dataDirectory, FileName);
 
     /// <summary>

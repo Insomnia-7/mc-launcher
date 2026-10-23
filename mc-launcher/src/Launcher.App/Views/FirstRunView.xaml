@@ -45,7 +45,7 @@
                                    Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
                         <Grid Margin="0,0,0,8">
                             <TextBlock Text="3 · 游戏身份" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
-                            <Button Content="登录微软账号" Command="{Binding LoginCommand}" HorizontalAlignment="Right"
+                            <Button Content="选择 / 添加账号" Command="{Binding OpenAccountsCommand}" HorizontalAlignment="Right"
                                     Style="{StaticResource SecondaryButton}" Height="28" Padding="12,0" FontSize="12" />
                         </Grid>
                         <TextBlock Text="{Binding SetupIdentityText}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8" />

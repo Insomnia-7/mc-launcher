@@ -39,3 +39,7 @@ mc-launcher/**/*.suo
 mc-launcher/**/*.pem
 mc-launcher/**/*.pfx
 mc-launcher/**/*.p12
+
+# Legacy and temporary account stores are also private.
+mc-launcher/**/account.json
+mc-launcher/**/accounts.json.tmp

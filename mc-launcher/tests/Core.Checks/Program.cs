@@ -364,6 +364,15 @@ Console.WriteLine("== 10. 账号簿：增删选 + 往返序列化 ==");
         Check("加第一个账号后自动选中", lib.Selected?.Uuid == alpha.Uuid);
         lib.AddOrUpdate(beta);
         Check("加第二个账号 → 2 个", lib.Accounts.Count == 2);
+        var snapshot = lib.Copy();
+        Check("账号副本保留当前选择", snapshot.Selected?.Uuid == lib.Selected?.Uuid);
+        snapshot.Select(alpha.Uuid);
+        Check("副本切换不改变原账号簿选择", lib.Selected?.Uuid == beta.Uuid);
+        snapshot.Remove(beta.Uuid);
+        Check("副本删除不改变原账号簿内容", lib.Accounts.Count == 2 && snapshot.Accounts.Count == 1);
+        snapshot.SetOfflineName("Other_Name");
+        Check("副本编辑离线身份不影响原账号簿", lib.OfflineIdentity.Name != "Other_Name");
+
         Check("后加的成为选中项", lib.Selected?.Uuid == beta.Uuid);
 
         lib.AddOrUpdate(alpha with { Name = "Alpha2" });

@@ -40,6 +40,7 @@ public sealed partial class MainViewModel
     partial void OnIsSetupBusyChanged(bool value)
     {
         OnPropertyChanged(nameof(CanEditSetup));
+        NotifyAccountActions();
         InstallSetupCommand.NotifyCanExecuteChanged();
         CloseSetupCommand.NotifyCanExecuteChanged();
         ReloadSetupVersionsCommand.NotifyCanExecuteChanged();
@@ -120,7 +121,12 @@ public sealed partial class MainViewModel
         _runningCts = cts;
         try
         {
-            if (Account is null) OfflineName = SetupOfflineName;
+            if (Account is null)
+            {
+                OfflineName = SetupOfflineName;
+                if (_library?.OfflineIdentity.Name != SetupOfflineName)
+                    throw new InvalidOperationException("无法保存离线身份，请检查数据目录后重试。");
+            }
             SetupStatus = StatusText = $"正在安装 {version.Id}…";
             await _setupInstaller.InstallAsync(new(version.Id, memory), GameRoot, AppPaths.DataDirectory,
                 new Progress<FirstRunProgress>(p =>
