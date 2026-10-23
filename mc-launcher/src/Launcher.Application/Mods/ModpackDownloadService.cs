@@ -19,12 +19,12 @@ public sealed class ModpackDownloadService(
         string gameRoot,
         string projectIdOrSlug,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? gameVersion = null, string? loader = null)
     {
-        // 整合包自带 MC 版本与加载器，不能按当前实例的版本过滤，否则大多数包会被筛掉
+        // Only explicit browser filters apply; an unrelated current instance must not constrain a modpack.
         progress?.Report(new ModpackImportProgress("解析整合包", 0, projectIdOrSlug));
 
-        var versions = await modrinth.GetVersionsAsync(projectIdOrSlug, null, null, ct).ConfigureAwait(false);
+        var versions = await modrinth.GetVersionsAsync(projectIdOrSlug, gameVersion, loader, ct).ConfigureAwait(false);
         var version = versions.FirstOrDefault()
             ?? throw new InvalidOperationException($"Modrinth 上没有 {projectIdOrSlug} 的可用版本");
 
@@ -69,7 +69,7 @@ public sealed class ModpackDownloadService(
         string gameRoot,
         int modId,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? gameVersion = null, string? loader = null)
     {
         if (!curseForge.IsConfigured)
         {
@@ -79,7 +79,7 @@ public sealed class ModpackDownloadService(
 
         progress?.Report(new ModpackImportProgress("解析整合包", 0, $"CurseForge#{modId}"));
 
-        var files = await curseForge.GetFilesAsync(modId, ct: ct).ConfigureAwait(false);
+        var files = await curseForge.GetFilesAsync(modId, gameVersion, loader, ct).ConfigureAwait(false);
         var file = files.FirstOrDefault(f => f.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                    ?? files.FirstOrDefault()
                    ?? throw new InvalidOperationException($"CurseForge 项目 {modId} 没有可下载的文件");

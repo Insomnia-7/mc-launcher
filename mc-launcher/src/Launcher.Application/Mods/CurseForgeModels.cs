@@ -90,6 +90,7 @@ public sealed class CfMod
     [JsonPropertyName("authors")]
     public List<CfAuthor> Authors { get; init; } = [];
 
+    [JsonPropertyName("dateModified")] public DateTimeOffset? DateModified { get; init; }
     public string Author => Authors.Count > 0 ? Authors[0].Name : string.Empty;
 
     public string DownloadsText => FormatCount(DownloadCount);

@@ -4,6 +4,11 @@ namespace Launcher.Application.Mods;
 
 public interface IModrinthClient
 {
+    Task<ModrinthSearchResponse> SearchAsync(ResourceSearchRequest request, CancellationToken ct = default) =>
+        SearchAsync(request.Query, request.Category, request.GameVersion, request.Loader, request.Limit, request.Offset, ct);
+    Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ResourceTag>>([]);
+
     /// <summary>按实际文件 SHA-1 匹配所属版本；未收录返回 null。</summary>
     Task<ModrinthVersion?> GetVersionByHashAsync(string sha1, CancellationToken ct = default) => Task.FromResult<ModrinthVersion?>(null);
 

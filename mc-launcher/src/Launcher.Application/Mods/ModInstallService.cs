@@ -36,7 +36,7 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
         Directory.CreateDirectory(targetDirectory);
 
         // 资源包 / 光影 / 数据包与加载器无关，按加载器过滤会一个都搜不到
-        var loader = category.UsesLoader() ? environment.LoaderSlug : null;
+        var loader = category == DownloadCategory.Datapack ? "datapack" : category.UsesLoader() ? environment.LoaderSlug : null;
 
         progress?.Report(ModInstallProgress.Of("解析版本", 0, $"{environment.Describe()} → {subdirectory}"));
 

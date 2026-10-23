@@ -1705,6 +1705,7 @@ Console.WriteLine();
 await FirstRunChecks.RunAsync(Check);
 await OptimizationChecks.RunAsync(Check);
 await FollowupChecks.RunAsync(Check);
+await ResourceBrowserChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

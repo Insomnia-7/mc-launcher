@@ -8,6 +8,11 @@ using Launcher.Domain.Content;
 /// </summary>
 public interface ICurseForgeClient
 {
+    Task<CfSearchResponse> SearchAsync(ResourceSearchRequest request, CancellationToken ct = default) =>
+        SearchAsync(request.Query, request.Category, request.GameVersion, request.Loader, request.Limit, request.Offset, ct);
+    Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ResourceTag>>([]);
+
     /// <summary>是否已配置 API Key。false 时其它成员不可用。</summary>
     bool IsConfigured { get; }
 

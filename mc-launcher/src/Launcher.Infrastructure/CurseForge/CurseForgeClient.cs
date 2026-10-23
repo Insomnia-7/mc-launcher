@@ -51,16 +51,25 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
         int index = 0,
         CancellationToken ct = default)
     {
+        return await SearchAsync(new ResourceSearchRequest(query, category, gameVersion, loaderSlug,
+            Limit: pageSize, Offset: index), ct).ConfigureAwait(false);
+    }
+
+    public async Task<CfSearchResponse> SearchAsync(ResourceSearchRequest request, CancellationToken ct = default)
+    {
+        var (query, category, gameVersion, loaderSlug, tag, sort, pageSize, index) = request;
         var classId = category.CurseForgeClassId() ?? ModsClassId;
+        var sortField = sort switch { ResourceSort.Downloads => 6, ResourceSort.Updated => 3,
+            ResourceSort.Newest => 11, _ => SortPopularity };
 
         var query_string = new List<string>
         {
             $"gameId={MinecraftGameId}",
             $"classId={classId}",
             $"searchFilter={Uri.EscapeDataString(query)}",
-            $"sortField={SortPopularity}",
+            $"sortField={sortField}",
             "sortOrder=desc",
-            $"index={index}",
+            $"index={Math.Clamp(index, 0, 9999)}",
             $"pageSize={Math.Clamp(pageSize, 1, 50)}"
         };
 
@@ -68,6 +77,9 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
         {
             query_string.Add($"gameVersion={Uri.EscapeDataString(gameVersion)}");
         }
+
+        if (int.TryParse(tag, out var categoryId) && categoryId > 0)
+            query_string.Add($"categoryId={categoryId}");
 
         // 资源包 / 光影 / 数据包没有加载器概念，带上会搜不到东西
         var loader = category.UsesLoader() ? CfModLoaderType.FromSlug(loaderSlug) : CfModLoaderType.Any;
@@ -88,6 +100,17 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
                 "这个 API Key 不能调搜索端点（403）。可以直接输入 CurseForge 项目 ID 或链接安装。", ex);
         }
     }
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<DownloadCategory, IReadOnlyList<ResourceTag>> _categoryCache = new();
+    public async Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category, CancellationToken ct = default)
+    {
+        if (_categoryCache.TryGetValue(category, out var cached)) return cached;
+        var response = await GetAsync<CfCategoryResponse>($"categories?gameId={MinecraftGameId}&classId={category.CurseForgeClassId()}", ct).ConfigureAwait(false);
+        var tags = (response?.Data ?? []).Select(t => new ResourceTag(t.Id.ToString(), t.Name)).OrderBy(t => t.Name).ToArray();
+        _categoryCache[category] = tags;
+        return tags;
+    }
+    private sealed class CfCategoryResponse { public List<CfCategory> Data { get; init; } = []; }
 
     public async Task<CfMod?> GetModAsync(int modId, CancellationToken ct = default)
         => (await GetAsync<CfModResponse>($"mods/{modId}", ct).ConfigureAwait(false))?.Data;

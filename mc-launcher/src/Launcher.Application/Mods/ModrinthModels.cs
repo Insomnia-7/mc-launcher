@@ -15,6 +15,9 @@ public sealed record ModrinthProject(
     [property: JsonPropertyName("categories")] IReadOnlyList<string> Categories,
     [property: JsonPropertyName("versions")] IReadOnlyList<string> Versions)
 {
+    [JsonPropertyName("project_type")] public string? ProjectType { get; init; }
+    [JsonPropertyName("all_project_types")] public IReadOnlyList<string>? AllProjectTypes { get; init; }
+    [JsonPropertyName("date_modified")] public DateTimeOffset? DateModified { get; init; }
     /// <summary>下载量的紧凑写法：85435625 → 85.4M。</summary>
     public string DownloadsText => Downloads switch
     {

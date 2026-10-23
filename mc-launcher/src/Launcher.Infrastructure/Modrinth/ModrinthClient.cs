@@ -43,8 +43,18 @@ public sealed class ModrinthClient(HttpClient http) : IModrinthClient
         int offset = 0,
         CancellationToken ct = default)
     {
-        var facets = BuildFacets(category, gameVersion, loader);
-        var url = $"search?query={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}" +
+        return await SearchAsync(new ResourceSearchRequest(query, category, gameVersion, loader,
+            Sort: ResourceSort.Relevance, Limit: limit, Offset: offset), ct).ConfigureAwait(false);
+    }
+
+    public async Task<ModrinthSearchResponse> SearchAsync(ResourceSearchRequest request, CancellationToken ct = default)
+    {
+        var (query, category, gameVersion, loader, tag, sort, limit, offset) = request;
+        var facets = BuildFacets(category, gameVersion, loader, tag);
+        var index = sort switch { ResourceSort.Downloads => "downloads", ResourceSort.Popularity => "follows",
+            ResourceSort.Updated => "updated", ResourceSort.Newest => "newest", _ => "relevance" };
+        limit = Math.Clamp(limit, 1, 100); offset = Math.Max(0, offset);
+        var url = $"search?query={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}&index={index}" +
                   (facets is null ? "" : $"&facets={Uri.EscapeDataString(facets)}");
 
         var response = await http.GetFromJsonAsync<ModrinthSearchResponse>(url, Json, ct).ConfigureAwait(false)
@@ -60,9 +70,9 @@ public sealed class ModrinthClient(HttpClient http) : IModrinthClient
     {
         var filters = new List<string>(2);
         if (!string.IsNullOrWhiteSpace(gameVersion))
-            filters.Add($"game_versions={Uri.EscapeDataString($"[\"{gameVersion}\"]")}");
+            filters.Add($"game_versions={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { gameVersion }))}");
         if (!string.IsNullOrWhiteSpace(loader))
-            filters.Add($"loaders={Uri.EscapeDataString($"[\"{loader}\"]")}");
+            filters.Add($"loaders={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { loader }))}");
 
         var url = $"project/{Uri.EscapeDataString(projectIdOrSlug)}/version";
         if (filters.Count > 0) url += "?" + string.Join("&", filters);
@@ -77,20 +87,30 @@ public sealed class ModrinthClient(HttpClient http) : IModrinthClient
     /// facets 是 JSON 数组套数组：[[ "project_type:mod" ], [ "versions:1.21.4" ], [ "categories:fabric" ]]
     /// 多个内层数组是 AND，同一个内层数组里多个值是 OR。
     /// </summary>
-    private static string? BuildFacets(DownloadCategory category, string? gameVersion, string? loader)
+    private static string BuildFacets(DownloadCategory category, string? gameVersion, string? loader, string? tag)
     {
-        var groups = new List<string>(3);
-
-        if (category.ModrinthProjectType() is { Length: > 0 } type)
-            groups.Add($"[\"project_type:{type}\"]");
-
-        if (!string.IsNullOrWhiteSpace(gameVersion))
-            groups.Add($"[\"versions:{gameVersion}\"]");
-
-        // 只有模组/整合包按加载器过滤；资源包、光影、数据包跟加载器无关
-        if (!string.IsNullOrWhiteSpace(loader) && category.UsesLoader())
-            groups.Add($"[\"categories:{loader}\"]");
-
-        return groups.Count == 0 ? null : "[" + string.Join(",", groups) + "]";
+        var groups = new List<string[]>();
+        if (category.ModrinthProjectType() is { } type)
+            groups.Add([category == DownloadCategory.Datapack ? "all_project_types:datapack" : "project_type:" + type]);
+        if (!string.IsNullOrWhiteSpace(gameVersion)) groups.Add(["versions:" + gameVersion]);
+        if (!string.IsNullOrWhiteSpace(loader) && category.UsesLoader()) groups.Add(["categories:" + loader]);
+        // A datapack must provide a datapack file, even when the primary project type is mod.
+        if (category == DownloadCategory.Datapack) groups.Add(["categories:datapack"]);
+        if (!string.IsNullOrWhiteSpace(tag)) groups.Add(["categories:" + tag]);
+        return JsonSerializer.Serialize(groups);
     }
+
+    private List<ModrinthTag>? _tags;
+    public async Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category, CancellationToken ct = default)
+    {
+        var tags = _tags ??= await http.GetFromJsonAsync<List<ModrinthTag>>("tag/category", Json, ct).ConfigureAwait(false) ?? [];
+        var type = category == DownloadCategory.Datapack ? "mod" : category.ModrinthProjectType();
+        return tags.Where(t => t.ProjectType == type && t.Header != "loaders")
+            .Select(t => new ResourceTag(t.Name, t.Name)).DistinctBy(t => t.Id).OrderBy(t => t.Name).ToArray();
+    }
+
+    private sealed record ModrinthTag(
+        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string Name,
+        [property: System.Text.Json.Serialization.JsonPropertyName("project_type")] string ProjectType,
+        [property: System.Text.Json.Serialization.JsonPropertyName("header")] string Header);
 }

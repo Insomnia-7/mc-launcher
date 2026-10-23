@@ -1294,18 +1294,11 @@ public sealed partial class MainViewModel : ObservableObject
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         try
         {
-            if (Directory.Exists(instancePath)) Directory.Delete(instancePath, recursive: true);
-
-            // 登记表里摘掉这个实例，再看还有没有别的实例共用同一个版本目录。
-            // 共用时不能删 versions（另一个整合包还在用它）。
-            var registry = InstanceRegistry.LoadOrMigrate(GameRoot);
-            registry.Remove(instance.InstanceId);
-            var stillUsed = registry.Instances.Any(r =>
-                string.Equals(r.VersionId, instance.VersionId, StringComparison.OrdinalIgnoreCase));
-            if (!stillUsed && Directory.Exists(versionPath)) Directory.Delete(versionPath, recursive: true);
+            var result = InstanceDeletion.Delete(GameRoot, instance.InstanceId, instance.VersionId);
+            var stillUsed = result.VersionRetained;
 
             StatusText = stillUsed
-                ? $"已删除版本 {instance.DisplayName}（版本目录仍被其他实例共用，已保留）"
+                ? $"已删除版本 {instance.DisplayName}（版本文件仍被其他实例或加载器依赖，已保留）"
                 : $"已删除版本 {instance.DisplayName}";
             _logger.LogInformation("删除版本 {InstanceId}（version {VersionId}，共用={Shared}）",
                 instance.InstanceId, instance.VersionId, stillUsed);

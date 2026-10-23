@@ -70,7 +70,7 @@ public sealed partial class VersionItem(string id, string type, DateTimeOffset r
 
     public string ReleaseDateText => ReleaseTime.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
 
-    public string TypeText => Type switch
+    public string TypeText => VersionClassification.IsEvent(Id) ? "活动版" : Type switch
     {
         "release" => "正式版",
         "snapshot" => "快照",
@@ -179,7 +179,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     public Task EnsureLoadedAsync()
     {
         _autoLoadEnabled = true;
-        return IsVersionMode ? EnsureVersionsAsync() : Task.CompletedTask;
+        return IsVersionMode ? EnsureVersionsAsync() : BrowseAsync();
     }
 
     public ObservableCollection<CategoryItem> Categories { get; }
@@ -261,7 +261,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     private double _progressPercent;
 
     [ObservableProperty]
-    private bool _releasesOnly = true;
+    private bool _releasesOnly = false;
 
     [ObservableProperty]
     private string _targetText = string.Empty;
@@ -282,7 +282,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     public bool ShowsReleasesOnly => IsVersionMode;
 
     public string SearchHint => SelectedSource == CurseForgeSource
-        ? "输入 CurseForge 项目 ID，例如 238222"
+        ? "搜索名称，或输入项目 ID（如 238222）"
         : SelectedCategory?.Category switch
         {
             DownloadCategory.Mod => "搜索模组，例如 jei、sodium",
@@ -301,6 +301,8 @@ public sealed partial class DownloadViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowsCurseForgeHint));
         OnPropertyChanged(nameof(ShowsReleasesOnly));
         OnPropertyChanged(nameof(SearchHint));
+
+        ResetBrowserState();
 
         // 左栏是自己画的按钮（不是 ListBox），选中态得手动同步
         foreach (var category in Categories)
@@ -322,6 +324,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         else
         {
             Status = value is null ? string.Empty : $"{value.Title}：{value.Hint}";
+            if (_autoLoadEnabled && value is not null) _ = BrowseAsync();
         }
     }
 
@@ -336,16 +339,10 @@ public sealed partial class DownloadViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ShowsCurseForgeHint));
         OnPropertyChanged(nameof(SearchHint));
-        Results.Clear();
-        SelectedResult = null;
-        Status = value == CurseForgeSource
-            ? _curseForge.IsConfigured
-                ? "CurseForge：输入项目 ID（例如 238222）后回车"
-                : "CurseForge 需要 API Key（见上方说明）"
-            : $"{value}：输入关键词后回车";
+        ResetBrowserState();
+        if (_autoLoadEnabled && IsSearchMode) _ = BrowseAsync();
     }
 
-    /// <summary>界面上的「Modrinth / CurseForge」切换按钮。</summary>
     [RelayCommand]
     private void UseSource(string? source)
     {
@@ -363,6 +360,8 @@ public sealed partial class DownloadViewModel : ObservableObject
         InstallCommand.NotifyCanExecuteChanged();
         InstallVersionCommand.NotifyCanExecuteChanged();
         CanCancel = value;
+        OnPropertyChanged(nameof(CanEditSearch));
+        NotifyPaging();
     }
 
     /// <summary>
@@ -429,101 +428,8 @@ public sealed partial class DownloadViewModel : ObservableObject
     {
         if (SelectedCategory is null) return;
 
-        if (string.IsNullOrWhiteSpace(Query))
-        {
-            Status = "先输入关键词";
-            return;
-        }
-
-        IsBusy = true;
-        ProgressPercent = 0;
-        Results.Clear();
-        SelectedResult = null;
-
-        // 真正开始请求前才建取消源，和命令传进来的 token 串起来
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        _runningCts = cts;
-
-        try
-        {
-            var category = SelectedCategory.Category;
-            var gameVersion = ResolveGameVersion();
-            var loader = ResolveLoader();
-
-            Status = $"正在 {SelectedSource} 搜索「{Query}」…";
-
-            if (SelectedSource == CurseForgeSource)
-            {
-                if (!_curseForge.IsConfigured)
-                {
-                    Status = "CurseForge 需要 API Key：到 console.curseforge.com 免费申请，填入设置后重启";
-                    return;
-                }
-
-                try
-                {
-                    var page = await _curseForge.SearchAsync(Query, category, gameVersion, loader, 20, 0, cts.Token).ConfigureAwait(true);
-                    foreach (var mod in page.Data)
-                    {
-                        Results.Add(new DownloadItem(
-                            CurseForgeSource,
-                            category,
-                            mod.Id.ToString(),
-                            mod.Name,
-                            mod.Authors.FirstOrDefault()?.Name ?? "未知作者",
-                            $"{mod.DownloadsText} 次下载",
-                            mod.Summary ?? string.Empty));
-                    }
-
-                    Status = $"CurseForge 命中 {page.Pagination?.TotalCount ?? Results.Count} 个，已取 {Results.Count} 条";
-                }
-                catch (CurseForgeSearchUnavailableException)
-                {
-                    // 个人 Core Key 通常不给搜索权限，退回按项目 ID 直读
-                    await SearchCurseForgeByIdAsync(category, cts.Token).ConfigureAwait(true);
-                }
-            }
-            else
-            {
-                // 整合包自带 MC 版本和加载器，按当前版本的 MC 版本过滤会把绝大多数包筛掉
-                var response = await _modrinth.SearchAsync(
-                    Query,
-                    category,
-                    category == DownloadCategory.Modpack ? null : gameVersion,
-                    loader,
-                    ct: cts.Token).ConfigureAwait(true);
-
-                foreach (var hit in response.Hits)
-                {
-                    Results.Add(new DownloadItem(
-                        ModrinthSource,
-                        category,
-                        hit.Slug ?? hit.ProjectId ?? string.Empty,
-                        hit.Title ?? string.Empty,
-                        hit.Author ?? "未知作者",
-                        $"{hit.DownloadsText} 次下载",
-                        hit.Description ?? string.Empty));
-                }
-
-                Status = $"Modrinth 命中 {response.TotalHits} 个，已取 {Results.Count} 条";
-            }
-        }
-        catch (Exception ex) when (IsCancellation(ex))
-        {
-            _logger.LogInformation(ex, "搜索已取消");
-            Status = "已取消";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "搜索失败");
-            Status = "搜索失败：" + ErrorText.Describe(ex);
-        }
-        finally
-        {
-            if (ReferenceEquals(_runningCts, cts)) _runningCts = null;
-            IsBusy = false;
-            ProgressPercent = 0;
-        }
+        PageNumber = 1;
+        await BrowseAsync(ct);
     }
 
     private bool CanInstall() => !IsBusy && SelectedResult is not null;
@@ -552,12 +458,18 @@ public sealed partial class DownloadViewModel : ObservableObject
 
         Status = $"正在读取 CurseForge 项目 {modId}…";
         var mod = await _curseForge.GetModAsync(modId.Value, ct).ConfigureAwait(true);
+        ct.ThrowIfCancellationRequested();
         if (mod is null)
         {
             Status = $"CurseForge 上没有 id={modId} 的项目";
             return;
         }
 
+        if (mod.ClassId != category.CurseForgeClassId())
+        {
+            Status = "项目类型不匹配，请切换到对应的资源栏目。";
+            return;
+        }
         Results.Add(new DownloadItem(
             CurseForgeSource,
             category,
@@ -583,6 +495,22 @@ public sealed partial class DownloadViewModel : ObservableObject
         {
             Status = "先在左侧选一个版本";
             return;
+        }
+
+        if (category != DownloadCategory.Modpack && _installRequest is { } filters)
+        {
+            var targetVersion = ResolveGameVersion();
+            var targetLoader = ResolveLoader();
+            if (filters.GameVersion is { } expectedVersion && expectedVersion != targetVersion)
+            {
+                Status = $"检索版本为 {expectedVersion}，当前实例为 {targetVersion ?? "未知"}。请切换实例或重置筛选后安装。";
+                return;
+            }
+            if (category.UsesLoader() && filters.Loader is { } expectedLoader && expectedLoader != targetLoader)
+            {
+                Status = $"检索加载器为 {expectedLoader}，当前实例为 {targetLoader ?? "原版"}。请切换实例或重置筛选后安装。";
+                return;
+            }
         }
 
         IsBusy = true;
@@ -666,11 +594,11 @@ public sealed partial class DownloadViewModel : ObservableObject
                 return;
             }
 
-            report = await _modpackDownloader.InstallCurseForgeAsync(_gameRoot(), cfModId, progress, ct);
+            report = await _modpackDownloader.InstallCurseForgeAsync(_gameRoot(), cfModId, progress, ct, _installRequest?.GameVersion, _installRequest?.Loader);
         }
         else
         {
-            report = await _modpackDownloader.InstallAsync(_gameRoot(), item.Id, progress, ct);
+            report = await _modpackDownloader.InstallAsync(_gameRoot(), item.Id, progress, ct, _installRequest?.GameVersion, _installRequest?.Loader);
         }
 
         Status = $"「{report.PackName} {report.PackVersionId}」导入完成 · {report.InstanceId} · 下载 {report.DownloadedFiles} / 跳过 {report.SkippedFiles}";
@@ -685,15 +613,6 @@ public sealed partial class DownloadViewModel : ObservableObject
     {
         if (item is not null) SelectedVersion = item;
     }
-
-    /// <summary>PCL 式排版：正式版 / 预览版 / 远古版各成一组。</summary>
-    private static string GroupNameFor(string type) => type switch
-    {
-        "release" => "正式版",
-        "snapshot" => "预览版",
-        "old_beta" or "old_alpha" => "远古版",
-        _ => "其他",
-    };
 
     [RelayCommand(CanExecute = nameof(CanInstallVersion))]
     private async Task InstallVersionAsync()
@@ -760,7 +679,7 @@ public sealed partial class DownloadViewModel : ObservableObject
             LatestVersions.Clear();
             if (_allVersions.FirstOrDefault(v => v.Type == "release") is { } latestRelease)
                 LatestVersions.Add(latestRelease);
-            if (_allVersions.FirstOrDefault(v => v.Type == "snapshot") is { } latestSnapshot)
+            if (_allVersions.FirstOrDefault(v => v.Type == "snapshot" && !VersionClassification.IsEvent(v.Id)) is { } latestSnapshot)
                 LatestVersions.Add(latestSnapshot);
 
             ApplyVersionFilter();
@@ -782,24 +701,13 @@ public sealed partial class DownloadViewModel : ObservableObject
         // 不能顺序切，否则同类型会散成好几个同名组。
         VersionGroups.Clear();
 
-        foreach (var type in new[] { "release", "snapshot", "old_beta", "old_alpha" })
+        foreach (var group in VersionClassification.Groups)
         {
-            var items = _allVersions.Where(v => v.Type == type).ToList();
+            var items = _allVersions.Where(v => VersionClassification.Group(v.Id, v.Type) == group).ToList();
             if (items.Count == 0) continue;
-
-            var bucket = new VersionGroup(GroupNameFor(type)) { IsExpanded = VersionGroups.Count == 0 };
+            var bucket = new VersionGroup(group) { IsExpanded = VersionGroups.Count == 0 || group == "活动版" };
             foreach (var item in items) bucket.Versions.Add(item);
             VersionGroups.Add(bucket);
-        }
-
-        // 万一以后 Mojang 加了新类型，别把版本吞掉
-        var known = new[] { "release", "snapshot", "old_beta", "old_alpha" };
-        var rest = _allVersions.Where(v => !known.Contains(v.Type)).ToList();
-        if (rest.Count > 0)
-        {
-            var other = new VersionGroup("其他");
-            foreach (var item in rest) other.Versions.Add(item);
-            VersionGroups.Add(other);
         }
 
         // 选中的版本被清空后（重新拉清单）要把选择也清掉，否则「下载并安装」会指向列表里看不到的东西

@@ -594,72 +594,36 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- 搜索行（模组 / 整合包 / 资源包 / 数据包 / 光影包）-->
-            <Grid Grid.Row="1" Margin="0,0,0,10"
-                  Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="132" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="84" />
-                </Grid.ColumnDefinitions>
-
-                <TextBox Grid.Column="0" Height="38" Padding="10,0"
-                         VerticalContentAlignment="Center"
-                         Background="{StaticResource PanelBrush}"
-                         Foreground="{StaticResource TextBrush}"
-                         BorderThickness="0" FontSize="13"
-                         FontFamily="Microsoft YaHei UI"
-                         Text="{Binding Download.Query, UpdateSourceTrigger=PropertyChanged}">
-                    <TextBox.InputBindings>
-                        <KeyBinding Key="Enter" Command="{Binding Download.SearchCommand}" />
-                    </TextBox.InputBindings>
-                </TextBox>
-
-                <Grid Grid.Column="2" Height="38"
-                      Visibility="{Binding Download.ShowsSourcePicker, Converter={StaticResource BoolToVis}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <Button Grid.Column="0" Content="Modrinth" Height="38"
-                            Command="{Binding Download.UseSourceCommand}"
-                            CommandParameter="Modrinth">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Download.SelectedSource}" Value="Modrinth">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <Button Grid.Column="2" Content="CurseForge" Height="38"
-                            Command="{Binding Download.UseSourceCommand}"
-                            CommandParameter="CurseForge">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Download.SelectedSource}" Value="CurseForge">
-                                        <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+            <!-- All content kinds share source/category/version/sort and server-side paging. -->
+            <StackPanel Grid.Row="1" Margin="0,0,0,10"
+                        Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="名称 / 关键词（留空查看热门）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                <Grid IsEnabled="{Binding Download.CanEditSearch}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions>
+                    <TextBox Height="32" Margin="0,0,8,0" VerticalContentAlignment="Center" Padding="8,0"
+                             Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}" BorderThickness="0"
+                             ToolTip="{Binding Download.SearchHint}" Text="{Binding Download.Query, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding Download.SearchCommand}"/></TextBox.InputBindings>
+                    </TextBox>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Download.Sources}" SelectedItem="{Binding Download.SelectedSource}" ToolTip="下载来源"/>
                 </Grid>
-
-                <Button Grid.Column="4" Content="搜索" Height="38"
-                        Style="{StaticResource SecondaryButton}"
-                        Command="{Binding Download.SearchCommand}" />
-            </Grid>
+                <WrapPanel Margin="0,8,0,0" IsEnabled="{Binding Download.CanEditSearch}">
+                    <StackPanel Width="150" Margin="0,0,8,5"><TextBlock Text="游戏版本（可输入）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="28" IsEditable="True" ItemsSource="{Binding Download.GameVersions}" Text="{Binding Download.GameVersionFilter, UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+                    <StackPanel Width="140" Margin="0,0,8,5"><TextBlock Text="内容分类" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="28" ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" DisplayMemberPath="Name"/></StackPanel>
+                    <StackPanel Width="115" Margin="0,0,8,5" Visibility="{Binding Download.ShowsLoaderFilter, Converter={StaticResource BoolToVis}}"><TextBlock Text="加载器" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="28" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}"/></StackPanel>
+                    <StackPanel Width="135" Margin="0,0,0,5"><TextBlock Text="排序" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                        <ComboBox Height="28" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" DisplayMemberPath="Name" ToolTip="{Binding Download.SortHint}"/></StackPanel>
+                </WrapPanel>
+                <WrapPanel Margin="0,4,0,0">
+                    <Button Content="搜索" Height="28" Padding="16,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.SearchCommand}"/>
+                    <Button Content="重置条件" Height="28" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.ResetFiltersCommand}"/>
+                    <Button Content="热门推荐" Height="28" Padding="12,0" Margin="0,0,8,4" Style="{StaticResource SecondaryButton}" Command="{Binding Download.PopularCommand}"/>
+                    <Button Content="安装已有整合包…" Height="28" Padding="12,0" Margin="0,0,0,4" Style="{StaticResource SecondaryButton}" Command="{Binding ImportModpackCommand}"/>
+                </WrapPanel>
+            </StackPanel>
 
             <!-- CurseForge 未配置提示 -->
             <Border Grid.Row="2" Background="{StaticResource PanelBrush}" CornerRadius="8"
@@ -729,6 +693,15 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <WrapPanel Grid.Row="3" Margin="0,0,0,6" Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding Download.ResultHeading}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,12,4"/>
+                <Button Content="首页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.FirstPageCommand}" Height="25" Margin="0,0,4,4" Padding="8,0"/>
+                <Button Content="上一页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.PreviousPageCommand}" Height="25" Margin="0,0,8,4" Padding="8,0"/>
+                <TextBlock Text="{Binding Download.PageText}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <Button Content="下一页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.NextPageCommand}" Height="25" Margin="0,0,4,4" Padding="8,0"/>
+                <Button Content="末页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.LastPageCommand}" Height="25" Margin="0,0,0,4" Padding="8,0"/>
+            </WrapPanel>
 
             <!-- 结果列表（两种模式共用一块区域）-->
             <Grid Grid.Row="4">

@@ -2,6 +2,8 @@
 # 私人文件（会话导出、网关探测、蓝图、截图、AGENTS 等）一律不入库，本地磁盘保留。
 /*
 !/.gitignore
+!/README.md
+!/LICENSE
 !/mc-launcher/
 !/mc-launcher/**
 !/.github/
