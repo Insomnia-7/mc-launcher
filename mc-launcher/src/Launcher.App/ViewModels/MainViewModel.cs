@@ -316,7 +316,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>下载源下拉：0 官方直连 / 1 BMCLAPI 镜像。</summary>
     public IReadOnlyList<string> DownloadSources { get; } =
-        ["官方（直连 Mojang / Fabric）", "镜像（BMCLAPI，国内加速）"];
+        ["官方（Mojang / Fabric）", "镜像（BMCLAPI，国内加速）"];
 
     [ObservableProperty]
     private int _downloadSourceIndex;

@@ -67,6 +67,8 @@
 
                 <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="12,0,12,12" Height="34" Style="{StaticResource SecondaryButton}" />
 
+                <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="12,0,12,8" Height="32" Style="{StaticResource SecondaryButton}" />
+
                 <!-- 版本列表 -->
                 <ListBox ItemsSource="{Binding Instances}"
                          SelectedItem="{Binding SelectedInstance}"
@@ -836,6 +838,9 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <views:NetworkSettingsView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
+                                   Visibility="{Binding IsNetworkOpen, Converter={StaticResource BoolToVis}}" />
 
         <views:FirstRunView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
                             Visibility="{Binding IsSetupOpen, Converter={StaticResource BoolToVis}}" />

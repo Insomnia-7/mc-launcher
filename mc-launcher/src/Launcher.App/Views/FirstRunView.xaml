@@ -64,6 +64,7 @@
                 </ScrollViewer>
                 <StackPanel Grid.Row="2" Margin="0,10,0,0">
                     <TextBlock Text="{Binding SetupError}" Style="{StaticResource OptionalText}" Foreground="#FF9292" TextWrapping="Wrap" Margin="0,0,0,6" />
+                    <Button Content="网络设置…" Command="{Binding OpenNetworkCommand}" Style="{StaticResource SecondaryButton}" Height="28" Padding="12,0" HorizontalAlignment="Left" Margin="0,0,0,6" />
                     <TextBlock Text="{Binding SetupStatus}" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" />
                     <ProgressBar Value="{Binding ProgressPercent}" Height="4" Margin="0,12,0,0" Minimum="0" Maximum="100"
                                  Visibility="{Binding IsSetupBusy, Converter={StaticResource BoolToVis}}"

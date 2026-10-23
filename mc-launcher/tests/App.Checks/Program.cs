@@ -86,6 +86,7 @@ internal static partial class UiCheck
         Check("下载资源使用所选实例目录而非共用版本 ID", secondVm.Download.TargetText.Contains("setup-test-2"));
         Browser(secondVm);
         Accounts();
+        Network();
         Console.WriteLine($"[ok] {_checks} 项 WPF 流程检查通过");
         window.Close();
         app.Shutdown();
