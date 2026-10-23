@@ -23,3 +23,19 @@ mc-launcher/.probe-cache/
 mc-launcher/*.log
 mc-launcher/**/*.log
 mc-launcher/*.args.txt
+# Private per-machine launcher settings
+mc-launcher/launcher.local.cmd
+
+# Local runtime data and private credentials are never source artifacts.
+mc-launcher/**/.env
+mc-launcher/**/.env.*
+mc-launcher/**/.credentials.yaml
+mc-launcher/**/accounts.json
+mc-launcher/**/settings.json
+mc-launcher/**/*.pdb
+mc-launcher/**/*.dmp
+mc-launcher/**/*.user
+mc-launcher/**/*.suo
+mc-launcher/**/*.pem
+mc-launcher/**/*.pfx
+mc-launcher/**/*.p12
