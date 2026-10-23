@@ -111,6 +111,7 @@ public sealed partial class MainViewModel : ObservableObject
         _offlineName = _library.OfflineIdentity.Name;
 
         GameRoot = AppPaths.GameRoot;
+        GameRootProblem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot) ?? string.Empty;
 
         Download = new DownloadViewModel(
             modrinth, curseForge, modInstallService, curseForgeInstallService, modpackDownloadService,
@@ -120,12 +121,12 @@ public sealed partial class MainViewModel : ObservableObject
 
         Download.InstancesChanged += RefreshInstances;
 
-        StatusText = $"就绪 · 游戏目录 {GameRoot}";
+        StatusText = HasGameRootProblem ? GameRootProblem : $"就绪 · 游戏目录 {GameRoot}";
         InitializeAppearance();
         InitializeSetup(meta);
         RefreshAccountChoices(selectCurrent: true);
         RefreshInstances();
-        IsSetupOpen = Instances.Count == 0;
+        IsSetupOpen = Instances.Count == 0 && !HasGameRootProblem;
         _logger.LogInformation("主视图初始化完成：{Count} 个版本，游戏目录 {GameRoot}", Instances.Count, GameRoot);
     }
 
@@ -784,6 +785,18 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = string.Empty;
 
+    /// <summary>游戏目录不可用时的中文说明（空字符串表示正常）。</summary>
+    [ObservableProperty]
+    private string _gameRootProblem = string.Empty;
+
+    public bool HasGameRootProblem => GameRootProblem.Length > 0;
+
+    partial void OnGameRootProblemChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasGameRootProblem));
+        OnPropertyChanged(nameof(EmptyStateHint));
+    }
+
     [ObservableProperty]
     private bool _isBusy;
 
@@ -1015,7 +1028,9 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
     public string EmptyStateHint =>
-        Instances.Count == 0
+        HasGameRootProblem
+            ? GameRootProblem
+            : Instances.Count == 0
             ? "还没有版本。\n点击左下角「安装向导」一键准备，或前往「下载」选择版本。"
             : "「启动游戏」使用上方显示的身份启动当前版本；\n"
               + "左侧「下载」里可以装模组、整合包、资源包、数据包与光影包；\n"
@@ -1597,7 +1612,23 @@ public sealed partial class MainViewModel : ObservableObject
         // 实例列表以 instances/index.json 为准（旧数据 LoadOrMigrate 会顺手补建）。
         // 注意：实例目录名不一定等于版本目录名——同一个加载器版本可以被多个整合包共用
         // （fabric-loader-0.20.1-1.21.4 与 fabric-loader-0.20.1-1.21.4-2 共用一份 versions）。
-        var registry = InstanceRegistry.LoadOrMigrate(GameRoot);
+        // 游戏目录本身不可用时（路径被同名文件占住、只读盘、父目录不存在又建不出来），
+        // 这里不能抛——启动器会连窗口都起不来。改成把原因留在界面上，列表留空。
+        InstanceRegistry registry;
+        try
+        {
+            registry = InstanceRegistry.LoadOrMigrate(GameRoot);
+        }
+        catch (Exception ex) when (Launcher.Application.Diagnostics.GameRootProbe.IsExpected(ex))
+        {
+            GameRootProblem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot)
+                ?? $"游戏目录不可用：{Launcher.Application.Diagnostics.ErrorText.Describe(ex)}";
+            StatusText = GameRootProblem;
+            _logger.LogWarning(ex, "读取实例列表失败：游戏目录 {GameRoot}", GameRoot);
+            OnPropertyChanged(nameof(EmptyStateHint));
+            return;
+        }
+
         foreach (var registration in registry.Instances)
         {
             var id = registration.Id;

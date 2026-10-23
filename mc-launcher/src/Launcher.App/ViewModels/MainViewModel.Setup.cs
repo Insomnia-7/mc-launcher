@@ -111,6 +111,7 @@ public sealed partial class MainViewModel
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "安装游戏");
         if (operation is null) { SetupError = StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         SetupError = string.Empty;
+        if (HasGameRootProblem) { SetupError = GameRootProblem; return; }
         if (SetupVersion is not { } version) { SetupError = "请先选择一个正式版。"; return; }
         if (!int.TryParse(SetupMemoryText, out var memory) || memory is < InstanceSettings.MinMemoryMb or > InstanceSettings.MaxMemoryMb)
         { SetupError = "内存请输入 512–65536 之间的整数，单位 MB。"; return; }

@@ -1793,6 +1793,19 @@ await UpdateSigningChecks.RunAsync(Check);
 EmbeddedUpdaterChecks.Run(Check);
 AppearanceChecks.Run(Check);
 
+// 游戏目录探测：坏路径要说出原因，好路径不能误报
+var probeRoot = Path.Combine(Path.GetTempPath(), "mcl-gameroot-" + Guid.NewGuid().ToString("N")[..8]);
+var probeGame = Path.Combine(probeRoot, "game");
+Check("可写目录通过游戏目录探测", Launcher.Application.Diagnostics.GameRootProbe.Describe(probeGame) is null);
+Directory.CreateDirectory(probeGame);
+var occupied = Path.Combine(probeGame, "occupied");
+File.WriteAllText(occupied, "x");
+Check("被文件占住时给出建不出来的原因",
+    Launcher.Application.Diagnostics.GameRootProbe.Describe(Path.Combine(occupied, "sub"))?.Contains("建不出来") == true);
+Check("空路径提示没有设置",
+    Launcher.Application.Diagnostics.GameRootProbe.Describe("  ")?.Contains("没有设置") == true);
+Directory.Delete(probeRoot, recursive: true);
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");

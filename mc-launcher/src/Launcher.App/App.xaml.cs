@@ -289,12 +289,29 @@ public static class AppPaths
             ? custom
             : Path.Combine(DataDirectory, "game");
 
+    /// <summary>
+    /// 建好启动器自己要用的目录。游戏目录可能是用户随手填的坏路径（被同名文件占住、
+    /// 只读盘、父目录建不出来），这一类失败不能让启动器起不来——记下来交给界面提示。
+    /// </summary>
     public static void EnsureCreated()
     {
-        Directory.CreateDirectory(LogsDirectory);
-        Directory.CreateDirectory(InstancesDirectory);
-        Directory.CreateDirectory(CacheDirectory);
-        Directory.CreateDirectory(GameRoot);
+        CreateQuietly(LogsDirectory);
+        CreateQuietly(InstancesDirectory);
+        CreateQuietly(CacheDirectory);
+        CreateQuietly(GameRoot);
+    }
+
+    private static void CreateQuietly(string path)
+    {
+        try
+        {
+            Directory.CreateDirectory(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // 具体原因由 GameRootProbe 在视图里转成中文提示，这里只保证不炸
+            Log.Warning(ex, "创建目录失败：{Path}", path);
+        }
     }
 }
 
