@@ -2,6 +2,7 @@
 // 用法：
 //   Core.Checks.exe            离线逻辑检查
 //   Core.Checks.exe --live     追加真实下载校验（用 .probe-cache 里的 1.21.4 版本 JSON）
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
@@ -1708,6 +1709,78 @@ Console.WriteLine("== 28. 下载条目备用地址：镜像失败可按条切回
             && sink.LastEntries[2].FallbackUrl == "https://fallback.test/c.jar");
     Check("DownloadEntry 默认 FallbackUrl 为 null（旧调用点零改动）",
         new DownloadEntry("u", "p", 1, null, DownloadKind.Asset).FallbackUrl is null);
+}
+
+Console.WriteLine("== 29. 更新账本：上游删掉的文件下次更新要清理 ==");
+{
+    var tree = NewTempTree("installed-set");
+    try
+    {
+        var previous = new InstalledFileSet("0.1.0", ["MCLauncher.exe", "a.dll", "sub\\c.dll", "old\\gone.dll"]);
+        UpdateFile[] current =
+        [
+            new("MCLauncher.exe", "https://x/1", new string('a', 64), 10),
+            new("a.dll", "https://x/2", new string('b', 64), 20),
+        ];
+        var stale = InstalledFileSet.ComputeStale(previous, current);
+        Check("账本：清单里没有的文件进待删列表", stale.Count == 2, string.Join(",", stale));
+        Check("账本：仍被清单引用的文件不删", !stale.Contains("MCLauncher.exe") && !stale.Contains("a.dll"));
+        Check("账本：路径统一成正斜杠", stale.Contains("sub/c.dll") && stale.Contains("old/gone.dll"));
+
+        UpdateFile[] keepAll =
+        [
+            new("MCLAUNCHER.EXE", "https://x/1", new string('a', 64), 10),
+            new("A.DLL", "https://x/2", new string('b', 64), 20),
+            new("SUB/C.DLL", "https://x/3", new string('c', 64), 30),
+            new("OLD/GONE.DLL", "https://x/4", new string('d', 64), 40),
+        ];
+        Check("账本：比较大小写不敏感", InstalledFileSet.ComputeStale(previous, keepAll).Count == 0);
+
+        var unsafePrevious = new InstalledFileSet("0.1.0",
+            ["../evil.dll", "C:\\windows\\x.dll", "a:b.dll", InstalledFileSet.FileName, "", "ok.dll"]);
+        var unsafeStale = InstalledFileSet.ComputeStale(unsafePrevious, []);
+        Check("账本：越界与绝对路径被过滤", unsafeStale.SequenceEqual(["ok.dll"]), string.Join(",", unsafeStale));
+
+        Check("账本：没有上一次记录时什么都不删", InstalledFileSet.ComputeStale(null, current).Count == 0);
+
+        var manifest = new UpdateManifest("1.2.3",
+            [new UpdateFile("bin\\app.dll", "https://x/1", new string('a', 64), 1)], null, null, null);
+        var saved = InstalledFileSet.FromManifest(manifest);
+        saved.Save(tree);
+        var loaded = InstalledFileSet.Load(tree);
+        Check("账本：落盘后能读回（版本 + 规范化路径）",
+            loaded is not null && loaded.Version == "1.2.3" && loaded.Files.SequenceEqual(["bin/app.dll"]),
+            loaded?.Version);
+        Check("账本：目录里没有账本时返回 null", InstalledFileSet.Load(Path.Combine(tree, "nope")) is null);
+
+        File.WriteAllText(InstalledFileSet.PathFor(tree), "{ 坏 json");
+        Check("账本：账本损坏按「没有记录」处理，不抛", InstalledFileSet.Load(tree) is null);
+    }
+    finally { TryDelete(tree); }
+}
+
+Console.WriteLine("== 30. 被安全软件拦截：异常识别与处置步骤 ==");
+{
+    Check("拦截：1223（确认框被取消）识别为「启动被取消」",
+        BlockedAppGuidance.TryFor(new Win32Exception(1223))?.Title.Contains("取消") == true);
+    Check("拦截：5（拒绝访问）识别为「没有权限」",
+        BlockedAppGuidance.TryFor(new Win32Exception(5))?.Title.Contains("权限") == true);
+    Check("拦截：225（判定为病毒）识别为「被杀软隔离」",
+        BlockedAppGuidance.TryFor(new Win32Exception(225))?.Title.Contains("病毒") == true);
+    Check("拦截：1260（组策略禁止）识别为「被系统策略拦住」",
+        BlockedAppGuidance.TryFor(new Win32Exception(1260))?.Title.Contains("策略") == true);
+    Check("拦截：普通异常不误判",
+        BlockedAppGuidance.TryFor(new InvalidOperationException("版本继承出现环")) is null);
+    Check("拦截：AggregateException 里的内层异常也能识别",
+        BlockedAppGuidance.TryFor(new AggregateException(new Win32Exception(1223))) is not null);
+    Check("拦截：关键字识别（SmartScreen / Defender 文案）",
+        BlockedAppGuidance.LooksBlocked("Windows 已保护你的电脑") && BlockedAppGuidance.LooksBlocked("blocked by policy"));
+    Check("拦截：正常文本不误判", !BlockedAppGuidance.LooksBlocked("下载完成 586.3 MB"));
+
+    var text = BlockedAppGuidance.Generic.ToDisplayText();
+    Check("拦截：帮助文本含四步与关键命令",
+        text.Contains("Unblock-File") && text.Contains("排除项") && text.Contains("1.") && text.Contains("4."),
+        text.Length.ToString());
 }
 
 Console.WriteLine();

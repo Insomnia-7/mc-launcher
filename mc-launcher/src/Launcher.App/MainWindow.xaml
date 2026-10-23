@@ -261,12 +261,17 @@
                                    Foreground="{StaticResource TextBrush}"
                                    FontFamily="Microsoft YaHei UI" />
                         <!-- 一键把「诊断 + 版本 + 游戏目录 + 时间」贴进剪贴板，省得用户手抄日志路径 -->
-                        <Button Content="复制诊断"
-                                Style="{StaticResource SecondaryButton}"
-                                Command="{Binding CopyDiagnosisCommand}"
-                                Visibility="{Binding HasDiagnosis, Converter={StaticResource BoolToVis}}"
-                                Height="26" Padding="14,0" FontSize="12"
-                                HorizontalAlignment="Right" Margin="0,8,0,0" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="被拦截了？"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ShowBlockedHelpCommand}"
+                                    Height="26" Padding="14,0" FontSize="12" Margin="0,0,8,0" />
+                            <Button Content="复制诊断"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding CopyDiagnosisCommand}"
+                                    Visibility="{Binding HasDiagnosis, Converter={StaticResource BoolToVis}}"
+                                    Height="26" Padding="14,0" FontSize="12" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -486,9 +491,18 @@
 
             <Border Grid.Row="7" Background="{StaticResource PanelBrush}" CornerRadius="8" Padding="16"
                     VerticalAlignment="Top">
-                <TextBlock Text="{Binding EmptyStateHint}" Style="{StaticResource BodyText}"
-                           Foreground="{StaticResource MutedBrush}"
-                           TextWrapping="Wrap" LineHeight="22" />
+                <StackPanel>
+                    <TextBlock Text="{Binding EmptyStateHint}" Style="{StaticResource BodyText}"
+                               Foreground="{StaticResource MutedBrush}"
+                               TextWrapping="Wrap" LineHeight="22" />
+                    <!-- 杀软误报是最常见的「打不开 / 启动就退」，把处置步骤做成随时能点的入口 -->
+                    <Button Content="被安全软件拦住了？"
+                            Command="{Binding ShowBlockedHelpCommand}"
+                            Height="24" Padding="0" FontSize="12" Margin="0,10,0,0"
+                            HorizontalAlignment="Left" Cursor="Hand"
+                            Background="Transparent" BorderThickness="0"
+                            Foreground="{StaticResource AccentBrush}" />
+                </StackPanel>
             </Border>
             </Grid>
         </ScrollViewer>
@@ -883,7 +897,8 @@
                                 Command="{Binding ConfirmOkCommand}" />
                         <Button Grid.Column="1" Content="取消" Height="32" MinWidth="72"
                                 Style="{StaticResource SecondaryButton}"
-                                Command="{Binding ConfirmCancelCommand}" />
+                                Command="{Binding ConfirmCancelCommand}"
+                                Visibility="{Binding ConfirmShowCancel, Converter={StaticResource BoolToVis}}" />
                     </Grid>
                 </StackPanel>
             </Border>

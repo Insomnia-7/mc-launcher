@@ -58,6 +58,13 @@ try
 
     Console.WriteLine($"准备更新到 {manifest.Version}（{manifest.Files.Count} 个文件）");
 
+    // 上一版装过、这一版清单里已经没有了 → 一并清掉（先移进备份目录，可回滚）。
+    // 只认账本里记过的文件，用户自己往目录里放的东西不会被碰。
+    var previous = InstalledFileSet.Load(options.Target);
+    var stale = InstalledFileSet.ComputeStale(previous, manifest.Files);
+    if (stale.Count > 0)
+        Console.WriteLine($"上游已移除 {stale.Count} 个文件，更新后清理：{string.Join("、", stale.Take(5))}{(stale.Count > 5 ? " 等" : string.Empty)}");
+
     // 先全量校验，一个不对就整体不动 —— 半套文件比旧版更糟
     foreach (var file in manifest.Files)
     {
@@ -102,7 +109,7 @@ try
     try
     {
         await UpdateFileTransaction.ApplyAsync(manifest.Files, options.Staging, options.Target, backupDirectory,
-            Environment.ProcessPath, message => log.AppendLine(message));
+            Environment.ProcessPath, message => log.AppendLine(message), removeFiles: stale);
     }
     catch (Exception ex)
     {
@@ -110,6 +117,19 @@ try
         await File.WriteAllTextAsync(Path.Combine(backupDirectory, "updater.log"), log.ToString());
         Console.Error.WriteLine("更新失败：" + ex.Message);
         return 3;
+    }
+
+    // 记下这一版装过哪些文件，下次更新才知道该删谁
+    try
+    {
+        InstalledFileSet.FromManifest(manifest).Save(options.Target);
+        log.AppendLine($"账本已更新：{manifest.Files.Count} 个文件");
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+        // 账本写不进去不影响本次更新成功，只是下次少删几个旧文件
+        log.AppendLine("账本写入失败：" + ex.Message);
+        Console.Error.WriteLine("账本写入失败（不影响本次更新）：" + ex.Message);
     }
 
     // 暂存的 update.json 不再需要，留在暂存目录里也行，顺手清掉避免下次误用

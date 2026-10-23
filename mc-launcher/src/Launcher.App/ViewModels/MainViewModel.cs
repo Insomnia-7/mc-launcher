@@ -239,6 +239,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _logger.LogError(ex, "应用更新失败");
             StatusText = "更新失败：" + ErrorText.Describe(ex);
+            if (BlockedAppGuidance.TryFor(ex) is { } blocked)
+            {
+                DiagnosisText = blocked.ToDisplayText();
+                StatusText = "更新失败：" + blocked.Title;
+            }
+
             IsUpdating = false;
             ProgressPercent = 0;
         }
@@ -399,17 +405,19 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _confirmOkText = "确定";
 
     private Action? _confirmAction;
+    [ObservableProperty] private bool _confirmShowCancel = true;
 
     public bool HasConfirmDetail => ConfirmDetail.Length > 0;
 
     partial void OnConfirmDetailChanged(string value) => OnPropertyChanged(nameof(HasConfirmDetail));
 
-    private void AskConfirm(string title, string message, string detail, string okText, Action action)
+    private void AskConfirm(string title, string message, string detail, string okText, Action? action = null, bool showCancel = true)
     {
         ConfirmTitle = title;
         ConfirmMessage = message;
         ConfirmDetail = detail;
         ConfirmOkText = okText;
+        ConfirmShowCancel = showCancel;
         _confirmAction = action;
         IsConfirmOpen = true;
         _logger.LogInformation("确认气泡：{Title}，IsConfirmOpen={Open}，Detail 长度 {Length}",
@@ -430,6 +438,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         IsConfirmOpen = false;
         _confirmAction = null;
+    }
+
+    /// <summary>「被拦截了？」：把 SmartScreen / Defender 的处置步骤摊开给用户看。</summary>
+    [RelayCommand]
+    private void ShowBlockedHelp()
+    {
+        var guidance = BlockedAppGuidance.Generic;
+        AskConfirm(guidance.Title, guidance.Summary, guidance.ToStepsText(), "知道了", showCancel: false);
     }
 
     partial void OnSelectedInstanceChanged(InstanceCard? value)
@@ -1162,6 +1178,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _logger.LogError(ex, "启动失败");
             StatusText = "启动失败：" + ErrorText.Describe(ex);
+            // 被 SmartScreen / 杀软拦住时给可操作的步骤，而不是把系统错误码丢给用户
+            if (BlockedAppGuidance.TryFor(ex) is { } blocked)
+            {
+                DiagnosisText = blocked.ToDisplayText();
+                StatusText = "启动失败：" + blocked.Title;
+            }
         }
         finally
         {
