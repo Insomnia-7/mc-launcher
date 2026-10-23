@@ -6,9 +6,11 @@ using System.Windows.Interop;
 using System.Windows.Threading;
 using Launcher.App.ViewModels;
 using Launcher.Application.Abstractions;
+using Launcher.Application.Accounts;
 using Launcher.Application.Auth;
 using Launcher.Application.Export;
 using Launcher.Application.Java;
+using Launcher.Infrastructure.Accounts;
 using Launcher.Infrastructure.Auth;
 using Launcher.Application.Install;
 using Launcher.Application.Mods;
@@ -190,6 +192,9 @@ base.OnStartup(e);
 
         if (DpapiSecretProtector.TryCreate() is { } protector)
             services.AddSingleton<ISecretProtector>(protector);
+
+        // 玩家头像：只用来显示，失败不影响任何功能
+        services.AddSingleton<ISkinService>(_ => new SkinService(AppPaths.DataDirectory));
         _services = services.BuildServiceProvider();
         CurrentServices = _services;
 

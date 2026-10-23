@@ -1,12 +1,17 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Application.Abstractions;
+using Launcher.Application.Accounts;
 using Launcher.Application.Auth;
 using Launcher.Application.Diagnostics;
 using Launcher.Application.Export;
@@ -24,6 +29,7 @@ using Launcher.Domain.Launch;
 using Launcher.Domain.Loaders;
 using Launcher.Domain.Versions;
 using Launcher.Infrastructure;
+using Launcher.Infrastructure.Http;
 using Launcher.Infrastructure.Update;
 using Microsoft.Extensions.Logging;
 
@@ -45,6 +51,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly DownloadSourceProvider _downloadSource;
     private readonly IUpdateClient _updateClient;
     private readonly ISecretProtector? _secretProtector;
+    private readonly ISkinService _skins;
     private readonly ModUpdateInstaller _modUpdateInstaller;
     private readonly ModUpdateService _modUpdates;
     private readonly InstanceExportService _exportService;
@@ -78,11 +85,13 @@ public sealed partial class MainViewModel : ObservableObject
         ISecretProtector? secretProtector,
         ModUpdateService modUpdates,
         InstanceExportService exportService,
-        ModUpdateInstaller modUpdateInstaller)
+        ModUpdateInstaller modUpdateInstaller,
+        ISkinService skins)
     {
         _logger = logger;
         _secretProtector = secretProtector;
         _modUpdateInstaller = modUpdateInstaller;
+        _skins = skins;
         _modUpdates = modUpdates;
         _exportService = exportService;
         _installer = installer;
@@ -129,6 +138,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (IsSetupOpen) _ = LoadSetupVersionsAsync();
         _ = LoadJavaOptionsAsync();
         _ = DelayedUpdateCheckAsync();
+        _ = RefreshSkinAsync();
     }
 
     public string GameRoot { get; }
@@ -790,8 +800,74 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _loginHint = string.Empty;
     [ObservableProperty] private bool _isLoggingIn;
 
-    public string AccountText =>
-        Account is null
+    // ── 头像 ─────────────────────────────────────────────────────────────
+    // 皮肤只用于显示：取不到就用首字母占位，任何失败都不影响登录与启动。
+    [ObservableProperty] private ImageSource? _skinHead;
+
+    public bool HasSkinHead => SkinHead is not null;
+
+    public string AccountInitial
+    {
+        get
+        {
+            var name = Account?.Name ?? _library?.OfflineIdentity.Name ?? "?";
+            name = name.Trim();
+            return name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+        }
+    }
+
+    partial void OnSkinHeadChanged(ImageSource? value) => OnPropertyChanged(nameof(HasSkinHead));
+
+    private async Task RefreshSkinAsync()
+    {
+        var account = Account;
+        if (account is null) { SkinHead = null; return; }
+        try
+        {
+            var result = await _skins.FetchAsync(account.Uuid, account.Name).ConfigureAwait(true);
+            var url = result.Skin?.SkinUrl;
+            _logger.LogInformation("皮肤：ok={Ok} reason={Reason} url={Url}", result.IsSuccess, result.Reason, url ?? "(空)");
+            SkinHead = string.IsNullOrWhiteSpace(url) ? null : await LoadHeadAsync(url).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "取皮肤失败");
+            SkinHead = null;
+        }
+    }
+
+    // 用启动器自己的 HttpClient 取纹理：BitmapImage 的 UriSource 走系统代理，代理不可用时会静默失败
+    private static readonly HttpClient SkinHttpClient =
+        HttpClientFactory.Create("MCLauncher-Skin/1.0", TimeSpan.FromSeconds(20));
+
+    /// <summary>皮肤图是 64x64，头部在 (8,8) 的 8x8 方块；后台解码后冻结，避免跨线程访问。</summary>
+    private Task<ImageSource?> LoadHeadAsync(string url) => Task.Run<ImageSource?>(async () =>
+    {
+        try
+        {
+            var bytes = await SkinHttpClient.GetByteArrayAsync(url).ConfigureAwait(false);
+            using var stream = new MemoryStream(bytes);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.StreamSource = stream;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            // StreamSource 下不能设 IgnoreImageCache：WPF 会按 Uri 去 ImagingCache 删条目，而 Uri 为 null → ArgumentNullException
+            bitmap.EndInit();
+            bitmap.Freeze();
+            _logger.LogInformation("皮肤图：{W}x{H} {Bytes} B", bitmap.PixelWidth, bitmap.PixelHeight, bytes.Length);
+            if (bitmap.PixelWidth < 16 || bitmap.PixelHeight < 16) return null;
+            var head = new CroppedBitmap(bitmap, new Int32Rect(8, 8, 8, 8));
+            head.Freeze();
+            return head;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "皮肤图解码失败：{Url}", url);
+            return null;
+        }
+    });
+
+    public string AccountText =>        Account is null
             ? $"离线 · {_library?.OfflineIdentity.Name ?? "Developer"}"
             : $"{Account.Name}（正版）";
 
@@ -823,6 +899,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AccountDetail));
         OnPropertyChanged(nameof(HasAccount));
         OnPropertyChanged(nameof(SetupIdentityText));
+        OnPropertyChanged(nameof(AccountInitial));
+        _ = RefreshSkinAsync();
     }
 
     partial void OnIsLoggingInChanged(bool value)
