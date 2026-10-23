@@ -282,12 +282,50 @@ public static class AppPaths
     public static string CacheDirectory { get; } = Path.Combine(DataDirectory, "cache");
 
     /// <summary>
-    /// 游戏目录。可用 MCLAUNCHER_GAME_ROOT 覆盖（便携版 / 多份安装 / 测试）。
+    /// 游戏目录。优先级：MCLAUNCHER_GAME_ROOT &gt; 数据目录下的 game-root.txt &gt; 数据目录\game。
+    /// 界面上「选择游戏目录…」改的就是 game-root.txt，改完立即生效、下次启动仍然生效。
     /// </summary>
-    public static string GameRoot { get; } =
-        Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 } custom
-            ? custom
-            : Path.Combine(DataDirectory, "game");
+    public static string GameRoot { get; private set; } = ResolveGameRoot();
+
+    public static string GameRootOverrideFile => Path.Combine(DataDirectory, "game-root.txt");
+
+    private static string ResolveGameRoot()
+    {
+        if (Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 } custom)
+            return custom;
+
+        try
+        {
+            if (File.Exists(GameRootOverrideFile)
+                && File.ReadAllText(GameRootOverrideFile).Trim() is { Length: > 0 } saved)
+                return saved;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // 记不下来就用默认目录，别为了一个路径文件起不来
+            Serilog.Log.Warning(ex, "读取游戏目录设置失败：{File}", GameRootOverrideFile);
+        }
+
+        return Path.Combine(DataDirectory, "game");
+    }
+
+    /// <summary>把用户选的目录记下来并立即生效；环境变量优先的情况下返回 false。</summary>
+    public static bool TrySetGameRoot(string path)
+    {
+        if (Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 }) return false;
+
+        GameRoot = path;
+        try
+        {
+            Directory.CreateDirectory(DataDirectory);
+            File.WriteAllText(GameRootOverrideFile, path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Serilog.Log.Warning(ex, "保存游戏目录设置失败：{File}", GameRootOverrideFile);
+        }
+        return true;
+    }
 
     /// <summary>
     /// 建好启动器自己要用的目录。游戏目录可能是用户随手填的坏路径（被同名文件占住、

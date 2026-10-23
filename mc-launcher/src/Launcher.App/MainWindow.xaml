@@ -562,6 +562,13 @@
                     <TextBlock Text="{Binding EmptyStateHint}" Style="{StaticResource BodyText}"
                                Foreground="{DynamicResource MutedBrush}"
                                TextWrapping="Wrap" LineHeight="22" />
+                    <!-- 游戏目录不可用时，唯一的出路就是换一个能写的目录 -->
+                    <Button Content="选择游戏目录…"
+                            Command="{Binding ChooseGameRootCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            Height="34" Padding="18,0" Margin="0,12,0,0"
+                            HorizontalAlignment="Left"
+                            Visibility="{Binding HasGameRootProblem, Converter={StaticResource BoolToVis}}" />
                     <!-- 杀软误报是最常见的「打不开 / 启动就退」，把处置步骤做成随时能点的入口 -->
                     <Button Content="被安全软件拦住了？"
                             Command="{Binding ShowBlockedHelpCommand}"

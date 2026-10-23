@@ -113,6 +113,19 @@ internal static partial class UiCheck
         updateVm.HasUpdate = true;
         Pump(updateVm.CheckUpdateCommand.ExecuteAsync(null));
         Check("更新签名失败向用户显示原因并关闭安装入口", !updateVm.HasUpdate && updateVm.StatusText.Contains("更新验证失败") && updateVm.UpdateText.Contains("签名"));
+
+        // 换游戏目录：坏路径拒绝并给原因，能用的路径就地切换
+        var occupied = Path.Combine(root, "occupied.txt");
+        File.WriteAllText(occupied, "x");
+        Check("坏游戏目录被拒绝并给出原因",
+            !updateVm.TryUseGameRoot(Path.Combine(occupied, "game"), out var gameRootError)
+            && gameRootError!.Contains("建不出来") && updateVm.GameRootProblem.Length == 0);
+        var altRoot = Path.Combine(root, "alt-game");
+        Check("可用游戏目录就地切换",
+            updateVm.TryUseGameRoot(altRoot, out _)
+            && !updateVm.HasGameRootProblem
+            && updateVm.GameRoot.EndsWith("alt-game", StringComparison.OrdinalIgnoreCase)
+            && updateVm.StatusText.Contains("游戏目录已切换"));
         Console.WriteLine($"[ok] {_checks} 项 WPF 流程检查通过");
         window.Close();
         app.Shutdown();

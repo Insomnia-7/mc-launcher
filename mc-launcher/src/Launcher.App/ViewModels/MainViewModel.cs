@@ -143,7 +143,52 @@ public sealed partial class MainViewModel : ObservableObject
         _ = RefreshSkinAsync();
     }
 
-    public string GameRoot { get; }
+    public string GameRoot { get; private set; }
+
+    /// <summary>
+    /// 换一个游戏目录：先探能不能用，能用才落盘并重读实例列表。
+    /// 返回 false 时 error 里是给用户看的中文原因。
+    /// </summary>
+    public bool TryUseGameRoot(string? path, out string? error)
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(path)) { error = "没有选择目录。"; return false; }
+
+        var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(path);
+        if (problem is not null) { error = problem; return false; }
+
+        var full = Path.GetFullPath(path!);
+        GameRoot = full;
+        if (!AppPaths.TrySetGameRoot(full))
+            _logger.LogInformation("游戏目录由环境变量指定，本次切换只在当前进程内生效");
+
+        GameRootProblem = string.Empty;
+        OnPropertyChanged(nameof(GameRoot));
+        RefreshInstances();
+        Download.RefreshTarget();
+        StatusText = Instances.Count == 0
+            ? $"游戏目录已切换到 {full}，这里还没有版本，去「安装向导」或「下载」装一个。"
+            : $"游戏目录已切换到 {full} · {Instances.Count} 个版本";
+        _logger.LogInformation("游戏目录切换为 {GameRoot}：{Count} 个版本", full, Instances.Count);
+        return true;
+    }
+
+    /// <summary>让用户挑一个能用的游戏目录（空状态卡上的按钮走这里）。</summary>
+    [RelayCommand]
+    private void ChooseGameRoot()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "选择游戏目录（会被用来放 versions / instances / assets / libraries）",
+            InitialDirectory = Directory.Exists(GameRoot) ? GameRoot : AppPaths.DataDirectory,
+        };
+
+        if (dialog.ShowDialog() != true) return;
+        if (TryUseGameRoot(dialog.FolderName, out var error)) return;
+
+        StatusText = error ?? "这个目录不能用。";
+        DiagnosisText = error ?? string.Empty;
+    }
 
     // ── 自更新 ───────────────────────────────────────────────────────────
     // 检查放在首帧之后（DelayedUpdateCheckAsync 先等 2 秒），避免和 Java 扫描抢启动时间。
