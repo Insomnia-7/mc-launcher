@@ -45,7 +45,7 @@ public static class PageTransition
     public static void Play(FrameworkElement element, double offsetY = DefaultOffsetY, int durationMs = DefaultDurationMs)
     {
         ArgumentNullException.ThrowIfNull(element);
-        if (!SystemParameters.ClientAreaAnimation) return;
+        if (!MotionPreferences.Enabled) return;
         if (durationMs <= 0) durationMs = DefaultDurationMs;
 
         var state = MotionCore.Ensure(element);

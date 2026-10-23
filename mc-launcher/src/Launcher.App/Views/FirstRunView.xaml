@@ -12,8 +12,8 @@
         </Style>
     </UserControl.Resources>
     <Grid Background="{DynamicResource OverlayBrush}" KeyboardNavigation.TabNavigation="Cycle">
-        <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                CornerRadius="12" Padding="28,24" MaxWidth="560" Margin="24"
+        <Border x:Name="DialogSurface" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                CornerRadius="20" Padding="26,24" MaxWidth="560" Margin="24"
                 HorizontalAlignment="Stretch" VerticalAlignment="Center">
             <Grid>
                 <Grid.RowDefinitions>
@@ -36,12 +36,12 @@
                                   Style="{StaticResource DarkComboBox}" AutomationProperties.Name="游戏版本">
                             <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Id}" /></DataTemplate></ComboBox.ItemTemplate>
                         </ComboBox>
-                        <TextBlock Text="仅列出正式版；快照和加载器可在下载页安装。" FontSize="11" Margin="0,6,0,16"
+                        <TextBlock Text="仅列出正式版；快照和加载器可在下载页安装。" FontSize="12" Margin="0,6,0,16"
                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
                         <TextBlock Text="2 · 游戏内存（MB）" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,8" />
                         <TextBox Text="{Binding SetupMemoryText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DarkTextBox}"
                                  AutomationProperties.Name="游戏内存" />
-                        <TextBlock Text="已按本机内存推荐；可填写 512–65536 MB。" FontSize="11" Margin="0,6,0,16"
+                        <TextBlock Text="已按本机内存推荐；可填写 512–65536 MB。" FontSize="12" Margin="0,6,0,16"
                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
                         <Grid Margin="0,0,0,8">
                             <TextBlock Text="3 · 游戏身份" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" />
@@ -51,7 +51,7 @@
                         <TextBlock Text="{Binding SetupIdentityText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8" />
                         <TextBox Text="{Binding SetupOfflineName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DarkTextBox}"
                                  AutomationProperties.Name="离线用户名" IsReadOnly="{Binding HasAccount}" />
-                        <TextBlock Text="离线身份可用于单人游戏，无法加入需要正版验证的服务器。" FontSize="11" Margin="0,6,0,0"
+                        <TextBlock Text="离线身份可用于单人游戏，无法加入需要正版验证的服务器。" FontSize="12" Margin="0,6,0,0"
                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding LoginCode}" Style="{StaticResource OptionalText}" Foreground="{DynamicResource AccentBrush}" FontSize="18" Margin="0,6,0,0" />
                         <TextBlock Text="{Binding LoginHint}" Style="{StaticResource OptionalText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextWrapping="Wrap" />

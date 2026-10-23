@@ -33,10 +33,12 @@ public static class ThemeCatalog
             ["OverlayBrush"]="#99080D18",["WallpaperTintBrush"]=tint
         }));
     public static IReadOnlyList<ThemePreset> BuiltIns { get; } = new[] {
-        Make("ocean","深海玻璃","#111B2D","#E8172338","#CA20304A","#E2293B56","#CC344C6B","#654C6588","#EFF5FF","#BACBE1","#9DC7FF","#3F6DAF","#45111B2D"),
-        Make("glacier","冰川微光","#E8EFF8","#E6F6F9FF","#D9FFFFFF","#E8EDF3FB","#E1DDE9F8","#A0A1B5D0","#17263E","#4F617C","#2F5BAE","#3862B0","#30E8EFF8"),
-        Make("amethyst","紫晶暮色","#1C172B","#E8251F39","#CF302942","#E139304E","#CC473A60","#737D6B98","#F5EFFF","#CEBFDF","#C7B6FA","#7758AD","#451C172B"),
-        Make("forest","松林薄雾","#122425","#E8192E30","#CC203B3B","#E12C4848","#CC375A56","#7372948C","#E9F8F2","#B5D0C7","#90D9BC","#347764","#45122425")
+        Make("ocean","深海玻璃","#131720","#EE1C222E","#E6262D3B","#D92D3544","#CC394354","#394F5B70","#F2F3F7","#ADB5C4","#9AB9F4","#476DB4","#25131720"),
+        Make("glacier","冰川微光","#EEF0F5","#EDFAFBFE","#EBFFFFFF","#EAF3F5F9","#D9E5EAF4","#333E506E","#252B37","#656F80","#4669AB","#4669AB","#18EEF0F5"),
+        Make("amethyst","紫晶暮色","#1B1922","#EE25222E","#E6302B3A","#D9373143","#CC443B52","#396E6080","#F4F1F7","#B9B0C4","#C2A8E6","#785BA5","#251B1922"),
+        Make("forest","松林薄雾","#17201E","#EE212D29","#E62A3732","#D932423B","#CC3D5148","#39657E71","#F0F5F2","#ACBFB5","#9BC9B1","#487D65","#2517201E"),
+        Make("sunset","日落琥珀","#191214","#EE241A1C","#E62E2225","#D935282B","#CC433236","#396B5158","#F7F2EE","#C4B2AC","#F0B27A","#B4703C","#25191214"),
+        Make("aurora","极光青屿","#0E1417","#EE16212A","#E61D2A34","#D9263540","#CC31434F","#39607A8C","#EEF6F9","#A9BEC7","#8FD9C8","#3E8C7C","#250E1417")
     };
     public static Dictionary<string,string> Resolve(ThemeDefinition theme)
     {
@@ -50,10 +52,11 @@ public static class ThemeCatalog
     }
 }
 
-public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55)
+public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55, string MotionMode = "smooth")
 {
     public AppearanceSettings Validate()
     {
+        if (MotionMode is not ("smooth" or "system" or "off")) throw new ArgumentException("未知动画模式。");
         if (ThemeId != "custom" && !ThemeCatalog.BuiltIns.Any(t => t.Id == ThemeId)) throw new ArgumentException("未知主题。");
         if (ThemeId == "custom" && CustomTheme is null) throw new ArgumentException("缺少自定义主题。");
         if (!double.IsFinite(WallpaperOpacity) || WallpaperOpacity is < 0 or > 0.85) throw new ArgumentException("壁纸强度应在 0–85% 之间。");

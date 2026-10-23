@@ -8,9 +8,11 @@
              xmlns:anim="clr-namespace:Launcher.App.Animations"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="MC Launcher" Height="640" Width="1000"
+        Title="MC Launcher" Height="740" Width="1120"
         MinHeight="560" MinWidth="820"
         Background="{DynamicResource BgBrush}"
+        FontFamily="{StaticResource UiFontFamily}" FontSize="13" Foreground="{DynamicResource TextBrush}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="Grayscale"
         AllowDrop="True"
         DragOver="OnWindowDragOver"
         Drop="OnWindowDrop"
@@ -24,7 +26,7 @@
     </Window.InputBindings>
     <Grid x:Name="RootGrid" Background="{DynamicResource BgBrush}" TextElement.Foreground="{DynamicResource TextBrush}" TextElement.FontFamily="{StaticResource UiFontFamily}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="216" />
+            <ColumnDefinition Width="224" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -38,18 +40,18 @@
           <Rectangle Fill="{DynamicResource WallpaperTintBrush}"/>
         </Grid>
         <!-- ══════════ 左栏 ══════════ -->
-        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" CornerRadius="20" Margin="14,14,0,8">
             <DockPanel>
-                <Grid DockPanel.Dock="Top" Margin="16,18,14,16"><Grid.ColumnDefinitions><ColumnDefinition Width="43"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="32" Height="32" CornerRadius="10" Background="{DynamicResource SelectedBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" HorizontalAlignment="Left"><TextBlock Text="M" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="MC Launcher" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="JAVA EDITION" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,2,0,0"/></StackPanel></Grid>
+                <Grid DockPanel.Dock="Top" Margin="16,20,14,18"><Grid.ColumnDefinitions><ColumnDefinition Width="43"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="32" Height="32" CornerRadius="10" Background="{DynamicResource SelectedBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" HorizontalAlignment="Left"><TextBlock Text="M" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="MC Launcher" FontSize="15" FontWeight="SemiBold"/><TextBlock Text="MINECRAFT JAVA" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,2,0,0"/></StackPanel></Grid>
                 <!-- 顶部两个分区按钮：游戏版本 / 下载 -->
-                <Grid DockPanel.Dock="Top" Margin="12,14,12,10">
+                <Grid DockPanel.Dock="Top" Margin="12,0,12,18">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Button Grid.Column="0" Content="游戏版本" Height="34"
+                    <Button Grid.Column="0" Content="游戏库" Height="36"
                             Command="{Binding ShowInstancesCommand}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
@@ -63,7 +65,7 @@
                         </Button.Style>
                     </Button>
 
-                    <Button Grid.Column="2" Content="下载" Height="34"
+                    <Button Grid.Column="2" Content="发现" Height="36"
                             Command="{Binding ShowDownloadsCommand}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
@@ -78,11 +80,11 @@
                     </Button>
                 </Grid>
 
-                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="12,0,12,12" Height="36" Style="{StaticResource SecondaryButton}" />
+                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" />
 
-                <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="12,0,12,8" Height="32" Style="{StaticResource SecondaryButton}" />
+                <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" />
 
-                <Button DockPanel.Dock="Bottom" Content="外观与主题…" Command="{Binding OpenAppearanceCommand}" Margin="12,0,12,8" Height="34" Style="{StaticResource SecondaryButton}" ToolTip="主题、壁纸 · Ctrl+,"/>
+                <Button DockPanel.Dock="Bottom" Content="外观与主题…" Command="{Binding OpenAppearanceCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" ToolTip="主题、壁纸 · Ctrl+,"/>
                 <!-- 版本列表 -->
                 <ListBox ItemsSource="{Binding Instances}"
                          SelectedItem="{Binding SelectedInstance}"
@@ -112,7 +114,7 @@
                                 <TextBlock Text="{Binding DisplayName}" FontSize="14"
                                            FontFamily="{StaticResource UiFontFamily}"
                                            TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Subtitle}" FontSize="11"
+                                <TextBlock Text="{Binding Subtitle}" FontSize="12"
                                            Foreground="{DynamicResource MutedBrush}"
                                            FontFamily="{StaticResource UiFontFamily}"
                                            TextTrimming="CharacterEllipsis" />
@@ -134,7 +136,7 @@
                                     <Border Height="1" Background="{DynamicResource LineBrush}" Margin="6,8"
                                             Visibility="{Binding IsSeparator, Converter={StaticResource BoolToVis}}" />
                                     <Button Command="{Binding SelectCommand}" CommandParameter="{Binding}"
-                                            Height="44" HorizontalContentAlignment="Stretch"
+                                            Height="42" Margin="0,2" HorizontalContentAlignment="Stretch"
                                             Visibility="{Binding IsNormal, Converter={StaticResource BoolToVis}}">
                                         <Button.Style>
                                             <Style TargetType="Button">
@@ -146,7 +148,7 @@
                                                     <Setter.Value>
                                                         <ControlTemplate TargetType="Button">
                                                             <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                                                    CornerRadius="6" Padding="12,0">
+                                                                    CornerRadius="10" Padding="14,0">
                                                                 <ContentPresenter VerticalAlignment="Center" />
                                                             </Border>
                                                             <ControlTemplate.Triggers>
@@ -165,7 +167,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </Button.Style>
-                                        <TextBlock Text="{Binding Title}" FontSize="14"
+                                        <TextBlock Text="{Binding Title}" FontSize="13"
                                                    FontFamily="{StaticResource UiFontFamily}"
                                                    VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"
@@ -180,10 +182,10 @@
         </Border>
 
         <!-- ══════════ 右：版本页 ══════════ -->
-        <ScrollViewer Grid.Row="0" Grid.Column="1" VerticalScrollBarVisibility="Auto"
+        <ScrollViewer x:Name="LibraryPage" Grid.Row="0" Grid.Column="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsInstanceSection}">
-            <Grid Margin="24,22,24,20" MaxWidth="1120">
+            <Grid Margin="28,28,28,20" MaxWidth="1120">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -201,7 +203,7 @@
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding SelectedInstance.Subtitle, FallbackValue='先装一个版本'}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
-                <Border Style="{StaticResource CardBorder}" Padding="14,10" Margin="0,16,0,0">
+                <Border Style="{StaticResource CardBorder}" Padding="18,14" Margin="0,16,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -247,7 +249,7 @@
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                             <TextBlock Text="{Binding AccountText}" FontSize="13" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding AccountDetail}" FontSize="11" Margin="0,3,0,0" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding AccountDetail}" FontSize="12" Margin="0,3,0,0" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="账号管理…" Command="{Binding OpenAccountsCommand}" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,0"/>
@@ -257,13 +259,13 @@
                     </Grid>
                 </Border>
 
-                <TextBlock Text="{Binding LoginHint}" FontSize="11" Margin="2,8,0,0"
+                <TextBlock Text="{Binding LoginHint}" FontSize="12" Margin="2,8,0,0"
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
                            Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
 
             <Button Grid.Row="1" Content="启动游戏"
-                    Style="{StaticResource PrimaryButton}" Height="52" FontSize="17" anim:PressFeedback.Scale="0.97"
+                    Style="{StaticResource PrimaryButton}" Height="52" FontSize="16" anim:PressFeedback.Scale="0.97"
                     Command="{Binding LaunchCommand}"
                     Margin="0,0,0,12" />
 
@@ -503,13 +505,13 @@
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" CornerRadius="4" Height="20" VerticalAlignment="Center"
                                                 Background="{DynamicResource LineBrush}">
-                                            <TextBlock Text="{Binding StateText}" FontSize="11" HorizontalAlignment="Center"
+                                            <TextBlock Text="{Binding StateText}" FontSize="12" HorizontalAlignment="Center"
                                                        VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
                                         </Border>
                                         <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="12"
                                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource TextBrush}" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Meta}" FontSize="11"
+                                        <TextBlock Grid.Column="2" Text="{Binding Meta}" FontSize="12"
                                                    VerticalAlignment="Center" Margin="12,0,0,0"
                                                    Foreground="{DynamicResource MutedBrush}" />
                                     </Grid>
@@ -564,7 +566,7 @@
         </ScrollViewer>
 
         <!-- ══════════ 右：下载页 ══════════ -->
-        <Grid Grid.Row="0" Grid.Column="1" Margin="24,22,24,18" MaxWidth="1120" anim:PageVisibility.TransitionKey="{Binding Download.SelectedCategory}"
+        <Grid x:Name="DownloadPage" Grid.Row="0" Grid.Column="1" Margin="28,28,28,16" MaxWidth="1120"
               Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsDownloadSection}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -576,12 +578,12 @@
             </Grid.RowDefinitions>
 
             <!-- 标题 + 当前目标 -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <StackPanel Grid.Row="0" Margin="0,0,0,20">
                 <TextBlock Text="{Binding Download.SelectedCategory.Title, FallbackValue='下载中心'}"
                            Style="{StaticResource H1Text}" />
                 <TextBlock Text="{Binding Download.SelectedCategory.Hint}"
                            Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
-                <TextBlock Text="{Binding Download.TargetText}"
+                <TextBlock Text="{Binding Download.TargetText}" Opacity="0.8"
                            Style="{StaticResource CaptionText}" Margin="0,4,0,0"
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
@@ -619,14 +621,14 @@
             </StackPanel>
 
             <!-- All content kinds share source/category/version/sort and server-side paging. -->
-            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="14,12" Margin="0,0,0,10"
+            <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,14"
                         Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
               <StackPanel>
-                <TextBlock Text="名称 / 关键词（留空查看热门）" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
+                <TextBlock Text="搜索资源" Style="{StaticResource CaptionText}" Margin="0,0,0,4"/>
                 <Grid IsEnabled="{Binding Download.CanEditSearch}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions>
                     <TextBox Style="{StaticResource DarkTextBox}" Height="34" Margin="0,0,8,0" VerticalContentAlignment="Center" Padding="8,0"
-                             Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" BorderThickness="0"
+                             Background="{DynamicResource FieldBrush}" Foreground="{DynamicResource TextBrush}" BorderThickness="1"
                              ToolTip="{Binding Download.SearchHint}" Text="{Binding Download.Query, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding Download.SearchCommand}"/></TextBox.InputBindings>
                     </TextBox>
@@ -708,7 +710,7 @@
                                                    VerticalAlignment="Center"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    FontFamily="{StaticResource UiFontFamily}" />
-                                        <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="11"
+                                        <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="12"
                                                    VerticalAlignment="Center" Margin="8,0,2,0"
                                                    Foreground="{DynamicResource MutedBrush}"
                                                    FontFamily="{StaticResource UiFontFamily}" />
@@ -720,7 +722,7 @@
                 </StackPanel>
             </Border>
 
-            <WrapPanel Grid.Row="3" Margin="0,0,0,6" Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
+            <WrapPanel Grid.Row="3" Margin="0,0,0,10" Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding Download.ResultHeading}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,12,4"/>
                 <Button Content="首页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.FirstPageCommand}" Height="25" Margin="0,0,4,4" Padding="8,0"/>
                 <Button Content="上一页" Style="{StaticResource SecondaryButton}" Command="{Binding Download.PreviousPageCommand}" Height="25" Margin="0,0,8,4" Padding="8,0"/>
@@ -831,7 +833,7 @@
                                                                                    Foreground="{DynamicResource TextBrush}"
                                                                                    FontFamily="{StaticResource UiFontFamily}"
                                                                                    TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="11"
+                                                                        <TextBlock Grid.Column="1" Text="{Binding ReleaseDateText}" FontSize="12"
                                                                                    VerticalAlignment="Center" Margin="8,0,2,0"
                                                                                    Foreground="{DynamicResource MutedBrush}"
                                                                                    FontFamily="{StaticResource UiFontFamily}" />
@@ -888,8 +890,9 @@
             </StackPanel>
         </Grid>
 
+        <Image x:Name="CategorySnapshot" Grid.Row="0" Grid.Column="1" Margin="28,28,28,16" MaxWidth="1120" Stretch="Fill" IsHitTestVisible="False" Visibility="Collapsed" Panel.ZIndex="5"/>
         <!-- 底部状态条 -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" Height="30">
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="Transparent" Height="30">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -906,28 +909,28 @@
                                FontFamily="{StaticResource UiFontFamily}" Margin="0,0,10,0" />
                     <Button Content="立即更新" Command="{Binding ApplyUpdateCommand}"
                             Style="{StaticResource SecondaryButton}"
-                            Height="22" FontSize="11" Padding="12,0" MinWidth="72" />
+                            Height="22" FontSize="12" Padding="12,0" MinWidth="72" />
                 </StackPanel>
             </Grid>
         </Border>
 
-        <views:AppearanceView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="97" Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAppearanceOpen}"/>
+        <views:AppearanceView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="97" Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAppearanceOpen}"/>
 
-        <views:NetworkSettingsView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
+        <views:NetworkSettingsView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
                                    Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsNetworkOpen}" />
 
-        <views:FirstRunView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
+        <views:FirstRunView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
                             Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsSetupOpen}" />
 
-        <views:AccountManagerView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="95"
+        <views:AccountManagerView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="95"
                                   Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAccountsOpen}" />
 
         <!-- 确认覆盖层：不用 Popup（PlacementTarget 容易跑出窗口），直接在窗口内盖一层 -->
         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="100"
-              Visibility="{Binding IsConfirmOpen, Converter={StaticResource BoolToVis}}">
+              Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsConfirmOpen}" anim:PageVisibility.Dialog="True">
             <Border Background="{DynamicResource OverlayBrush}" MouseLeftButtonDown="OnConfirmBackdropClick" />
-            <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                    CornerRadius="10" Padding="22,18" Width="460" MaxHeight="440"
+            <Border x:Name="ConfirmSurface" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                    CornerRadius="20" Padding="26,22" Width="460" MaxHeight="440"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.55" Color="Black" />
@@ -941,7 +944,7 @@
                                Margin="0,8,0,0" FontFamily="{StaticResource UiFontFamily}" />
                     <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0"
                                   Visibility="{Binding HasConfirmDetail, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding ConfirmDetail}" FontSize="11" TextWrapping="Wrap"
+                        <TextBlock Text="{Binding ConfirmDetail}" FontSize="12" TextWrapping="Wrap"
                                    Foreground="{DynamicResource MutedBrush}" LineHeight="17"
                                    FontFamily="Consolas, Microsoft YaHei UI" />
                     </ScrollViewer>

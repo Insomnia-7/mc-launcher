@@ -2,13 +2,13 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Background="{DynamicResource OverlayBrush}">
-        <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                CornerRadius="10" Padding="20" Margin="24" MaxWidth="600" MaxHeight="490"
+        <Border x:Name="DialogSurface" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                CornerRadius="20" Padding="26" Margin="24" MaxWidth="600" MaxHeight="490"
                 HorizontalAlignment="Stretch" VerticalAlignment="Center">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <StackPanel Margin="0,0,0,12">
-                    <TextBlock Text="账号管理" Style="{StaticResource BodyText}" FontSize="20"/>
+                    <TextBlock Text="账号管理" Style="{StaticResource BodyText}" FontSize="23" FontWeight="SemiBold"/>
                     <TextBlock Text="选择已保存的正版账号或离线身份，切换后用于下一次启动。" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                 </StackPanel>
                 <ListBox Grid.Row="1" MinHeight="90" MaxHeight="180" ItemsSource="{Binding AccountChoices}"
@@ -18,7 +18,7 @@
                     <ListBox.ItemTemplate><DataTemplate>
                         <Grid Margin="8,6"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <StackPanel><TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextBrush}" FontSize="13" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/></StackPanel>
+                                <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/></StackPanel>
                             <TextBlock Grid.Column="1" Text="正在使用" Foreground="{DynamicResource AccentBrush}" Margin="12,0,0,0" VerticalAlignment="Center"
                                        Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVis}}"/>
                         </Grid>

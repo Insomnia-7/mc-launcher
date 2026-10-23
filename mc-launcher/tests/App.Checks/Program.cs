@@ -195,7 +195,7 @@ internal static partial class UiCheck
     private static void Render(MainWindow window, int width, int height, string name)
     {
         var grid = (Grid)window.Content;
-        grid.Measure(new Size(width, height)); grid.Arrange(new Rect(0, 0, width, height)); grid.UpdateLayout();
+        grid.Measure(new Size(width, height)); grid.Arrange(new Rect(0, 0, width, height)); grid.UpdateLayout(); Pump(Task.Delay(400));
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(grid);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));

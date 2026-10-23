@@ -7,14 +7,21 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.App.Appearance;
+using Launcher.App.Animations;
 using Launcher.Application.Settings;
 using Microsoft.Win32;
 
 namespace Launcher.App.ViewModels;
 
+public sealed record MotionChoice(string Id, string Name)
+{
+    public override string ToString() => Name;   // UIA / 无障碍读屏读的是 ToString，不给就念成 record 转储
+}
+
 public sealed record ThemeChoice(string Id,ThemeDefinition Definition)
 {
     public string Name => Definition.Name;
+    public override string ToString() => Name;
     public Brush Swatch => new SolidColorBrush((Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(Definition)["BgBrush"]));
     public Brush Accent => new SolidColorBrush((Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(Definition)["AccentBrush"]));
 }
@@ -26,6 +33,8 @@ public sealed partial class MainViewModel
     private DispatcherTimer? _appearanceSaveTimer;
     private bool _readingAppearance;
     private int _wallpaperRevision;
+    public IReadOnlyList<MotionChoice> MotionChoices { get; } = new[] { new MotionChoice("smooth","流畅动画"),new MotionChoice("system","跟随系统"),new MotionChoice("off","关闭动画") };
+    [ObservableProperty] private MotionChoice? _selectedMotion;
     public ObservableCollection<ThemeChoice> ThemeChoices { get; }=[];
     [ObservableProperty] private ThemeChoice? _selectedTheme;
     [ObservableProperty] private bool _isAppearanceOpen;
@@ -46,6 +55,8 @@ public sealed partial class MainViewModel
         if(_appearanceSettings.CustomTheme is { } custom) ThemeChoices.Add(new("custom",custom));
         SelectedTheme=ThemeChoices.Single(t=>t.Id==_appearanceSettings.ThemeId);
         WallpaperOpacity=_appearanceSettings.WallpaperOpacity;
+        SelectedMotion=MotionChoices.Single(m=>m.Id==_appearanceSettings.MotionMode);
+        MotionPreferences.Mode=_appearanceSettings.MotionMode;
         _appearance.Apply(_appearanceSettings.Theme);
         _readingAppearance=false;
     }
@@ -60,6 +71,13 @@ public sealed partial class MainViewModel
         if(_readingAppearance || value is null) return;
         _appearanceSettings=_appearanceSettings with { ThemeId=value.Id };
         _appearance.Apply(value.Definition); SaveAppearance();
+    }
+    partial void OnSelectedMotionChanged(MotionChoice? value)
+    {
+        if(_readingAppearance || value is null) return;
+        MotionPreferences.Mode=value.Id;
+        _appearanceSettings=_appearanceSettings with { MotionMode=value.Id };
+        SaveAppearance();
     }
     partial void OnWallpaperOpacityChanged(double value)
     {

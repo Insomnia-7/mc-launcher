@@ -19,8 +19,9 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
             brush.Freeze(); resources[pair.Key]=brush;
         }
         var accent=(Color)ColorConverter.ConvertFromString(colors["AccentBrush"]);
-        var glow=new LinearGradientBrush(Color.FromArgb(36,accent.R,accent.G,accent.B),Color.FromArgb(0,accent.R,accent.G,accent.B),45);
+        var glow=new LinearGradientBrush(Color.FromArgb(18,accent.R,accent.G,accent.B),Color.FromArgb(0,accent.R,accent.G,accent.B),45);
         glow.Freeze(); resources["BackdropGlowBrush"]=glow;
+        resources["GlassEdgeBrush"]=resources["LineBrush"];
     }
     public static BitmapSource Decode(byte[] bytes)
     {

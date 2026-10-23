@@ -1,4 +1,5 @@
 using System.IO;
+using Launcher.App.Animations;
 using System.Windows;
 using System.Windows.Input;
 using Launcher.App.ViewModels;
@@ -10,6 +11,16 @@ public partial class MainWindow : Window
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        var categoryMotion = new CategoryTransition(DownloadPage, CategorySnapshot);
+        System.ComponentModel.PropertyChangingEventHandler categoryChanging = (_,e) => {
+            if(e.PropertyName==nameof(DownloadViewModel.SelectedCategory) && viewModel.IsDownloadSection) categoryMotion.Play();
+        };
+        System.ComponentModel.PropertyChangingEventHandler sectionChanging = (_,e) => {
+            if(e.PropertyName==nameof(MainViewModel.IsInstanceSection)) categoryMotion.Clear();
+        };
+        viewModel.Download.PropertyChanging += categoryChanging;
+        viewModel.PropertyChanging += sectionChanging;
+        Closed += (_,_) => { viewModel.Download.PropertyChanging -= categoryChanging; viewModel.PropertyChanging -= sectionChanging; categoryMotion.Clear(); };
         DataContext = viewModel;
         ContentRendered += async (_,_) => await viewModel.LoadAppearanceWallpaperAsync();
         Closing += (_,_) => viewModel.FlushAppearance();

@@ -85,11 +85,75 @@ internal static partial class UiCheck
         PageVisibility.SetIsActive(outgoing,true);host.Show();
         PageVisibility.SetIsActive(outgoing,false);PageVisibility.SetIsActive(incoming,true);
         PageVisibility.SetIsActive(outgoing,true);PageVisibility.SetIsActive(incoming,false);
-        Pump(Task.Delay(300));
+        Pump(Task.Delay(450));
         Check("快速反复切页以最后状态为准且动画收尾",outgoing.Visibility==Visibility.Visible && outgoing.IsHitTestVisible && outgoing.Opacity==1 && incoming.Visibility==Visibility.Collapsed && !incoming.IsHitTestVisible);
         host.Close();
         vm.SelectedTheme=vm.ThemeChoices.First(t=>t.Id=="ocean");
+        VerifyVisibleMotion(window,vm);
         window.Close();
+    }
+    private static void VerifyVisibleMotion(MainWindow window,MainViewModel vm)
+    {
+        Console.WriteLine($"[motion] system animation={SystemParameters.ClientAreaAnimation}; selected={vm.SelectedMotion?.Id}");
+        vm.SelectedMotion=vm.MotionChoices.Single(m=>m.Id=="smooth");
+        vm.IsInstanceSection=true;
+        window.Left=-10000;window.Top=-10000;window.ShowActivated=false;window.ShowInTaskbar=false;
+        window.Show();Pump(Task.Delay(450));
+        var library=(FrameworkElement)window.FindName("LibraryPage");
+        var download=(FrameworkElement)window.FindName("DownloadPage");
+        var snapshot=(Image)window.FindName("CategorySnapshot");
+        vm.ShowDownloadsCommand.Execute(null);
+        Pump(Task.Delay(65));
+        Check("真实窗口切换期间旧页仍在淡出",library.Visibility==Visibility.Visible && library.Opacity>0 && library.Opacity<1 && !library.IsHitTestVisible);
+        Check("真实窗口切换期间新页正在淡入",download.IsVisible && download.Opacity>0 && download.Opacity<1);
+        CaptureMotion(window,"motion-page-middle.png");
+        Pump(Task.Delay(400));
+        Check("真实窗口切页完成正确归位",library.Visibility==Visibility.Collapsed && download.Opacity==1 && download.IsHitTestVisible);
+
+        vm.Download.SelectedCategory=vm.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.ResourcePack);
+        Check("切换资源分类保留旧内容快照",snapshot.Source is not null);
+        Pump(Task.Delay(75));
+        Check("分类切换同时执行旧内容淡出与新内容淡入",snapshot.Opacity>0 && snapshot.Opacity<1 && download.Opacity>0 && download.Opacity<1);
+        CaptureMotion(window,"motion-category-middle.png");
+        Pump(Task.Delay(400));
+        Check("分类动画完成释放快照",snapshot.Source is null && snapshot.Visibility==Visibility.Collapsed && download.Opacity==1);
+
+        var overlay=AppearanceDescendants(window).OfType<Launcher.App.Views.AppearanceView>().Single();
+        vm.OpenAppearanceCommand.Execute(null);
+        Pump(Task.Delay(70));
+        var surface=(FrameworkElement)overlay.FindName("DialogSurface");
+        var transform=(TransformGroup)surface.RenderTransform;
+        var scale=transform.Children.OfType<ScaleTransform>().Last();
+        Check("弹窗打开具有中间透明度和缩放帧",overlay.Opacity>0 && overlay.Opacity<1 && scale.ScaleX>.975 && scale.ScaleX<1);
+        CaptureMotion(window,"motion-dialog-middle.png");
+        Pump(Task.Delay(400));
+        vm.CloseAppearanceCommand.Execute(null);Pump(Task.Delay(60));
+        Check("弹窗关闭在淡出完成前保持可见并禁止点击",overlay.IsVisible && overlay.Opacity>0 && overlay.Opacity<1 && !overlay.IsHitTestVisible);
+        Pump(Task.Delay(250));
+        Check("弹窗淡出后才隐藏",overlay.Visibility==Visibility.Collapsed);
+
+        vm.SelectedMotion=vm.MotionChoices.Single(m=>m.Id=="off");
+        vm.IsInstanceSection=true;Pump(Task.Delay(30));
+        Check("关闭动画时直接切页",library.Visibility==Visibility.Visible && library.Opacity==1 && download.Visibility==Visibility.Collapsed);
+        Check("动画偏好持久保存",AppearanceStore.Read(AppPaths.DataDirectory).MotionMode=="off");
+        vm.SelectedMotion=vm.MotionChoices.Single(m=>m.Id=="system");
+        Check("跟随系统模式正确使用系统开关",MotionPreferences.Enabled==SystemParameters.ClientAreaAnimation);
+        vm.SelectedMotion=vm.MotionChoices.Single(m=>m.Id=="smooth");
+        Check("流畅模式独立于系统动画开关",MotionPreferences.Enabled);
+        vm.IsInstanceSection=false;Pump(Task.Delay(450));
+        vm.Download.SelectedCategory=vm.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.Mod);
+        Pump(Task.Delay(450));
+        vm.OpenAppearanceCommand.Execute(null);Pump(Task.Delay(450));
+        CaptureMotion(window,"redesign-appearance.png");
+        vm.CloseAppearanceCommand.Execute(null);Pump(Task.Delay(250));
+    }
+    private static void CaptureMotion(MainWindow window,string name)
+    {
+        var grid=(Grid)window.Content;
+        var bitmap=new RenderTargetBitmap((int)Math.Ceiling(grid.ActualWidth),(int)Math.Ceiling(grid.ActualHeight),96,96,PixelFormats.Pbgra32);
+        bitmap.Render(grid);
+        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream=File.Create(Path.Combine(AppContext.BaseDirectory,name));encoder.Save(stream);
     }
     private static IEnumerable<DependencyObject> AppearanceDescendants(DependencyObject root)
     {
