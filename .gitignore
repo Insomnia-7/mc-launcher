@@ -54,3 +54,7 @@ mc-launcher/**/settings.json.*.tmp
 !/scripts/new-update-key.ps1
 mc-launcher/**/*.dpapi
 mc-launcher/**/*.key
+
+!/scripts/publish-launcher.ps1
+!/scripts/sign-windows-executable.ps1
+!/scripts/check-single-file-update.ps1

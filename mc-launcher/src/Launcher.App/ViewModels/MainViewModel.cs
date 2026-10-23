@@ -201,16 +201,10 @@ public sealed partial class MainViewModel : ObservableObject
         if (_pendingUpdate is not { } manifest || IsUpdating)
             return;
 
-        var updater = FindUpdater();
-        if (updater is null)
-        {
-            StatusText = "找不到更新器 mclupd.exe（应该在安装目录的 updater\\ 下）";
-            return;
-        }
-
         IsUpdating = true;
         try
         {
+            var updater = FindUpdater() ?? throw new FileNotFoundException("找不到更新器，安装包可能不完整，请重新下载启动器。");
             var target = AppContext.BaseDirectory;
             var progress = new Progress<UpdateProgress>(report =>
             {
@@ -267,9 +261,14 @@ public sealed partial class MainViewModel : ObservableObject
         await CheckUpdateAsync();
     }
 
-    /// <summary>更新器位置：安装目录下的 updater\mclupd.exe，其次和主程序同级。</summary>
+    /// <summary>单文件版从内嵌资源提取更新器；普通构建继续查找安装目录中的更新器。</summary>
     private static string? FindUpdater()
     {
+        // 单文件版优先使用随主程序发布的更新器，避免旧目录残留抢先被使用。
+        using var embedded = typeof(MainViewModel).Assembly.GetManifestResourceStream("Launcher.Updater.mclupd.exe");
+        if (embedded is not null)
+            return Launcher.Infrastructure.Update.EmbeddedUpdater.Extract(embedded, AppPaths.CacheDirectory);
+
         var baseDirectory = AppContext.BaseDirectory;
         foreach (var candidate in new[]
                  {

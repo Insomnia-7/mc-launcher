@@ -60,6 +60,14 @@ dotnet src/Launcher.App/bin/Release/net10.0-windows/MCLauncher.dll
 可双击 `run-app.cmd` 启动已构建的程序，或通过 `run.cmd` 在首次运行时构建。脚本优先使用 `DOTNET_ROOT`，否则使用 PATH 中的 .NET SDK。
 本机配置可写入被 Git 忽略的 `launcher.local.cmd`，用 `set "变量=值"` 指定上述环境变量；该文件不会随源码发布。
 
+## 单文件开发包
+
+在仓库根目录运行 `pwsh -File scripts/publish-launcher.ps1`，会先发布独立更新器，再内嵌到 `dist/portable/MCLauncher.exe`。发布目录必须为空，避免旧文件混入。
+
+该包需要 .NET 10 Desktop Runtime；一个 EXE 指分发形态，运行时仍会保存设置、日志和更新备份。更新器只在需要更新时提取到数据目录缓存，按内容哈希校验与复用。单文件版优先使用内嵌更新器；普通源码构建继续使用外置更新器。
+
+GitHub 发布流程已改为此布局，清单和签名保持独立资产。尚未创建新的公开 Release。验证与迁移限制见 [单文件发布说明](docs/single-file-release.md)。
+
 ## 检查
 
 ```powershell

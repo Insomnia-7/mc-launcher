@@ -18,6 +18,14 @@ dotnet build mc-launcher/MinecraftLauncher.sln -c Release -m:1
 dotnet mc-launcher/src/Launcher.App/bin/Release/net10.0-windows/MCLauncher.dll
 ```
 
+本地生成单 EXE 开发包：
+
+```powershell
+pwsh -File scripts/publish-launcher.ps1
+```
+
+产物位于 `mc-launcher/dist/portable/MCLauncher.exe`，需要 .NET 10 Desktop Runtime，内嵌独立更新器。源代码构建仍支持原多文件布局。详情见 [单文件发布说明](mc-launcher/docs/single-file-release.md)。
+
 完整运行配置、资源来源权限说明、检查命令和开发记录见 **[启动器 README](mc-launcher/README.md)**。
 
 本项目与 Mojang、Microsoft 没有关联，亦非官方产品。Minecraft 与第三方资源遵循各自的许可。

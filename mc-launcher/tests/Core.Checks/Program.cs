@@ -1790,6 +1790,7 @@ await FollowupChecks.RunAsync(Check);
 await ResourceBrowserChecks.RunAsync(Check);
 await NetworkSettingsChecks.RunAsync(Check);
 await UpdateSigningChecks.RunAsync(Check);
+EmbeddedUpdaterChecks.Run(Check);
 
 if (failures.Count == 0)
 {

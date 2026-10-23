@@ -1,231 +1,40 @@
-# 发布与自更新说明（release pipeline）
+# 发布与自更新
 
-现在发布还要求 **update.json.sig 发布者签名**。GitHub `release-signing` 环境应配置 `MCLAUNCHER_UPDATE_SIGNING_KEY` Secret；公钥编入客户端和独立更新器。构建与测试、签名、独立验签全部成功后才上传。密钥备份、首次迁移和轮换限制见 [更新签名说明](../mc-launcher/docs/update-signing.md)。
+正式发布通过 v* 标签触发，或手工选择一个已存在的版本标签。主程序采用框架依赖的 Windows x64 单 EXE，内嵌独立更新器；目标机需要 .NET 10 Desktop Runtime。
 
-这套东西只做一件事：**把一个 tag 变成「客户端点一下就能升级」的 GitHub Release**。
+流水线执行顺序：
 
-```
-push tag v0.3.0
-   └─ .github/workflows/release.yml
-        ├─ dotnet publish mc-launcher/src/Launcher.App        → out/
-        ├─ dotnet publish mc-launcher/tools/Launcher.Updater  → out/updater/（单文件 mclupd.exe）
-        ├─ 检查 out/** 里没有重名文件（Release 资产名是拍平的）
-        ├─ pwsh scripts/make-update-manifest.ps1 -Directory out … → out/update.json
-        ├─ 按更新器的规矩自检 update.json
-        ├─ update-signing.ps1 签名并独立验签 → out/update.json.sig
-        └─ softprops/action-gh-release 上传 out/** 作为 Release 资产
-```
+1. 检出对应标签，构建并运行核心、架构和 WPF 检查。
+2. 发布更新器到 payload/updater；配置了 Authenticode 证书时先签更新器。
+3. 发布主程序，把已签的更新器资源编入 MCLauncher.exe，再可选签主程序。
+4. 校验发布目录仅含主程序，便携 ZIP 放到 dist，避免进入更新文件清单。
+5. 生成 update.json，必须且只能包含 MCLauncher.exe。
+6. 使用发布环境 Secret 为清单签名，再用公钥独立验签。
+7. 上传 MCLauncher.exe、update.json、update.json.sig 和便携 ZIP。
 
-两个发布都用 `-p:DebugType=None -p:DebugSymbols=false`，**不产 pdb**：清单本来就排除调试符号，
-也没必要把它们当 Release 资产传上去。
+release-signing 环境中的 MCLAUNCHER_UPDATE_SIGNING_KEY 为必需签名私钥。可选的 CODE_SIGNING_PFX_BASE64、CODE_SIGNING_PFX_PASSWORD 用于 Windows 可执行文件签名，只在各自的签名步骤注入。清单签名与 Windows 可执行文件签名是不同用途。
 
-更新器必须是**单文件发布**（`-r win-x64 --self-contained false -p:PublishSingleFile=true`）：
-普通的框架依赖发布会把 `Launcher.Application.dll` / `Launcher.Domain.dll` 再复制一份到 `out/updater/`，
-而 GitHub Release 的资产名是拍平的，同名资产上传会 422 撞车。单文件后 `out/updater/` 里只有一个
-`mclupd.exe`（~450 KB，依赖机器上的 .NET 10 运行时，和主程序一样是框架依赖）。
-
-产出的 `update.json` 就是 `mclupd` 和客户端自更新流程唯一认的清单，形状与
-`Launcher.Application.Update.UpdateManifestParser` 严格对齐，**不要手工改字段名**：
-
-```json
-{
-  "version": "0.3.0",
-  "notes": "更新说明或 null",
-  "publishedAt": "2026-10-23T10:00:00+08:00",
-  "files": [
-    { "path": "MCLauncher.dll", "url": "https://…/MCLauncher.dll", "sha256": "<64 位小写 hex>", "size": 12345 }
-  ]
-}
-```
-
-- `path`：相对启动器安装目录，`/` 分隔。不允许 `..`、不允许绝对路径、不允许出现冒号 —— 更新器见到就整批拒收。
-- `url`：可以是 http(s)，也可以是**相对清单所在目录**的路径（本地目录 / U 盘更新靠这个）。
-- `sha256`：小写 64 位；`size`：字节数。
-
-## 三步用法
-
-### 1. 发版：push 一个 tag
+本地构建单文件开发包：
 
 ```powershell
-# 版本号自己定，tag 必须以 v 开头（工作流只认 v*）
-git tag v0.3.0
-git push origin v0.3.0
+pwsh -File scripts/publish-launcher.ps1
 ```
 
-工作流会自己跑完发布。产物在 `Releases` 页面上：一堆 `*.dll` / `MCLauncher.exe` / `mclupd.exe` / `update.json`。
+输出目录默认 mc-launcher/dist/portable，必须为空；可以指定 -OutputDirectory 与 -Version。开发包不会自动发布到 GitHub。
 
-> 想手工重跑：Actions → Release → Run workflow，`tag` 填**已经存在**的 tag（例如 `v0.3.0`），
-> `notes` 可留空。手工触发不会替你创建 tag。
+更新清单生成工具仍为 make-update-manifest.ps1，支持 Directory、Version、Notes、BaseUrl、OutFile、PublishedAt 和 FlattenAssetUrls。GitHub Release 地址必须使用 FlattenAssetUrls；签名文件、PDB、日志及备份目录不会进入清单。生成清单后使用 update-signing.ps1 签名，不能再改动清单字节。
 
-### 2. 本地出清单（不经过 CI）
+更多说明：
+
+- [单文件产物、迁移和验证](../mc-launcher/docs/single-file-release.md)
+- [签名密钥与轮换](../mc-launcher/docs/update-signing.md)
+
+## 便携 ZIP 与 winget
+
+流水线将单 EXE 打包到 dist/MCLauncher-<版本>-win-x64.zip。winget 清单应使用实际发布 ZIP 的字节计算哈希，不要拿另行重打的 ZIP 代替。
 
 ```powershell
-# 先把发布目录准备好，例如 dotnet publish … -o D:\tmp\out
-pwsh -File scripts/make-update-manifest.ps1 `
-    -Directory D:\tmp\out `
-    -Version 0.3.0 `
-    -Notes "首个测试版" `
-    -OutFile D:\tmp\out\update.json
+pwsh -File scripts/make-winget-manifest.ps1 -ZipPath dist/MCLauncher-0.1.2-win-x64.zip -Version 0.1.2
 ```
 
-参数：
-
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `-Directory` | 是 | 已发布目录，递归收录 |
-| `-Version` | 是 | 版本号，`0.3.0` / `v0.3.0` 都行；空则报错 exit 1 |
-| `-Notes` | 否 | 更新说明，不填写 `null` |
-| `-BaseUrl` | 否 | 下载基地址，例如 `https://example.com/dl`；给了就拼绝对 url，不给写相对路径 |
-| `-OutFile` | 否 | 默认 `<Directory>/update.json` |
-| `-PublishedAt` | 否 | 固定发布时间，默认当前时间；需要「两次跑出字节一致的 JSON」时用它 |
-| `-FlattenAssetUrls` | 否 | 只在配 `-BaseUrl` 时用：url 用文件名而不是相对路径（GitHub Release 资产名是拍平的，CI 必须带） |
-
-行为细节：
-
-- **排除**：`*.pdb`、任意 `update.json`、`.backup/` 目录下的所有文件、`*.log`，以及 `-OutFile` 自身。
-- **排序**：按 `path` 的 Ordinal 升序，跨机器、跨语言环境一致。
-- **输出**：UTF-8 无 BOM、2 空格缩进、LF 换行；同一份输入 + 同一个 `-PublishedAt` ⇒ 字节一致的 JSON。
-- **报错**：目录不存在 / 是文件而不是目录 / 目录里没有可收录的文件 / `-Version` 为空 / `-BaseUrl` 不是 http(s) / `-PublishedAt` 非法 —— 全部一行中文说明 + **exit 1**，不抛栈。
-- 脚本是 UTF-8 **带 BOM** 保存的，`pwsh` 7 和 Windows PowerShell 5.1 都能正确读中文。
-
-### 3. 客户端指向清单
-
-两种方式，环境变量优先：
-
-```powershell
-# 方式 A：环境变量（临时/调试首选）
-$env:MCLAUNCHER_UPDATE_URL = "https://github.com/<owner>/<repo>/releases/latest/download/update.json"
-```
-
-```jsonc
-// 方式 B：%APPDATA%\MCLauncher\settings.json
-{
-  "updateUrl": "https://github.com/<owner>/<repo>/releases/latest/download/update.json"
-}
-```
-
-`releases/latest/download/update.json` 永远指向最新一次 Release 的清单，客户端不用跟着版本改地址。
-
-本地目录也能当更新源（离线/内网/U 盘）：
-
-```powershell
-$env:MCLAUNCHER_UPDATE_URL = "D:\share\mc-launcher\"   # 目录 → 自动找里面的 update.json
-```
-
-## 更新器（mclupd）会怎么处理这份清单
-
-1. **先验签，再碰任何文件**：staging 里缺 `update.json` / `update.json.sig`、签名无效或清单被改过 → **整批不动，exit 1**。
-2. **全量校验 staging**：清单里任何一个文件缺失、大小不符、sha256 不符 → **整批不动，exit 2**。
-   半套文件比旧版更糟，所以这里是「一个不对就全退」。
-3. **备份**：把要被替换的文件复制到 `<启动器目录>\.backup\<yyyyMMdd-HHmmss>\`（顺带写 `updater.log`）。
-4. **替换**：目标文件被占用时重试 5 轮（间隔递增），仍失败 → 已替换的回滚并 **exit 3**。
-5. **清理上游已移除的文件**：更新器在目标目录维护 `installed-files.json`（上一版装过哪些文件）。
-   新版清单里没有的条目会被**移进本次的 `.backup/<时间戳>/`** 再删除（可手工恢复），
-   日志里是 `移除旧文件 <路径>`；账本里没记过的文件（用户自己放进去的）一律不碰。
-   回滚同样覆盖这些移除动作：任何一步失败，被移走的旧文件会被搬回原位。
-6. **重启**：`--restart` 指定的程序（一般是 `MCLauncher.exe`）。
-
-| 退出码 | 含义 |
-| --- | --- |
-| 0 | 成功 |
-| 1 | 参数不对 / 未预期异常 / 暂存清单或签名缺失、验签失败（整批未动） |
-| 2 | 缺文件、大小不符、sha256 不符（整批未动） |
-| 3 | 替换失败（文件被占用等，已替换的回滚） |
-| 4 | 等主进程退出超时 |
-
-客户端侧同理：`mcl update check` 在验签失败时打印一行中文原因并 **exit 3**（「已是最新」才是 exit 0），
-发布自检脚本可以只看退出码，不会把一次验证失败读成「无需更新」。
-
-## GitHub Release 的坑：资产名会被拍平
-
-GitHub Release **不支持目录结构**：`out/updater/mclupd.exe` 上传后资产名是 `mclupd.exe`。
-所以 CI 里生成清单时带了 `-FlattenAssetUrls`，`url` 取文件名而不是 `updater/mclupd.exe`；
-`path` 仍然是 `updater/mclupd.exe`（客户端解压/替换要认这个路径）。
-
-拍平还有第二个后果：**`out/**` 里不能有两个同名文件**，否则两个资产互相覆盖、或者上传直接 422。
-更新器如果按多文件发布，`out/updater/` 里就会再出现一份 `Launcher.Application.dll` / `Launcher.Domain.dll`，
-正好和 `out/` 根上的重名 —— 这就是更新器必须单文件发布的原因。workflow 里另外有一步
-「检查资产名唯一」，真出现重名会当场 fail，不会传到一半才炸。
-
-换成保留目录的静态托管（nginx / S3 / 内网目录）时**别带** `-FlattenAssetUrls`，否则子目录文件会 404。
-
-另外 GitHub 会清洗资产名里的特殊字符（空格、中文等）。发布目录里尽量别放这类文件名，本项目产物都是 ASCII，没问题。
-
-## 本地验证（改脚本后至少跑一遍）
-
-```powershell
-# 造假目录
-New-Item -ItemType Directory -Force D:\tmp-ci-manifest\out\sub, D:\tmp-ci-manifest\out\中文目录 | Out-Null
-Set-Content D:\tmp-ci-manifest\out\a.txt 'alpha'
-Set-Content D:\tmp-ci-manifest\out\sub\b.dll 'beta'
-Set-Content 'D:\tmp-ci-manifest\out\中文目录\说明 文档.txt' '中文'
-Set-Content D:\tmp-ci-manifest\out\x.pdb 'debug'   # 应被排除
-
-pwsh -File scripts/make-update-manifest.ps1 `
-    -Directory D:\tmp-ci-manifest\out -Version 0.3.0 -Notes "测试" `
-    -BaseUrl https://example.com/dl -OutFile D:\tmp-ci-manifest\out\update.json
-
-# 回读检查
-$m = Get-Content D:\tmp-ci-manifest\out\update.json -Raw | ConvertFrom-Json
-$m.files.Count                      # 期望 3（pdb 被排除）
-$m.files[2].url                      # 期望中文目录/说明 文档.txt 的百分号编码
-Get-FileHash D:\tmp-ci-manifest\out\a.txt -Algorithm SHA256   # 与 files[0].sha256 比
-```
-
-想把更新器按 CI 的方式（单文件）发布出来手工试：
-
-```powershell
-dotnet publish mc-launcher/tools/Launcher.Updater -c Release `
-    -o D:\tmp-ci-manifest\out\updater -r win-x64 --self-contained false -p:PublishSingleFile=true
-# 然后用本地目录当更新源，验证清单能被真正应用：
-mclupd --staging <有 update.json 的目录> --target <启动器目录>
-```
-
-## 已知限制
-
-- 这套 workflow 已在 GitHub 真跑过两次（`v0.1.0`、`v0.1.1`，13 步全绿，19 个资产、18 个文件的 sha256 逐个核对通过）；
-  本机另外把 6 个 `run` 步骤按顺序复刻跑过一遍。换 runner 镜像或升级 action 版本时仍要留意日志。
-- 发布签名是**从签名版本起生效**的：更早的客户端不认识 `update.json.sig`，首次迁移必须让用户从发布页完整装一次新版本。
-- Release 资产名拍平是 GitHub 的行为，不是这套脚本的选择；换托管方式时记得去掉 `-FlattenAssetUrls`。
-- 清单不含 `entry` 字段：重启目标由客户端传 `--restart`（默认 `MCLauncher.exe`）决定。
-- 更新器会按 `installed-files.json` 账本删除「上游已移除」的文件（先移进本次 `.backup/<时间戳>/` 再删，可回滚）；
-  账本只记启动器自己装过的路径，用户自己放进去的文件永远不动。
-- CI 出的 `mclupd.exe` 是单文件包，本地 `dotnet build` 出来的是多文件（`mclupd.exe` + 若干 dll）。
-  两者都能用；更新后旧的 `updater\*.dll` 会被账本清理掉，单文件包也不会去读它们。
-
-## 代码签名（可选，Authenticode）
-
-没配 secret 时 workflow 会整步跳过，`MCLauncher.exe` 保持未签名 —— 用户那边会看到 SmartScreen 的「未知发布者」。
-
-配了之后 CI 会签 `out/MCLauncher.exe` 与 `out/updater/mclupd.exe`，位置在「打包便携版 zip」**之前**、
-「生成 update.json」**之前**。顺序不能改：清单里的 sha256 必须覆盖**签名后**的字节，否则客户端校验必然失败。
-
-需要的 repository secret / variable：
-
-| 名字 | 类型 | 内容 |
-| --- | --- | --- |
-| `CODE_SIGNING_PFX_BASE64` | secret | `.pfx` 的 base64（`[Convert]::ToBase64String([IO.File]::ReadAllBytes('cert.pfx'))`） |
-| `CODE_SIGNING_PFX_PASSWORD` | secret | pfx 密码 |
-| `CODE_SIGNING_TIMESTAMP_URL` | variable | 可选，默认 `http://timestamp.digicert.com` |
-
-签名用的是 runner 上 Windows SDK 自带的 `signtool`（脚本会自动找 `Windows Kits\10\bin\*\x64\signtool.exe`）。
-
-## 便携版 zip 与 winget
-
-workflow 现在会额外产出 `dist/MCLauncher-<版本>-win-x64.zip`（整个 `out/` 打成一个包，含 `updater/`），
-作为 Release 资产上传。它**故意放在 `dist/` 而不是 `out/`**：`out/` 是更新清单的扫描目录，
-把整包 zip 放进去会让更新器每次更新都重下整个包。
-
-给 winget 提 PR 时用这个 zip：
-
-```powershell
-pwsh -NoProfile -File scripts/make-winget-manifest.ps1 `
-    -ZipPath dist/MCLauncher-0.1.2-win-x64.zip -Version 0.1.2
-```
-
-脚本按 winget-pkgs 的目录布局写到 `dist/winget/i/Insomnia-7/MCLauncher/<版本>/`，生成 version / installer / locale 三个 yaml
-（`InstallerType: zip` + `NestedInstallerType: portable`，命令别名 `mclauncher`），把那个目录整体拷进
-`microsoft/winget-pkgs` 的 `manifests/i/Insomnia-7/MCLauncher/<版本>/` 就能提 PR。
-
-**必须用发布产物（或从 Release 下载回来的 zip）生成**：`InstallerSha256` 要和线上那个文件逐字节一致，
-本地随手打的 zip 哈希不同，PR 的自动校验会失败。
+生成器和官方 schema 验证说明保留在 [winget 交付目录](../mc-launcher/packaging/winget/README.md)。本轮不向 winget 社区提交 PR。

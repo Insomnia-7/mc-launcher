@@ -85,6 +85,25 @@ internal static partial class UiCheck
         secondVm.Download.RefreshTarget();
         Check("下载资源使用所选实例目录而非共用版本 ID", secondVm.Download.TargetText.Contains("setup-test-2"));
         Browser(secondVm);
+        using (var payload = typeof(MainViewModel).Assembly.GetManifestResourceStream("Launcher.Updater.mclupd.exe"))
+        {
+            // App.Checks 的输出目录不带发布用更新器；放入只用于定位的替身，不执行它。
+            var fixture = Path.Combine(AppContext.BaseDirectory,"updater","mclupd.exe");
+            var created = !File.Exists(fixture);
+            if (created) { Directory.CreateDirectory(Path.GetDirectoryName(fixture)!); File.WriteAllText(fixture,"fixture"); }
+            try
+            {
+                var located = (string?)typeof(MainViewModel).GetMethod("FindUpdater", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null,null);
+                if (payload is null) Check("多文件构建仍可找到外置更新器", located == fixture);
+                else
+                {
+                    using var stream = File.OpenRead(located!);
+                    Check("内嵌更新器优先于外置旧版本且哈希相同", located!.StartsWith(AppPaths.CacheDirectory) &&
+                        System.Security.Cryptography.SHA256.HashData(stream).SequenceEqual(System.Security.Cryptography.SHA256.HashData(payload)));
+                }
+            }
+            finally { if (created) File.Delete(fixture); }
+        }
         Accounts();
         Network();
         var updateVm = (MainViewModel)Resolve(typeof(MainViewModel))!;

@@ -1,11 +1,13 @@
 # 单文件发布：实测、取舍与推荐方案
 
+> 后续状态：方案 B 已接入源码、正式发布流程及本地脚本；当前入口和新一轮验证见 [落地记录](../../docs/single-file-release.md)。以下保留为此前的方案实验，drafts 中的补丁不再作为当前操作步骤。
+
 > 目的：回答「主程序能不能只发一个 exe」。
 > 结论：**能**，而且自更新链路在单文件下照样工作（已端到端实测）。
 > 但「单文件」有两种完全不同的东西，体积差 50 倍，选错方向比不做更糟。
 >
 > 本文所有数字都来自本机实测（Windows 11 / .NET SDK 10.0.402 / win-x64 / Release），
-> 原始工程是仓库 `HEAD 1bdf8e9` 的隔离副本，产物在 `D:\work\_singlefile-test\out\`。
+> 原始工程是仓库 `HEAD 1bdf8e9` 的隔离副本，产物在 `<test-root>\out\`。
 > 复现脚本见 `scripts/`，可直接套用的改动见 `drafts/`。
 
 ---
@@ -138,7 +140,7 @@ B/C/E 的数字都已经是关掉 pdb 的。
 而且从多文件迁到单文件时，旧目录里的那 17 个 dll/pdb 会被更新器的「上游已移除文件」清理
 自动搬进 `.backup\<stamp>\`（见 §12.2），不需要人工清目录。
 
-实测环境：`D:\work\_singlefile-test\e2e\`，旧版 0.1.2（126.94 MB 自包含单文件）→ 新版 0.1.3，
+实测环境：`<test-root>\e2e\`，旧版 0.1.2（126.94 MB 自包含单文件）→ 新版 0.1.3，
 清单用**自签测试密钥**签（`rsa-pss-sha256`），更新器是 36.04 MB 自包含压缩单文件。
 
 ### 阶段 1：独立 `mclupd.exe`（等价于现状多文件布局的链路，用在单文件 exe 上）
@@ -312,12 +314,12 @@ CI 产物大 25~50 倍、winget 校验与 CDN 缓存都更重。现有用户并�
 
 ```powershell
 # 1) 隔离副本（仓库里的 MCLauncher.exe 会锁 bin，不能就地发布）
-robocopy <repo>\mc-launcher D:\work\_singlefile-test\src /E /XD bin obj .git /XF *.user
+robocopy <repo>\mc-launcher <test-root>\src /E /XD bin obj .git /XF *.user
 
 # 2) 打补丁（drafts/src-patch.md 里的三处 csproj + 一处 MainViewModel）
 
 # 3) 构建矩阵（A~E 全跑一遍，约 1 分钟；产物落 <WorkDir>\out\<flavor>\）
-.\scripts\build-single-file.ps1 -Flavor all -WorkDir D:\work\_singlefile-test -Dotnet D:\dotnet\dotnet.exe
+.\scripts\build-single-file.ps1 -Flavor all -WorkDir <test-root> -Dotnet <dotnet-sdk>\dotnet.exe
 
 # 4) 首帧测量
 .\scripts\measure-launch.ps1 -Exe <某个产物>\MCLauncher.exe -Runs 5
@@ -327,7 +329,7 @@ robocopy <repo>\mc-launcher D:\work\_singlefile-test\src /E /XD bin obj .git /XF
     -Updater <mclupd.exe> -ProbeEmbed <probe-embed.exe> -WorkDir <临时目录> -KeysDir <keys 目录>
 ```
 
-> 脚本的 `-Dotnet` 默认是 `dotnet`；本机 PATH 里是 6.x，必须显式给 `D:\dotnet\dotnet.exe`，
+> 脚本的 `-Dotnet` 默认是 `dotnet`；本机 PATH 里是 6.x，必须显式给 `<dotnet-sdk>\dotnet.exe`，
 > 否则报 `NETSDK1045`。
 
 自更新测试需要一个 `rsa-pss-sha256` 签名密钥对，且公钥要写进隔离副本的 `UpdateTrustKeys.json`

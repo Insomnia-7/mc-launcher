@@ -8,7 +8,7 @@
   （exe 162,304 B；实际逻辑在 `MCLauncher.dll` 212,992 B；构建于 2026-10-24 01:58:14；
   文件版本 `0.1.1.0`，产品版本 `0.1.2+c2078bd4368a0d0addce78764fb071152e686d3c`）
 - **这是哪一版**：任务基线 HEAD `639bfa2` 对应的 Release 产物 —— 已含 JVM preset、启动前预检、编码 `-D` 参数、MemoryMb 自适应、natives 缓存/复用
-- **数据目录**：`MCLAUNCHER_HOME=D:\MCLauncherData`（固定数据目录，避免首启初始化差异）
+- **数据目录**：`MCLAUNCHER_HOME=<launcher-data>`（固定数据目录，避免首启初始化差异）
 
 ## 机器
 

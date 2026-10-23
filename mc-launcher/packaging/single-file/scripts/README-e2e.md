@@ -10,11 +10,11 @@
 所以先复制一份到仓库外：
 
 ```powershell
-$work = 'D:\work\_singlefile-test'      # 换成你自己的临时目录
-robocopy D:\work\deepseek-harness\default-workspace\mc-launcher $work\src /E /XD bin obj .git /XF *.user
+$work = '<test-root>'      # 换成你自己的临时目录
+robocopy <repo>\mc-launcher $work\src /E /XD bin obj .git /XF *.user
 ```
 
-> `dotnet` 的路径：本机 SDK 10 在 `D:\dotnet\dotnet.exe`，PATH 里的 `dotnet` 是 6.x，
+> `dotnet` 的路径：本机 SDK 10 在 `<dotnet-sdk>\dotnet.exe`，PATH 里的 `dotnet` 是 6.x，
 > 直接跑会 `NETSDK1045`。本目录的脚本都接受 `-Dotnet` 参数覆盖。
 
 ## 1. 打补丁
@@ -29,7 +29,7 @@ robocopy D:\work\deepseek-harness\default-workspace\mc-launcher $work\src /E /XD
 
 ```powershell
 cd mc-launcher\packaging\single-file\scripts
-.\build-single-file.ps1 -Flavor all -WorkDir $work -Version 0.1.2 -Dotnet D:\dotnet\dotnet.exe
+.\build-single-file.ps1 -Flavor all -WorkDir $work -Version 0.1.2 -Dotnet <dotnet-sdk>\dotnet.exe
 ```
 
 预期（本机实测，热构建）：
@@ -72,9 +72,9 @@ cd mc-launcher\packaging\single-file\scripts
 
 ```powershell
 # 旧版 0.1.2
-.\build-single-file.ps1 -Flavor sc -WorkDir $work -Version 0.1.2 -Dotnet D:\dotnet\dotnet.exe
+.\build-single-file.ps1 -Flavor sc -WorkDir $work -Version 0.1.2 -Dotnet <dotnet-sdk>\dotnet.exe
 # 新版 0.1.3（同一套源码，只改版本号）
-.\build-single-file.ps1 -Flavor sc -WorkDir $work -Version 0.1.3 -Dotnet D:\dotnet\dotnet.exe
+.\build-single-file.ps1 -Flavor sc -WorkDir $work -Version 0.1.3 -Dotnet <dotnet-sdk>\dotnet.exe
 ```
 
 `build-single-file.ps1` 每次都会覆盖 `out\sc`，所以两次之间把产物挪走或改名。
@@ -82,7 +82,7 @@ cd mc-launcher\packaging\single-file\scripts
 ### 4.3 构建 probe-embed（模拟「更新器内嵌在主程序里」）
 
 ```powershell
-D:\dotnet\dotnet.exe publish .\probe-embed\probe-embed.csproj -c Release `
+<dotnet-sdk>\dotnet.exe publish .\probe-embed\probe-embed.csproj -c Release `
   -p:UpdaterPayload=$work\payload\updater-sc-compressed\mclupd.exe `
   -o $work\out\probe-embed
 ```
@@ -122,4 +122,4 @@ D:\dotnet\dotnet.exe publish .\probe-embed\probe-embed.csproj -c Release `
 | `out\` 里除了 exe 还有 4 个 pdb | 没关调试符号 | 加 `-p:DebugType=none -p:DebugSymbols=false` |
 | 更新器报「签名无效」/ 拒绝更新 | 信任文件没重新构建进主程序，或 `update.json` 没签 | 重建主程序；`sign-manifest.ps1 -Sign` |
 | 替换时 `UnauthorizedAccessException` | 主程序没退出（`--wait-pid` 没生效/进程没退） | 确认 `--wait-pid <pid>` 传的是真 PID |
-| `dotnet` 报 `NETSDK1045` | 用到了 PATH 里的 6.x | 用 `-Dotnet D:\dotnet\dotnet.exe` |
+| `dotnet` 报 `NETSDK1045` | 用到了 PATH 里的 6.x | 用 `-Dotnet <dotnet-sdk>\dotnet.exe` |

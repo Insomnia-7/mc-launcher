@@ -488,9 +488,7 @@ internal sealed record MachineInfo(
     string OsDescription,
     string OsVersion,
     string Architecture,
-    string FrameworkDescription,
-    string HostName,
-    string UserName)
+    string FrameworkDescription)
 {
     public static MachineInfo Capture()
     {
@@ -503,9 +501,7 @@ internal sealed record MachineInfo(
             OsDescription: RuntimeInformation.OSDescription,
             OsVersion: Environment.OSVersion.VersionString,
             Architecture: RuntimeInformation.OSArchitecture.ToString(),
-            FrameworkDescription: RuntimeInformation.FrameworkDescription,
-            HostName: Environment.MachineName,
-            UserName: Environment.UserName);
+            FrameworkDescription: RuntimeInformation.FrameworkDescription);
     }
 
     private static string ReadCpuName()
@@ -557,7 +553,7 @@ internal sealed record TargetInfo(string Exe, string? FileVersion, string? Produ
         }
 
         return new TargetInfo(
-            exe,
+            Path.GetFileName(exe),
             string.IsNullOrWhiteSpace(version?.FileVersion) ? null : version!.FileVersion,
             string.IsNullOrWhiteSpace(version?.ProductVersion) ? null : version!.ProductVersion,
             info.Length,

@@ -8,12 +8,10 @@
     "osDescription": "Microsoft Windows 10.0.26300",
     "osVersion": "Microsoft Windows NT 10.0.26300.0",
     "architecture": "X64",
-    "frameworkDescription": ".NET 10.0.13",
-    "hostName": "DESKTOP-5KG677K",
-    "userName": "HBJ"
+    "frameworkDescription": ".NET 10.0.13"
   },
   "target": {
-    "exe": "D:\\work\\deepseek-harness\\default-workspace\\mc-launcher\\src\\Launcher.App\\bin\\Release\\net10.0-windows\\MCLauncher.exe",
+    "exe": "MCLauncher.exe",
     "fileVersion": "0.1.1.0",
     "productVersion": "0.1.2+c2078bd4368a0d0addce78764fb071152e686d3c",
     "sizeBytes": 162304,

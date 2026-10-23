@@ -85,40 +85,6 @@ jobs:
           dotnet mc-launcher/tests/App.Checks/bin/Release/net10.0-windows/App.Checks.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      # 主程序：MCLauncher.exe + dll 等，直接落到 out/
-      # -p:Version 让程序里的版本号和 tag 一致，不依赖 csproj 里写死的 0.1.0
-      # 不产 pdb：清单默认排除调试符号，也不该把它们当 Release 资产传上去
-      - name: 发布主程序（WPF）
-        shell: pwsh
-        run: |
-          dotnet publish mc-launcher/src/Launcher.App `
-            -c Release `
-            -o out `
-            -p:Version=${{ steps.version.outputs.version }} `
-            -p:ContinuousIntegrationBuild=true `
-            -p:DebugType=None `
-            -p:DebugSymbols=false
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      # 更新器单独发布到 out/updater/：主程序按 updater\mclupd.exe 找它。
-      # 必须打成单文件（win-x64、框架依赖）：多文件发布会把 Launcher.Application.dll /
-      # Launcher.Domain.dll 再复制一份到 out/updater/，而 GitHub Release 的资产名是拍平的，
-      # 同名资产上传会 422 撞车。
-      - name: 发布更新器
-        shell: pwsh
-        run: |
-          dotnet publish mc-launcher/tools/Launcher.Updater `
-            -c Release `
-            -o out/updater `
-            -r win-x64 `
-            --self-contained false `
-            -p:PublishSingleFile=true `
-            -p:Version=${{ steps.version.outputs.version }} `
-            -p:ContinuousIntegrationBuild=true `
-            -p:DebugType=None `
-            -p:DebugSymbols=false
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
       # 先判断这次有没有证书。判断结果落成 output，签名步骤靠它开关；
       # 没证书时打一条 warning，免得「静默跳过」导致发布完才发现没签。
       - name: 检测代码签名凭据
@@ -135,10 +101,22 @@ jobs:
             Write-Host '检测到代码签名证书，本次发布会签名'
           }
 
-      # 代码签名（可选）：配了证书才执行。
-      # 顺序很关键——必须在这里签完 exe，再去生成 update.json，否则清单里的 sha256
-      # 算的是没签名的文件，客户端下载后校验必然失败。
-      - name: 代码签名（可选）
+      - name: 发布更新器
+        shell: pwsh
+        run: |
+          dotnet publish mc-launcher/tools/Launcher.Updater `
+            -c Release `
+            -o payload/updater `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:ContinuousIntegrationBuild=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: 签名内嵌更新器（可选）
         if: steps.signing.outputs.enabled == 'true'
         shell: pwsh
         env:
@@ -146,39 +124,43 @@ jobs:
           PFX_PASSWORD: ${{ secrets.CODE_SIGNING_PFX_PASSWORD }}
           TIMESTAMP_URL: ${{ vars.CODE_SIGNING_TIMESTAMP_URL }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $pfx = Join-Path $env:RUNNER_TEMP 'code-signing.pfx'
-          try {
-            # secret 编辑器常把长 base64 折行，先去掉所有空白再解码
-            $b64 = $env:PFX_BASE64 -replace '\s', ''
-            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($b64))
+          pwsh -NoProfile -File scripts/sign-windows-executable.ps1 -Path payload/updater/mclupd.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-            $stamp = if ([string]::IsNullOrWhiteSpace($env:TIMESTAMP_URL)) {
-              'https://timestamp.digicert.com'
-            } else { $env:TIMESTAMP_URL }
+      - name: 发布主程序（WPF）
+        shell: pwsh
+        run: |
+          dotnet publish mc-launcher/src/Launcher.App `
+            -c Release `
+            -o out `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            "-p:UpdaterPayload=$((Resolve-Path payload/updater/mclupd.exe).Path)" `
+            "-p:FileVersion=$(('${{ steps.version.outputs.version }}').Split('-')[0]).0" `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:ContinuousIntegrationBuild=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-            # signtool 在 Windows SDK 里；按 [version] 排序，字典序会把 10.0.9999 排到 10.0.10000 前面
-            $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
-              Sort-Object { try { [version](Split-Path (Split-Path (Split-Path $_.FullName -Parent) -Parent) -Leaf) } catch { [version]'0.0' } } -Descending |
-              Select-Object -First 1 -ExpandProperty FullName
-            if (-not $signtool) { $signtool = 'signtool' }
+      - name: 签名主程序（可选）
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          PFX_BASE64: ${{ secrets.CODE_SIGNING_PFX_BASE64 }}
+          PFX_PASSWORD: ${{ secrets.CODE_SIGNING_PFX_PASSWORD }}
+          TIMESTAMP_URL: ${{ vars.CODE_SIGNING_TIMESTAMP_URL }}
+        run: |
+          pwsh -NoProfile -File scripts/sign-windows-executable.ps1 -Path out/MCLauncher.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-            $targets = @('out/MCLauncher.exe', 'out/updater/mclupd.exe') |
-              Where-Object { Test-Path $_ }
-            if (-not $targets) { throw '没找到要签名的 exe' }
-
-            foreach ($exe in $targets) {
-              & $signtool sign /fd SHA256 /tr $stamp /td SHA256 /f $pfx /p $env:PFX_PASSWORD $exe
-              if ($LASTEXITCODE -ne 0) { throw "签名失败：$exe" }
-              & $signtool verify /pa /v $exe
-              if ($LASTEXITCODE -ne 0) { throw "签名校验失败：$exe" }
-              Write-Host "已签名并验证：$exe"
-            }
-          }
-          finally {
-            # 私钥别留在 runner 上
-            if (Test-Path $pfx) { Remove-Item $pfx -Force -ErrorAction SilentlyContinue }
-          }
+      - name: 验证单文件发布布局
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem out -Recurse -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'MCLauncher.exe') { throw '发布目录必须只有 MCLauncher.exe' }
 
       # Release 资产是拍平的：一旦 out/** 里出现两个同名文件，上传就会互相覆盖/报 422。
       # 这里提前拦住，别等传到一半才炸。
@@ -264,8 +246,8 @@ jobs:
             if ($file.size -le 0) { throw "size 不正常：$($file.path) = $($file.size)" }
           }
 
-          if (-not ($files | Where-Object { $_.path -eq 'updater/mclupd.exe' })) {
-            throw 'update.json 里没有 updater/mclupd.exe，自更新会缺更新器'
+          if ($files.Count -ne 1 -or $files[0].path -ne 'MCLauncher.exe') {
+            throw '单文件更新清单必须且只能包含 MCLauncher.exe'
           }
 
           Write-Host "清单 OK：$($files.Count) 个文件，版本 $($manifest.version)"
