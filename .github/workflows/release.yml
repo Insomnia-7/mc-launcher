@@ -1,0 +1,182 @@
+name: Release
+
+# 触发：push 一个 v* tag（例如 v0.3.0），或者手工重跑一个「已经存在」的 tag。
+# 流水线：发布主程序（WPF）+ 更新器 → 生成 update.json → 传成 GitHub Release 资产。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（必须已经存在，例如 v0.3.0）'
+        required: true
+        type: string
+      notes:
+        description: '更新说明，写进 update.json 的 notes；留空则用 MCLauncher <version>'
+        required: false
+        type: string
+
+# 传 Release 必须：contents: write
+permissions:
+  contents: write
+
+# 同一个 tag 别并发发两次
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: 取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 解析 tag 与版本号
+        id: version
+        shell: pwsh
+        env:
+          RAW_TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "$env:RAW_TAG".Trim()
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            Write-Host '::error::没有可发布的 tag（tag 触发或 workflow_dispatch 的 tag 输入都为空）'
+            exit 1
+          }
+          $version = $tag
+          if ($version -match '^[vV]') { $version = $version.Substring(1) }
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            Write-Host '::error::从 tag 里解析出的版本号为空'
+            exit 1
+          }
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version" -Encoding utf8
+          Write-Host "tag=$tag version=$version"
+
+      # 主程序：MCLauncher.exe + dll 等，直接落到 out/
+      # -p:Version 让程序里的版本号和 tag 一致，不依赖 csproj 里写死的 0.1.0
+      # 不产 pdb：清单默认排除调试符号，也不该把它们当 Release 资产传上去
+      - name: 发布主程序（WPF）
+        shell: pwsh
+        run: |
+          dotnet publish mc-launcher/src/Launcher.App `
+            -c Release `
+            -o out `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:ContinuousIntegrationBuild=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # 更新器单独发布到 out/updater/：主程序按 updater\mclupd.exe 找它。
+      # 必须打成单文件（win-x64、框架依赖）：多文件发布会把 Launcher.Application.dll /
+      # Launcher.Domain.dll 再复制一份到 out/updater/，而 GitHub Release 的资产名是拍平的，
+      # 同名资产上传会 422 撞车。
+      - name: 发布更新器
+        shell: pwsh
+        run: |
+          dotnet publish mc-launcher/tools/Launcher.Updater `
+            -c Release `
+            -o out/updater `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:ContinuousIntegrationBuild=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Release 资产是拍平的：一旦 out/** 里出现两个同名文件，上传就会互相覆盖/报 422。
+      # 这里提前拦住，别等传到一半才炸。
+      - name: 检查资产名唯一
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $groups = Get-ChildItem out -Recurse -File |
+            Where-Object { $_.Extension -ne '.pdb' -and $_.Name -ne 'update.json' } |
+            Group-Object Name |
+            Where-Object Count -gt 1
+          if ($groups) {
+            foreach ($g in $groups) {
+              $where = ($g.Group | ForEach-Object { $_.FullName }) -join ' / '
+              Write-Host "::error::资产名重复：$($g.Name) ← $where"
+            }
+            exit 1
+          }
+          Write-Host 'out/** 里的文件名互不重复，可以按拍平资产上传'
+
+      # GitHub Release 会把资产名拍平（out/updater/mclupd.exe 变成资产 mclupd.exe），
+      # 所以这里必须带 -FlattenAssetUrls，否则 updater/mclupd.exe 的下载地址会 404。
+      - name: 生成 update.json
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+          RAW_NOTES: ${{ inputs.notes }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $notes = if ([string]::IsNullOrWhiteSpace($env:RAW_NOTES)) { "MCLauncher $($env:VERSION)" } else { $env:RAW_NOTES }
+          $baseUrl = "https://github.com/$($env:REPOSITORY)/releases/download/$($env:TAG)"
+          Write-Host "baseUrl=$baseUrl"
+          pwsh -NoProfile -File scripts/make-update-manifest.ps1 `
+            -Directory out `
+            -Version $env:VERSION `
+            -Notes $notes `
+            -BaseUrl $baseUrl `
+            -FlattenAssetUrls `
+            -OutFile out/update.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # 传上去之前先按更新器的规矩自检一遍，免得发出一份客户端根本吃不了的清单
+      - name: 校验 update.json
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $manifest = Get-Content -LiteralPath out/update.json -Raw -Encoding utf8 | ConvertFrom-Json
+          if ([string]::IsNullOrWhiteSpace($manifest.version)) { throw 'update.json 缺少 version' }
+          $files = @($manifest.files)
+          if ($files.Count -eq 0) { throw 'update.json 里没有任何文件' }
+
+          foreach ($file in $files) {
+            if ($file.path -match '(\.\.|:)' -or $file.path.StartsWith('/') -or $file.path.Contains('\')) {
+              throw "update.json 里的 path 不是安全相对路径：$($file.path)"
+            }
+            if ($file.path -ieq 'update.json') { throw 'update.json 把自己也写进 files 了' }
+            if ($file.path -like '*.pdb' -or $file.path -like '*.log') { throw "不该被收录的文件进了清单：$($file.path)" }
+            if ($file.sha256 -notmatch '^[0-9a-f]{64}$') { throw "sha256 不是 64 位小写 hex：$($file.path)" }
+            if ([string]::IsNullOrWhiteSpace($file.url)) { throw "url 为空：$($file.path)" }
+            if ($file.size -le 0) { throw "size 不正常：$($file.path) = $($file.size)" }
+          }
+
+          if (-not ($files | Where-Object { $_.path -eq 'updater/mclupd.exe' })) {
+            throw 'update.json 里没有 updater/mclupd.exe，自更新会缺更新器'
+          }
+
+          Write-Host "清单 OK：$($files.Count) 个文件，版本 $($manifest.version)"
+          Write-Host "主程序 url 示例：$($files[0].url)"
+
+      - name: 发布到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: MCLauncher ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: out/**

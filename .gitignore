@@ -1,0 +1,23 @@
+# ── 仓库只放 Minecraft 启动器本身与它的发布工具 ──
+# 私人文件（会话导出、网关探测、蓝图、截图、AGENTS 等）一律不入库，本地磁盘保留。
+/*
+!/.gitignore
+!/mc-launcher/
+!/mc-launcher/**
+!/.github/
+!/.github/workflows/
+!/.github/workflows/release.yml
+!/scripts/
+/scripts/*
+!/scripts/make-update-manifest.ps1
+!/scripts/README-release.md
+
+# ── 启动器目录里的构建产物与临时文件也不入库 ──
+mc-launcher/**/bin/
+mc-launcher/**/obj/
+mc-launcher/dist/
+mc-launcher/scratch/
+mc-launcher/.probe-cache/
+mc-launcher/*.log
+mc-launcher/**/*.log
+mc-launcher/*.args.txt

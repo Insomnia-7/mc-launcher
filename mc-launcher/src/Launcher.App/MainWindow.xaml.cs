@@ -1,0 +1,60 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Input;
+using Launcher.App.ViewModels;
+
+namespace Launcher.App;
+
+public partial class MainWindow : Window
+{
+    public MainWindow(MainViewModel viewModel)
+    {
+        InitializeComponent();
+        DataContext = viewModel;
+    }
+
+    /// <summary>点确认气泡外面的遮罩等于取消，和系统对话框的行为一致。</summary>
+    private void OnConfirmBackdropClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel)
+            viewModel.ConfirmCancelCommand.Execute(null);
+    }
+
+    /// <summary>双击版本 = 启动它（和 PCL / HMCL 的手感一致）。</summary>
+    private void OnInstanceListDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel) return;
+        if (viewModel.LaunchCommand.CanExecute(null)) viewModel.LaunchCommand.Execute(null);
+    }
+
+    private void OnWindowDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// 拖进窗口的路由：<c>.jar</c> → 装进当前版本的 mods；目录 → 当 MultiMC / Prism 版本导入；
+    /// 其它压缩包 → 当整合包导入。一次拖多个 .jar 会逐个放进去。
+    /// </summary>
+    private async void OnWindowDrop(object sender, DragEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel) return;
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] { Length: > 0 } paths) return;
+
+        e.Handled = true;
+
+        var jars = paths
+            .Where(path => !Directory.Exists(path)
+                           && Path.GetExtension(path).Equals(".jar", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (jars.Length > 0)
+        {
+            foreach (var jar in jars) await viewModel.DropJarAsync(jar);
+            return;
+        }
+
+        await viewModel.ImportModpackFileAsync(paths[0]);
+    }
+}
