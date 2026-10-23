@@ -24,6 +24,8 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _setupOfflineName = OfflineIdentityFactory.DefaultName;
     [ObservableProperty] private string _setupMemoryText = InstanceSettings.AdaptiveMemoryMb().ToString(CultureInfo.InvariantCulture);
     [ObservableProperty] private string _setupError = string.Empty;
+    /// <summary>上一次安装失败了：界面上给一个「重试安装」，不用重新挑版本。</summary>
+    [ObservableProperty] private bool _canRetrySetup;
     [ObservableProperty] private string _setupStatus = "选择版本后即可安装，Java 会自动准备。";
     [ObservableProperty] private bool _setupLaunchAfterInstall = true;
 
@@ -131,7 +133,8 @@ public sealed partial class MainViewModel
                 if (_library?.OfflineIdentity.Name != SetupOfflineName)
                     throw new InvalidOperationException("无法保存离线身份，请检查数据目录后重试。");
             }
-            SetupStatus = StatusText = $"正在安装 {version.Id}…";
+            CanRetrySetup = false;
+        SetupStatus = StatusText = $"正在安装 {version.Id}…";
             await _setupInstaller.InstallAsync(new(version.Id, memory), GameRoot, AppPaths.DataDirectory,
                 new Progress<FirstRunProgress>(p =>
                 {
@@ -155,7 +158,8 @@ public sealed partial class MainViewModel
         {
             _logger.LogError(ex, "安装向导失败：{Version}", version.Id);
             SetupError = "安装失败：" + ErrorText.Describe(ex);
-            SetupStatus = StatusText = "可检查网络和下载源后重试，或返回主界面。";
+            CanRetrySetup = true;
+        SetupStatus = StatusText = "可点「重试安装」再来一次，或检查网络和下载源后返回主界面。";
         }
         finally
         {

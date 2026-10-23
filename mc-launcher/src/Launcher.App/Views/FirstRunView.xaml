@@ -75,6 +75,9 @@
                     <Button Content="稍后设置" Command="{Binding CloseSetupCommand}" Style="{StaticResource SecondaryButton}" Height="36" Padding="16,0" HorizontalAlignment="Left" />
                     <Button Grid.Column="1" Content="取消安装" Command="{Binding CancelCommand}" Style="{StaticResource SecondaryButton}" Height="36" Padding="16,0"
                             Visibility="{Binding IsSetupBusy, Converter={StaticResource BoolToVis}}" />
+                    <!-- 失败后不用重新挑版本：沿用当前选择再试一次（两者互斥，不会同时出现） -->
+                    <Button Grid.Column="1" Content="重试安装" Command="{Binding InstallSetupCommand}" Style="{StaticResource SecondaryButton}" Height="36" Padding="16,0"
+                            Visibility="{Binding CanRetrySetup, Converter={StaticResource BoolToVis}}" />
                     <Button Grid.Column="3" Content="一键安装" Command="{Binding InstallSetupCommand}" Style="{StaticResource PrimaryButton}"
                             Height="36" MinWidth="112" FontSize="14" />
                 </Grid>

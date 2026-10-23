@@ -55,8 +55,10 @@ internal static partial class UiCheck
         Render(window, 1000, 640, "setup-1000.png");
         Render(window, 820, 560, "setup-820.png");
         State.FailJava = true;
+        Check("安装前不显示重试入口", !vm.CanRetrySetup);
         Pump(vm.InstallSetupCommand.ExecuteAsync(null));
         Check("失败后可编辑并重试", vm.IsSetupOpen && !vm.IsSetupBusy && vm.SetupError.Contains("安装失败") && vm.InstallSetupCommand.CanExecute(null));
+        Check("失败后给出重试入口", vm.CanRetrySetup && vm.SetupStatus.Contains("重试安装"));
         State.FailJava = false;
         State.CancelJava = () => vm.CancelCommand.Execute(null);
         Pump(vm.InstallSetupCommand.ExecuteAsync(null));
