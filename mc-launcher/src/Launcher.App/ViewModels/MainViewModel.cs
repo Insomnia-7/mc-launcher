@@ -111,7 +111,9 @@ public sealed partial class MainViewModel : ObservableObject
         Download.InstancesChanged += RefreshInstances;
 
         StatusText = $"就绪 · 游戏目录 {GameRoot}";
+        InitializeSetup(meta);
         RefreshInstances();
+        IsSetupOpen = Instances.Count == 0;
         _logger.LogInformation("主视图初始化完成：{Count} 个版本，游戏目录 {GameRoot}", Instances.Count, GameRoot);
     }
 
@@ -122,6 +124,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public void StartBackgroundWork()
     {
+        if (IsSetupOpen) _ = LoadSetupVersionsAsync();
         _ = LoadJavaOptionsAsync();
         _ = DelayedUpdateCheckAsync();
     }
@@ -802,9 +805,16 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AccountText));
         OnPropertyChanged(nameof(AccountDetail));
         OnPropertyChanged(nameof(HasAccount));
+        OnPropertyChanged(nameof(SetupIdentityText));
     }
 
-    [RelayCommand]
+    partial void OnIsLoggingInChanged(bool value)
+    {
+        InstallSetupCommand.NotifyCanExecuteChanged();
+        CloseSetupCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(IncludeCancelCommand = true)]
     private async Task LoginAsync(CancellationToken cancellationToken)
     {
         if (IsLoggingIn) return;
@@ -919,13 +929,14 @@ public sealed partial class MainViewModel : ObservableObject
     }
     public string EmptyStateHint =>
         Instances.Count == 0
-            ? "还没有版本。\n点左侧「下载」→「游戏本体」，挑一个装好就能启动。"
-            : "「启动游戏」用离线账户 Developer 拉起当前版本；\n"
+            ? "还没有版本。\n点击左下角「安装向导」一键准备，或前往「下载」选择版本。"
+            : "「启动游戏」使用上方显示的身份启动当前版本；\n"
               + "左侧「下载」里可以装模组、整合包、资源包、数据包与光影包；\n"
               + "下面的「版本设置」能改内存、Java 和额外参数，保存后写进这个版本的 settings.json。";
 
     partial void OnIsBusyChanged(bool value)
     {
+        InstallSetupCommand.NotifyCanExecuteChanged();
         InstallCommand.NotifyCanExecuteChanged();
         ImportModpackCommand.NotifyCanExecuteChanged();
         LaunchCommand.NotifyCanExecuteChanged();

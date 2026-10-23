@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     private async void OnWindowDrop(object sender, DragEventArgs e)
     {
         if (DataContext is not MainViewModel viewModel) return;
+        if (viewModel.IsSetupOpen) { e.Handled = true; return; }
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] { Length: > 0 } paths) return;
 
         e.Handled = true;

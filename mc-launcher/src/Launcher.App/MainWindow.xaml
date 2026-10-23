@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Launcher.App.ViewModels"
+        xmlns:views="clr-namespace:Launcher.App.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="MC Launcher" Height="640" Width="1000"
@@ -63,6 +64,8 @@
                         </Button.Style>
                     </Button>
                 </Grid>
+
+                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="12,0,12,12" Height="34" Style="{StaticResource SecondaryButton}" />
 
                 <!-- 版本列表 -->
                 <ListBox ItemsSource="{Binding Instances}"
@@ -908,6 +911,9 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <views:FirstRunView Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
+                            Visibility="{Binding IsSetupOpen, Converter={StaticResource BoolToVis}}" />
 
         <!-- 确认覆盖层：不用 Popup（PlacementTarget 容易跑出窗口），直接在窗口内盖一层 -->
         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="100"
