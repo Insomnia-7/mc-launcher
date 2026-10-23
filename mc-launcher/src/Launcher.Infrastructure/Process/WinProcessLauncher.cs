@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
+using Launcher.Infrastructure.Java;
 using Launcher.Application.Abstractions;
 using Launcher.Domain.Launch;
 
@@ -13,8 +13,9 @@ namespace Launcher.Infrastructure.Processes;
 /// 该目录不可写（Program Files 安装、只读磁盘、受限令牌）时依次退到 TEMP、当前目录，
 /// 不让"写不了日志"这种小事把整个启动堵死。
 /// </summary>
-public sealed class WinProcessLauncher : IProcessLauncher
+public sealed class WinProcessLauncher(IJavaLocator? javaLocator = null) : IProcessLauncher
 {
+    private readonly IJavaLocator _javaLocator = javaLocator ?? new JavaLocator();
     public IGameProcess Start(LaunchPlan plan, string logFilePath, IReadOnlyDictionary<string, string>? environment = null)
     {
         // 实例目录还没建过时直接 Process.Start 会报 Win32 267「目录名称无效」——先兜住
@@ -63,42 +64,8 @@ public sealed class WinProcessLauncher : IProcessLauncher
     /// 形如 <c>version "1.8.0_421"</c> 或 <c>version "21.0.1"</c>；探不出来时按「支持」处理，
     /// 保持原来行为（真起不来还能从日志看到命令行）。
     /// </summary>
-    private static bool SupportsArgFile(string javaPath) =>
-        ArgFileSupport.GetOrAdd(javaPath, DetectArgFileSupport);
-
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> ArgFileSupport =
-        new(StringComparer.OrdinalIgnoreCase);
-
-    private static bool DetectArgFileSupport(string javaPath)
-    {
-        try
-        {
-            var probe = new ProcessStartInfo(javaPath)
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-            probe.ArgumentList.Add("-version");
-
-            using var process = System.Diagnostics.Process.Start(probe);
-            if (process is null) return true;
-
-            var output = process.StandardError.ReadToEnd() + process.StandardOutput.ReadToEnd();
-            process.WaitForExit(5000);
-
-            var match = Regex.Match(output, "version \"(?:1\\.)?(\\d+)");
-            if (!match.Success) return true;
-
-            return int.Parse(match.Groups[1].Value) >= 9;
-        }
-        catch (Exception)
-        {
-            // 探测失败不该影响启动：按支持处理，真不认 @ 的话错误也会写进日志
-            return true;
-        }
-    }
+    private bool SupportsArgFile(string javaPath) =>
+        (_javaLocator.ProbeAsync(javaPath).GetAwaiter().GetResult()?.MajorVersion ?? 9) >= 9;
 
     /// <summary>
     /// 依次尝试「给定日志目录 → TEMP → 当前目录 → 工作目录」，返回第一个能写的 argfile 与日志路径。

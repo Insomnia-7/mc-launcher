@@ -64,51 +64,63 @@ public sealed class InstanceExportService
 
         var archiveFull = Path.GetFullPath(archivePath);
         Directory.CreateDirectory(Path.GetDirectoryName(archiveFull)!);
-        if (File.Exists(archiveFull)) File.Delete(archiveFull);
+        var temporary = archiveFull + "." + Guid.NewGuid().ToString("N") + ".part";
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var files = 0;
         long sourceBytes = 0;
         progress?.Report("打包中…");
 
-        await using (var stream = new FileStream(archiveFull, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create))
+        try
         {
-            // 版本元数据（两个 json 都在版本目录根部）
-            foreach (var name in new[] { InstanceMetadata.FileName, InstanceSettings.FileName })
+            await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var zip = new ZipArchive(stream, ZipArchiveMode.Create))
             {
-                var path = Path.Combine(instanceDirectory, name);
-                if (File.Exists(path))
+                // 版本元数据（两个 json 都在版本目录根部）
+                foreach (var name in new[] { InstanceMetadata.FileName, InstanceSettings.FileName })
                 {
-                    await AddFileAsync(zip, path, name, ct).ConfigureAwait(false);
-                    files++;
-                    sourceBytes += new FileInfo(path).Length;
+                    var path = Path.Combine(instanceDirectory, name);
+                    if (File.Exists(path))
+                    {
+                        await AddFileAsync(zip, path, name, ct).ConfigureAwait(false);
+                        files++;
+                        sourceBytes += new FileInfo(path).Length;
+                    }
+                }
+
+                // 自己写一份清单，方便将来「导入备份」时不用猜
+                var manifest = await BuildManifestAsync(gameRoot, instanceId, ct).ConfigureAwait(false);
+                var entry = zip.CreateEntry(ManifestEntryName, CompressionLevel.Optimal);
+                await using (var entryStream = entry.Open())
+                {
+                    await JsonSerializer.SerializeAsync(entryStream, manifest, ManifestJson, ct).ConfigureAwait(false);
+                }
+
+                var gameDirectory = Path.Combine(instanceDirectory, GameDirectoryName);
+                if (Directory.Exists(gameDirectory))
+                {
+                    foreach (var file in EnumerateExportable(gameDirectory, options))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (string.Equals(file.FullName, archiveFull, StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(file.FullName, temporary, StringComparison.OrdinalIgnoreCase)) continue;
+                        var relative = Path.GetRelativePath(instanceDirectory, file.FullName)
+                            .Replace('\\', '/');
+                        await AddFileAsync(zip, file.FullName, relative, ct).ConfigureAwait(false);
+                        files++;
+                        sourceBytes += file.Length;
+                        if (files % 200 == 0)
+                            progress?.Report($"打包中… {files} 个文件 / {sourceBytes / 1024d / 1024d:N1} MB");
+                    }
                 }
             }
 
-            // 自己写一份清单，方便将来「导入备份」时不用猜
-            var manifest = await BuildManifestAsync(gameRoot, instanceId, ct).ConfigureAwait(false);
-            var entry = zip.CreateEntry(ManifestEntryName, CompressionLevel.Optimal);
-            await using (var entryStream = entry.Open())
-            {
-                await JsonSerializer.SerializeAsync(entryStream, manifest, ManifestJson, ct).ConfigureAwait(false);
-            }
-
-            var gameDirectory = Path.Combine(instanceDirectory, GameDirectoryName);
-            if (Directory.Exists(gameDirectory))
-            {
-                foreach (var file in EnumerateExportable(gameDirectory, options))
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var relative = Path.GetRelativePath(instanceDirectory, file.FullName)
-                        .Replace('\\', '/');
-                    await AddFileAsync(zip, file.FullName, relative, ct).ConfigureAwait(false);
-                    files++;
-                    sourceBytes += file.Length;
-                    if (files % 200 == 0)
-                        progress?.Report($"打包中… {files} 个文件 / {sourceBytes / 1024d / 1024d:N1} MB");
-                }
-            }
+            ct.ThrowIfCancellationRequested();
+            File.Move(temporary, archiveFull, overwrite: true);
+        }
+        finally
+        {
+            try { File.Delete(temporary); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
 
         stopwatch.Stop();

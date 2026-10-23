@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Buffers;
+using Launcher.Application.Install;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
@@ -73,21 +75,25 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                 await gate.WaitAsync(token).ConfigureAwait(false);
                 try
                 {
-                    var target = Path.Combine(rootDirectory, entry.RelativePath);
+                    if (Path.IsPathRooted(entry.RelativePath)) throw new InvalidDataException("下载目标必须是相对路径。");
+                    var target = LongPath.Normalize(LongPath.Combine(Path.GetFullPath(rootDirectory), entry.RelativePath));
 
                     if (await IsUpToDateAsync(target, entry, token).ConfigureAwait(false))
                     {
                         Interlocked.Increment(ref counters.Skipped);
-                        var afterSkip = Interlocked.Add(ref counters.Bytes, entry.Size);
-                        progress?.Report(new DownloadProgress(afterSkip, totalBytes, Volatile.Read(ref counters.Skipped), totalFiles, entry.RelativePath));
+                        var afterSkip = Interlocked.Add(ref counters.CompletedBytes, Math.Max(0, entry.Size));
+                        var completed = Interlocked.Increment(ref counters.CompletedFiles);
+                        progress?.Report(new DownloadProgress(afterSkip, totalBytes, completed, totalFiles, entry.RelativePath));
                         return;
                     }
 
                     var written = await DownloadWithRetryAsync(entry, target, token).ConfigureAwait(false);
 
                     Interlocked.Increment(ref counters.Downloaded);
-                    var after = Interlocked.Add(ref counters.Bytes, written > 0 ? written : entry.Size);
-                    progress?.Report(new DownloadProgress(after, totalBytes, Volatile.Read(ref counters.Downloaded), totalFiles, entry.RelativePath));
+                    Interlocked.Add(ref counters.DownloadedBytes, written);
+                    var after = Interlocked.Add(ref counters.CompletedBytes, written);
+                    var completedFiles = Interlocked.Increment(ref counters.CompletedFiles);
+                    progress?.Report(new DownloadProgress(after, totalBytes, completedFiles, totalFiles, entry.RelativePath));
                 }
                 catch (OperationCanceledException)
                 {
@@ -112,13 +118,16 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                 errors.OrderBy(e => e.Entry.RelativePath, StringComparer.Ordinal).Select(e => e.Error));
         }
 
-        return new DownloadSummary(totalFiles, counters.Downloaded, counters.Skipped, counters.Bytes, stopwatch.Elapsed);
+        progress?.Report(new DownloadProgress(counters.CompletedBytes, totalBytes, counters.CompletedFiles, totalFiles, null));
+        return new DownloadSummary(totalFiles, counters.Downloaded, counters.Skipped, counters.DownloadedBytes, stopwatch.Elapsed);
     }
 
     /// <summary>跨线程计数器。必须放在类字段上，async lambda 里不能对捕获的局部变量取 ref。</summary>
     private sealed class Counters
     {
-        public long Bytes;
+        public long CompletedBytes;
+        public long DownloadedBytes;
+        public int CompletedFiles;
         public int Downloaded;
         public int Skipped;
     }
@@ -152,6 +161,15 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                 {
                     var existing = new FileInfo(partPath).Length;
                     if (entry.Size > 0 && existing > entry.Size) File.Delete(partPath);   // .part 比目标还大，说明脏了
+                    else if (entry.Size > 0 && existing == entry.Size)
+                    {
+                        if (await IsUpToDateAsync(partPath, entry, ct).ConfigureAwait(false))
+                        {
+                            File.Move(partPath, target, overwrite: true);
+                            return existing;
+                        }
+                        File.Delete(partPath);
+                    }
                     else written = existing;
                 }
 
@@ -235,6 +253,14 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
 
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
 
+        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+            File.Delete(partPath); // 远端已拒绝此断点，下次尝试从头下载。
+        if (response.StatusCode == HttpStatusCode.PartialContent && response.Content.Headers.ContentRange?.From != alreadyHave)
+        {
+            File.Delete(partPath);
+            throw new InvalidDataException("续传响应的 Content-Range 与本地断点不一致。");
+        }
+
         var append = alreadyHave > 0 && response.StatusCode == HttpStatusCode.PartialContent;
         if (!append) alreadyHave = 0;
 
@@ -301,7 +327,8 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         using var stallCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var token = stallCts.Token;
 
-        var watchdog = Task.Run(async () =>
+        var watchdog = WatchAsync();
+        async Task WatchAsync()
         {
             var sampleInterval = TimeSpan.FromSeconds(2);
             var window = _options.EffectiveStallTimeout;
@@ -348,14 +375,14 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
             {
                 // 正常结束
             }
-        }, CancellationToken.None);
+        }
 
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
         try
         {
-            var buffer = new byte[81920];
             while (true)
             {
-                var read = await source.ReadAsync(buffer, token).ConfigureAwait(false);
+                var read = await source.ReadAsync(buffer.AsMemory(0, 81920), token).ConfigureAwait(false);
                 if (read == 0) break;
 
                 Volatile.Write(ref state.Bytes, Volatile.Read(ref state.Bytes) + read);
@@ -369,6 +396,7 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         }
         finally
         {
+            ArrayPool<byte>.Shared.Return(buffer);
             await stallCts.CancelAsync().ConfigureAwait(false);
             try
             {

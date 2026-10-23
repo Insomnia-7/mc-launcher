@@ -21,11 +21,11 @@ public sealed class ImportTransaction
     private const string InstancesDirectory = "instances";
 
     private readonly string _gameRoot;
-    private readonly HashSet<string> _versionsBefore;
-    private readonly HashSet<string> _instancesBefore;
+    private readonly HashSet<string>? _versionsBefore;
+    private readonly HashSet<string>? _instancesBefore;
     private readonly List<string> _removed = [];
 
-    private ImportTransaction(string gameRoot, HashSet<string> versionsBefore, HashSet<string> instancesBefore)
+    private ImportTransaction(string gameRoot, HashSet<string>? versionsBefore, HashSet<string>? instancesBefore)
     {
         _gameRoot = gameRoot;
         _versionsBefore = versionsBefore;
@@ -56,8 +56,9 @@ public sealed class ImportTransaction
         return _removed;
     }
 
-    private void DeleteNewDirectories(string directoryName, HashSet<string> before)
+    private void DeleteNewDirectories(string directoryName, HashSet<string>? before)
     {
+        if (before is null) return; // 无法建立快照时保留该根目录，不推断目录归属。
         var root = Path.Combine(_gameRoot, directoryName);
         if (!Directory.Exists(root)) return;
 
@@ -88,20 +89,20 @@ public sealed class ImportTransaction
         }
     }
 
-    private static HashSet<string> Snapshot(string root, string directoryName)
+    private static HashSet<string>? Snapshot(string root, string directoryName)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var path = Path.Combine(root, directoryName);
-        if (!Directory.Exists(path)) return names;
 
         try
         {
             foreach (var child in Directory.GetDirectories(path))
                 names.Add(Path.GetFileName(child));
         }
+        catch (DirectoryNotFoundException) { return names; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // 连现有目录都列不出来时当作空快照：宁可少删，不误删
+            return null; // 不可读取与空目录不能混为一谈。
         }
 
         return names;

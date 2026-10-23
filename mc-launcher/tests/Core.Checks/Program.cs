@@ -29,6 +29,8 @@ using Launcher.Infrastructure.Meta;
 using Launcher.Infrastructure.Modpacks;
 using Launcher.Infrastructure.Security;
 
+if (OptimizationChecks.IsJavaFixture(args)) return OptimizationChecks.RunJavaFixture();
+
 var failures = new List<string>();
 var passes = 0;
 
@@ -1694,6 +1696,7 @@ Console.WriteLine("== 28. 下载条目备用地址：镜像失败可按条切回
 
 Console.WriteLine();
 await FirstRunChecks.RunAsync(Check);
+await OptimizationChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

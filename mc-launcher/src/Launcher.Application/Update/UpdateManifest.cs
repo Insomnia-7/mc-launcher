@@ -64,6 +64,7 @@ public static class UpdateManifestParser
             throw new UpdateManifestException("更新清单缺少 version 字段");
 
         var files = new List<UpdateFile>();
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in raw.Files ?? [])
         {
             if (string.IsNullOrWhiteSpace(file.Path))
@@ -72,14 +73,18 @@ public static class UpdateManifestParser
             if (string.IsNullOrWhiteSpace(file.Url))
                 throw new UpdateManifestException($"更新清单里 {file.Path} 缺少 url");
 
-            // 反斜杠会让目标路径跑出安装目录，提前挡住而不是等运行时才发现
-            if (file.Path.Contains("..", StringComparison.Ordinal) ||
-                file.Path.StartsWith('/') ||
-                file.Path.Contains(':', StringComparison.Ordinal))
+            var normalizedPath = file.Path.Replace((char)92, '/');
+            // 先统一分隔符，再检查根路径及别名，不能在检查后才转换。
+            if (normalizedPath.Contains("..", StringComparison.Ordinal) ||
+                normalizedPath.StartsWith('/') ||
+                normalizedPath.Contains(':', StringComparison.Ordinal) ||
+                normalizedPath.Split('/').Any(segment => segment.Length == 0 || segment == "."))
                 throw new UpdateManifestException($"更新清单里 {file.Path} 不是相对路径");
 
+            if (!paths.Add(normalizedPath)) throw new UpdateManifestException($"更新清单有重复目标：{file.Path}");
+
             files.Add(new UpdateFile(
-                file.Path.Replace('\\', '/'),
+                normalizedPath,
                 file.Url,
                 (file.Sha256 ?? string.Empty).Trim().ToLowerInvariant(),
                 file.Size));

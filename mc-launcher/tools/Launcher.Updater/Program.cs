@@ -91,68 +91,24 @@ try
         }
     }
 
-    var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+    var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N")[..8];
     var backupDirectory = Path.Combine(options.Target, ".backup", stamp);
     Directory.CreateDirectory(backupDirectory);
 
     var log = new StringBuilder();
     log.AppendLine($"mclupd {stamp} → {manifest.Version}");
 
-    foreach (var file in manifest.Files)
+    try
     {
-        var staged = StagePath(options.Staging, file.Path);
-        var target = TargetPath(options.Target, file.Path);
-
-        if (!File.Exists(staged))
-        {
-            // 校验阶段已经确认目标本身符合清单：这个文件不需要动
-            log.AppendLine($"已是最新 {file.Path}");
-            continue;
-        }
-
-        // 更新器自己的 exe 正在运行，Windows 不允许覆盖它。
-        // 清单里的 mclupd 与当前运行的是同一版本（CI 一起发布），跳过即可；
-        // 真要换更新器本身，下次由新版启动器重新暂存后再走一遍。
-        if (Environment.ProcessPath is { Length: > 0 } self &&
-            string.Equals(Path.GetFullPath(target), Path.GetFullPath(self), StringComparison.OrdinalIgnoreCase))
-        {
-            log.AppendLine($"跳过自身 {file.Path}");
-            continue;
-        }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-
-        if (File.Exists(target))
-        {
-            var backup = Path.Combine(backupDirectory, file.Path.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
-            File.Copy(target, backup, overwrite: true);
-            log.AppendLine($"备份 {file.Path}");
-        }
-
-        // 目标文件可能被占用：重试几轮，仍然失败就回滚已替换的并报错
-        var copied = false;
-        for (var attempt = 1; attempt <= 5 && !copied; attempt++)
-        {
-            try
-            {
-                File.Copy(staged, target, overwrite: true);
-                copied = true;
-                log.AppendLine($"替换 {file.Path}");
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempt < 5)
-            {
-                await Task.Delay(300 * attempt);
-            }
-        }
-
-        if (!copied)
-        {
-            Console.Error.WriteLine($"替换失败（文件被占用？）：{file.Path}");
-            log.AppendLine($"失败 {file.Path}");
-            await File.WriteAllTextAsync(Path.Combine(backupDirectory, "updater.log"), log.ToString());
-            return 3;
-        }
+        await UpdateFileTransaction.ApplyAsync(manifest.Files, options.Staging, options.Target, backupDirectory,
+            Environment.ProcessPath, message => log.AppendLine(message));
+    }
+    catch (Exception ex)
+    {
+        log.AppendLine("更新失败：" + ex.Message);
+        await File.WriteAllTextAsync(Path.Combine(backupDirectory, "updater.log"), log.ToString());
+        Console.Error.WriteLine("更新失败：" + ex.Message);
+        return 3;
     }
 
     // 暂存的 update.json 不再需要，留在暂存目录里也行，顺手清掉避免下次误用

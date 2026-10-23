@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Text.RegularExpressions;
 using Launcher.Application.Abstractions;
 using Launcher.Domain.Java;
@@ -50,13 +52,25 @@ public sealed class JavaLocator : IJavaLocator
         @"C:\Program Files\Common Files\Oracle\Java",
     ];
 
-    public async Task<IReadOnlyList<JavaInstall>> DiscoverAsync(CancellationToken ct = default)
+    private static readonly TimeSpan ProbeCacheLifetime = TimeSpan.FromMinutes(2);
+    private readonly ConcurrentDictionary<string, ProbeState> _probes = new(StringComparer.OrdinalIgnoreCase);
+
+    private sealed class ProbeState
+    {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public JavaInstall? Install;
+        public (long Length, long Modified, long ReleaseModified) Fingerprint;
+        public DateTime ExpiresAt;
+    }
+
+    private List<string> FindCandidates(CancellationToken ct)
     {
         var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // 1) PATH 里的 java
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
+            ct.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(dir)) continue;
             var exe = Path.Combine(dir.Trim(), JavaExeName);
             if (File.Exists(exe)) candidates.Add(exe);
@@ -73,9 +87,10 @@ public sealed class JavaLocator : IJavaLocator
         // 3) 已知安装根：depth 1 和 depth 2 都看（Zulu 会多一层）
         foreach (var root in KnownRoots)
         {
+            ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(root)) continue;
 
-            foreach (var binDir in Descend(root, maxDepth: 3))
+            foreach (var binDir in Descend(root, maxDepth: 3, ct))
             {
                 var exe = Path.Combine(binDir, JavaExeName);
                 if (File.Exists(exe)) candidates.Add(exe);
@@ -86,20 +101,26 @@ public sealed class JavaLocator : IJavaLocator
         //    后者就是启动器自己装的 java/<major>/bin/java.exe。
         foreach (var root in _extraRoots)
         {
+            ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(root)) continue;
 
             var direct = Path.Combine(root, "bin", JavaExeName);
             if (File.Exists(direct)) candidates.Add(direct);
 
-            foreach (var binDir in Descend(root, maxDepth: 2))
+            foreach (var binDir in Descend(root, maxDepth: 2, ct))
             {
                 var exe = Path.Combine(binDir, JavaExeName);
                 if (File.Exists(exe)) candidates.Add(exe);
             }
         }
 
+        return candidates.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public async Task<IReadOnlyList<JavaInstall>> DiscoverAsync(CancellationToken ct = default)
+    {
+        var ordered = await Task.Run(() => FindCandidates(ct), ct).ConfigureAwait(false);
         var results = new List<JavaInstall>();
-        var ordered = candidates.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
 
         // 并行探测：12 个 JVM 串行要 3.6s，并行 + 限流 4 大约 1s
         using var gate = new SemaphoreSlim(4);
@@ -125,42 +146,86 @@ public sealed class JavaLocator : IJavaLocator
 
     public async Task<JavaInstall?> ProbeAsync(string javaExePath, CancellationToken ct = default)
     {
-        if (!File.Exists(javaExePath)) return null;
-
+        ct.ThrowIfCancellationRequested();
+        var path = ResolveExecutable(javaExePath);
+        if (path is null) return null;
+        var state = _probes.GetOrAdd(path, _ => new ProbeState());
+        await state.Gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var psi = new ProcessStartInfo(javaExePath)
+            var fingerprint = Fingerprint(path);
+            if (state.Install is not null && state.Fingerprint == fingerprint && DateTime.UtcNow < state.ExpiresAt)
+                return state.Install;
+            var install = await ProbeProcessAsync(path, ct).ConfigureAwait(false);
+            if (install is not null && fingerprint == Fingerprint(path))
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
+                state.Install = install;
+                state.Fingerprint = fingerprint;
+                state.ExpiresAt = DateTime.UtcNow + ProbeCacheLifetime;
+            }
+            else state.Install = null;
+            return install;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+        finally { state.Gate.Release(); }
+    }
+
+    private static string? ResolveExecutable(string executable)
+    {
+        var name = OperatingSystem.IsWindows() && !Path.HasExtension(executable) ? executable + ".exe" : executable;
+        if (File.Exists(name)) return Path.GetFullPath(name);
+        if (Path.GetFileName(name) != name) return null;
+        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+        {
+            if (string.IsNullOrWhiteSpace(directory)) continue;
+            var candidate = Path.Combine(directory.Trim().Trim('"'), name);
+            if (File.Exists(candidate)) return Path.GetFullPath(candidate);
+        }
+        return null;
+    }
+
+    private static (long Length, long Modified, long ReleaseModified) Fingerprint(string path)
+    {
+        var info = new FileInfo(path);
+        var home = Path.GetDirectoryName(Path.GetDirectoryName(path));
+        var release = home is null ? null : new FileInfo(Path.Combine(home, "release"));
+        return (info.Length, info.LastWriteTimeUtc.Ticks, release?.Exists == true ? release.LastWriteTimeUtc.Ticks : 0);
+    }
+
+    private static async Task<JavaInstall?> ProbeProcessAsync(string path, CancellationToken ct)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo(path)
+            {
+                RedirectStandardOutput = true, RedirectStandardError = true,
+                UseShellExecute = false, CreateNoWindow = true,
             };
             psi.ArgumentList.Add("-version");
-
             using var process = new Process { StartInfo = psi };
             if (!process.Start()) return null;
-
-            var stdout = process.StandardOutput.ReadToEndAsync(ct);
-            var stderr = process.StandardError.ReadToEndAsync(ct);
-
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(5));
+            var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
+            var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
             try
             {
                 await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+                await Task.WhenAll(stdout, stderr).WaitAsync(timeout.Token).ConfigureAwait(false);
+                return Parse(path, string.Concat(await stderr.ConfigureAwait(false), await stdout.ConfigureAwait(false)));
             }
             catch (OperationCanceledException)
             {
-                try { process.Kill(entireProcessTree: true); } catch { /* 已经退出 */ }
+                try { process.Kill(entireProcessTree: true); } catch (Exception ex) when (ex is InvalidOperationException or Win32Exception) { }
+                try { await Task.WhenAll(stdout, stderr).ConfigureAwait(false); } catch (OperationCanceledException) { }
+                ct.ThrowIfCancellationRequested();
                 return null;
             }
-
-            // java -version 的输出走 stderr，少数发行版会混到 stdout
-            var output = string.Concat(await stderr.ConfigureAwait(false), await stdout.ConfigureAwait(false));
-            return Parse(javaExePath, output);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception)
         {
             return null;
         }
@@ -200,18 +265,19 @@ public sealed class JavaLocator : IJavaLocator
         return new JavaInstall(javaExePath, major, versionString, vendor, arch);
     }
 
-    private static IEnumerable<string> Descend(string root, int maxDepth)
+    private static IEnumerable<string> Descend(string root, int maxDepth, CancellationToken ct)
     {
         var queue = new Queue<(string Path, int Depth)>();
         queue.Enqueue((root, 0));
 
         while (queue.Count > 0)
         {
+            ct.ThrowIfCancellationRequested();
             var (current, depth) = queue.Dequeue();
             if (depth >= maxDepth) continue;
 
-            IEnumerable<string> children;
-            try { children = Directory.EnumerateDirectories(current); }
+            string[] children;
+            try { children = Directory.GetDirectories(current); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { continue; }
 
             foreach (var child in children)

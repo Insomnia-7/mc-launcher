@@ -653,6 +653,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportInstanceAsync()
     {
+        if (IsBusy || Download.IsBusy) { StatusText = "请等待当前任务结束后再导出"; return; }
         if (SelectedInstance is not { } instance)
         {
             StatusText = "先选一个版本";
@@ -669,13 +670,15 @@ public sealed partial class MainViewModel : ObservableObject
         };
         if (dialog.ShowDialog() != true) return;
 
+        using var cts = new CancellationTokenSource();
+        _runningCts = cts;
         IsBusy = true;
         try
         {
             var progress = new Progress<string>(text => StatusText = text);
             var report = await _exportService.ExportAsync(
                 GameRoot, instance.InstanceId, dialog.FileName, progress: progress,
-                ct: _runningCts?.Token ?? CancellationToken.None).ConfigureAwait(true);
+                ct: cts.Token).ConfigureAwait(true);
             StatusText = report.ToSummary();
         }
         catch (Exception ex) when (IsCancellation(ex))
@@ -688,6 +691,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         finally
         {
+            if (ReferenceEquals(_runningCts, cts)) _runningCts = null;
             IsBusy = false;
         }
     }
