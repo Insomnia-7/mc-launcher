@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Update/UpdateTrustKeys.json" LogicalName="Launcher.UpdateTrustKeys.json" />
     <ProjectReference Include="..\Launcher.Domain\Launcher.Domain.csproj" />
   </ItemGroup>
 

@@ -20,6 +20,9 @@ public sealed record UpdateManifest(
     DateTimeOffset? PublishedAt = null,
     string? Entry = null)
 {
+    [JsonIgnore]
+    public UpdateSignatureProof? SignatureProof { get; init; }
+
     /// <summary>重启时优先用它；没写就用调用方给的默认值。</summary>
     public string EntryOrDefault(string fallback) =>
         string.IsNullOrWhiteSpace(Entry) ? fallback : Entry!;
@@ -33,7 +36,11 @@ public sealed record UpdateManifest(
     }
 }
 
-public sealed class UpdateManifestException(string message) : Exception(message);
+public sealed class UpdateManifestException : Exception
+{
+    public UpdateManifestException(string message) : base(message) { }
+    public UpdateManifestException(string message, Exception innerException) : base(message, innerException) { }
+}
 
 /// <summary>清单解析与版本比较。放 Application 层是为了让 Updater 和 App 共用同一套规则。</summary>
 public static class UpdateManifestParser

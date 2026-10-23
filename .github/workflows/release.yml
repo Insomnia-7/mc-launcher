@@ -34,10 +34,13 @@ env:
 jobs:
   release:
     runs-on: windows-latest
+    environment: release-signing
 
     steps:
       - name: 取代码
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v4
@@ -58,6 +61,7 @@ jobs:
           }
           $version = $tag
           if ($version -match '^[vV]') { $version = $version.Substring(1) }
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$') { throw 'tag 必须为 v 主版本.次版本.补丁版本，可带预发布后缀' }
           if ([string]::IsNullOrWhiteSpace($version)) {
             Write-Host '::error::从 tag 里解析出的版本号为空'
             exit 1
@@ -65,6 +69,18 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag" -Encoding utf8
           Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version" -Encoding utf8
           Write-Host "tag=$tag version=$version"
+
+      - name: 构建与回归检查
+        shell: pwsh
+        run: |
+          dotnet build mc-launcher/MinecraftLauncher.sln -c Release -m:1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet mc-launcher/tests/Core.Checks/bin/Release/net10.0/Core.Checks.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet mc-launcher/tests/Architecture.Check/bin/Release/net10.0/Architecture.Check.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet mc-launcher/tests/App.Checks/bin/Release/net10.0-windows/App.Checks.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # 主程序：MCLauncher.exe + dll 等，直接落到 out/
       # -p:Version 让程序里的版本号和 tag 一致，不依赖 csproj 里写死的 0.1.0
@@ -169,6 +185,20 @@ jobs:
 
           Write-Host "清单 OK：$($files.Count) 个文件，版本 $($manifest.version)"
           Write-Host "主程序 url 示例：$($files[0].url)"
+
+      - name: 签名更新清单
+        shell: pwsh
+        env:
+          MCLAUNCHER_UPDATE_SIGNING_KEY: ${{ secrets.MCLAUNCHER_UPDATE_SIGNING_KEY }}
+        run: |
+          pwsh -NoProfile -File scripts/update-signing.ps1 -ManifestPath out/update.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: 独立验证发布签名
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File scripts/update-signing.ps1 -ManifestPath out/update.json -VerifyOnly
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: 发布到 GitHub Release
         uses: softprops/action-gh-release@v2

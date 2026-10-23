@@ -169,7 +169,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             _pendingUpdate = null;
             HasUpdate = false;
-            UpdateText = result.Reason is { Length: > 0 } reason && reason.StartsWith("已是最新", StringComparison.Ordinal)
+            UpdateText = result.Reason is { Length: > 0 } reason && (reason.StartsWith("已是最新", StringComparison.Ordinal) || reason.StartsWith("更新验证失败", StringComparison.Ordinal))
                 ? reason
                 : string.Empty;
 

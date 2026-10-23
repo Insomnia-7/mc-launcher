@@ -5,16 +5,21 @@ using System.Threading.Tasks;
 namespace Launcher.Application.Update;
 
 /// <summary>检查结果：有新版时 <see cref="Manifest"/> 非空，没有时 <see cref="Reason"/> 说明为什么。</summary>
+/// <remarks>
+/// <see cref="Failed"/> 区分「真的出错」和「本来就是最新」——两者都没有清单，
+/// 但调用方（CLI、发布自检脚本）必须能把它们分开，否则签名验证失败会被当成「已是最新」。
+/// </remarks>
 public sealed record UpdateCheckResult(
     UpdateManifest? Manifest,
     string? Location = null,
     string? Reason = null,
-    string? CurrentVersion = null)
+    string? CurrentVersion = null,
+    bool Failed = false)
 {
     public bool HasUpdate => Manifest is not null;
 }
 
-/// <summary>暂存好的更新：目录里按 Path 摆好了文件，外加一份 manifest.json 给 updater 读。</summary>
+/// <summary>暂存好的更新：目录里按 Path 摆好了文件，外加原始 update.json 与 update.json.sig 给 updater 再次验证。</summary>
 public sealed record UpdateStaging(string Directory, UpdateManifest Manifest, int DownloadedFiles, int SkippedFiles);
 
 public sealed record UpdateProgress(string Stage, double Percent, string? Detail);

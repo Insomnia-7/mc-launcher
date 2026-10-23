@@ -15,16 +15,12 @@ namespace Launcher.Infrastructure.Update;
 /// 更新清单的取用与文件暂存。来源支持三种：http(s) 地址、本地 .json 文件、本地目录
 /// （目录时自动拼 update.json）—— 测试和「把启动器放在 U 盘上手动更新」都靠后两种。
 /// </summary>
-public sealed class UpdateClient(HttpClient http) : IUpdateClient
+public sealed class UpdateClient(HttpClient http, UpdateSignatureVerifier? signatureVerifier = null) : IUpdateClient
 {
+    private readonly UpdateSignatureVerifier _signatures = signatureVerifier ?? new();
     public const string ManifestFileName = "update.json";
     public const string EnvironmentVariable = "MCLAUNCHER_UPDATE_URL";
 
-    private static readonly JsonSerializerOptions ManifestJson = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
 
     public static HttpClient CreateHttpClient() =>
         HttpClientFactory.Create("MCLauncher-Updater/1.0", TimeSpan.FromSeconds(60));
@@ -33,26 +29,17 @@ public sealed class UpdateClient(HttpClient http) : IUpdateClient
     {
         var resolved = ResolveLocation(location);
         if (resolved is null)
-            return new UpdateCheckResult(null, Reason: $"没有配置更新地址（环境变量 {EnvironmentVariable} 或 settings.json 的 updateUrl）", CurrentVersion: currentVersion);
-
-        string json;
-        try
-        {
-            json = await ReadManifestTextAsync(resolved, ct).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
-        {
-            return new UpdateCheckResult(null, resolved, $"读取更新清单失败：{ex.Message}", currentVersion);
-        }
+            return new UpdateCheckResult(null, Reason: $"没有配置更新地址（环境变量 {EnvironmentVariable} 或 settings.json 的 updateUrl）", CurrentVersion: currentVersion, Failed: true);
 
         UpdateManifest manifest;
         try
         {
-            manifest = UpdateManifestParser.Parse(json);
+            var (document, signature) = await ReadSignedManifestAsync(resolved, ct).ConfigureAwait(false);
+            manifest = _signatures.Verify(document, signature);
         }
-        catch (UpdateManifestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UpdateManifestException or UnauthorizedAccessException)
         {
-            return new UpdateCheckResult(null, resolved, ex.Message, currentVersion);
+            return new UpdateCheckResult(null, resolved, $"更新验证失败：{ex.Message}", currentVersion, Failed: true);
         }
 
         if (!UpdateVersion.IsNewer(manifest.Version, currentVersion))
@@ -71,6 +58,7 @@ public sealed class UpdateClient(HttpClient http) : IUpdateClient
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
+        manifest = _signatures.Reverify(manifest);
         var resolved = ResolveLocation(location);
         var stagingDirectory = Path.Combine(dataDirectory, "update", manifest.Version);
         Directory.CreateDirectory(stagingDirectory);
@@ -128,13 +116,10 @@ public sealed class UpdateClient(HttpClient http) : IUpdateClient
             progress?.Report(new UpdateProgress("下载", Percent(done, manifest.TotalBytes), file.Path));
         }
 
-        // updater 只读这份，不再关心最初的来源是 http 还是本地目录
+        // 保留签名针对的原始字节，独立 updater 会再次验证，不能重新序列化。
         var manifestPath = Path.Combine(stagingDirectory, ManifestFileName);
-        await File.WriteAllTextAsync(
-            manifestPath,
-            JsonSerializer.Serialize(manifest, ManifestJson),
-            Encoding.UTF8,
-            ct).ConfigureAwait(false);
+        await File.WriteAllBytesAsync(manifestPath, Convert.FromBase64String(manifest.SignatureProof!.ManifestBase64), ct).ConfigureAwait(false);
+        await File.WriteAllTextAsync(manifestPath + ".sig", manifest.SignatureProof.SignatureJson, new UTF8Encoding(false), ct).ConfigureAwait(false);
 
         progress?.Report(new UpdateProgress("就绪", 100, $"新版本 {manifest.Version} 已准备好"));
         return new UpdateStaging(stagingDirectory, manifest, downloaded, skipped);
@@ -149,19 +134,50 @@ public sealed class UpdateClient(HttpClient http) : IUpdateClient
         return string.IsNullOrWhiteSpace(location) ? null : location;
     }
 
-    private async Task<string> ReadManifestTextAsync(string location, CancellationToken ct)
+    private async Task<(byte[] Document, byte[] Signature)> ReadSignedManifestAsync(string location, CancellationToken ct)
     {
-        if (Directory.Exists(location))
-            location = Path.Combine(location, ManifestFileName);
-
+        if (Directory.Exists(location)) location = Path.Combine(location, ManifestFileName);
         if (File.Exists(location))
-            return await File.ReadAllTextAsync(location, ct).ConfigureAwait(false);
+        {
+            var signaturePath = location + ".sig";
+            if (!File.Exists(signaturePath))
+                throw new UpdateManifestException($"更新清单缺少发布者签名（{Path.GetFileName(signaturePath)}），已停止更新。");
+            return (await ReadBoundedAsync(File.OpenRead(location), UpdateSignatureVerifier.MaxManifestBytes, ct),
+                await ReadBoundedAsync(File.OpenRead(signaturePath), UpdateSignatureVerifier.MaxSignatureBytes, ct));
+        }
 
-        if (!Uri.TryCreate(location, UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-            throw new InvalidOperationException($"不认识的更新地址：{location}");
+        if (!Uri.TryCreate(location, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
+            throw new InvalidOperationException("不认识的更新地址。");
 
-        return await http.GetStringAsync(uri, ct).ConfigureAwait(false);
+        var signatureUri = new UriBuilder(uri) { Path = uri.AbsolutePath + ".sig" }.Uri;
+        var document = await ReadBoundedAsync(await http.GetStreamAsync(uri, ct).ConfigureAwait(false), UpdateSignatureVerifier.MaxManifestBytes, ct);
+        byte[] signature;
+        try
+        {
+            signature = await ReadBoundedAsync(await http.GetStreamAsync(signatureUri, ct).ConfigureAwait(false), UpdateSignatureVerifier.MaxSignatureBytes, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new UpdateManifestException($"更新源没有提供 update.json.sig 签名文件（{ex.Message}），已停止更新。", ex);
+        }
+
+        return (document, signature);
+    }
+
+    private static async Task<byte[]> ReadBoundedAsync(Stream source, int limit, CancellationToken ct)
+    {
+        await using (source)
+        {
+            using var result = new MemoryStream();
+            var buffer = new byte[8192];
+            int count;
+            while ((count = await source.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            {
+                if (result.Length + count > limit) throw new UpdateManifestException("更新清单或签名超过大小限制。");
+                result.Write(buffer, 0, count);
+            }
+            return result.ToArray();
+        }
     }
 
     /// <summary>文件地址可以是绝对的 http 地址，也可以是相对清单位置的路径。</summary>
@@ -189,11 +205,9 @@ public sealed class UpdateClient(HttpClient http) : IUpdateClient
             return false;
 
         var info = new FileInfo(path);
-        if (file.Size > 0 && info.Length != file.Size)
+        if (info.Length != file.Size)
             return false;
 
-        if (string.IsNullOrWhiteSpace(file.Sha256))
-            return true;
 
         var actual = await Sha256Async(path, ct).ConfigureAwait(false);
         return string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase);

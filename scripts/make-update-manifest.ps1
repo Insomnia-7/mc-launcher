@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     为 MCLauncher 的自更新器（mclupd）生成 update.json。
 
@@ -220,7 +220,7 @@ foreach ($fullPath in $allFiles) {
         continue
     }
 
-    if ($fileName -ieq 'update.json') { continue }
+    if ($fileName -ieq 'update.json' -or $fileName -like '*.sig') { continue }
     if ($fileName -like '*.pdb') { continue }
     if ($fileName -like '*.log') { continue }
 

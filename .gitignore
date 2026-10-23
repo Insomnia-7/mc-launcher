@@ -46,3 +46,9 @@ mc-launcher/**/accounts.json.tmp
 
 # Temporary settings files may contain private configuration.
 mc-launcher/**/settings.json.*.tmp
+
+# Update signing tools are public; private key backups never are.
+!/scripts/update-signing.ps1
+!/scripts/new-update-key.ps1
+mc-launcher/**/*.dpapi
+mc-launcher/**/*.key

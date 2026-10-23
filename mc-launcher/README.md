@@ -77,7 +77,9 @@ Domain / Application 核心不依赖 WPF；Infrastructure 实现网络和系统�
 - [代码审查](docs/review-and-optimization-2026-10-23.md)
 - [六项后续修复](docs/followup-fixes-2026-10-23.md)
 
-当前多账号管理和代理设置界面已完成。下一阶段继续处理更新清单签名、发布密钥管理和正式联网验收；CurseForge 搜索权限仍取决于所用 API Key。
+多账号管理、代理设置和更新清单签名已完成。更新清单必须携带可信发布者签名，主程序与独立更新器分别验证；校验失败会停止更新并显示原因。发布密钥通过 GitHub `release-signing` 环境 Secret 使用，公钥随程序编译，私钥不进入仓库或安装包。
+
+首次迁移到签名版本，应从项目发布页完整安装新版本（包含更新器）；旧版客户端不能获得追溯性的签名保护。后续维护、密钥轮换与验证范围见 [更新签名说明](docs/update-signing.md)。下一阶段为真实联网与发布升级验收；CurseForge 搜索权限仍取决于所用 API Key。
 
 ## 许可证
 

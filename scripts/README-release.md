@@ -1,5 +1,7 @@
 # 发布与自更新说明（release pipeline）
 
+现在发布还要求 **update.json.sig 发布者签名**。GitHub `release-signing` 环境应配置 `MCLAUNCHER_UPDATE_SIGNING_KEY` Secret；公钥编入客户端和独立更新器。构建与测试、签名、独立验签全部成功后才上传。密钥备份、首次迁移和轮换限制见 [更新签名说明](../mc-launcher/docs/update-signing.md)。
+
 这套东西只做一件事：**把一个 tag 变成「客户端点一下就能升级」的 GitHub Release**。
 
 ```
@@ -10,6 +12,7 @@ push tag v0.3.0
         ├─ 检查 out/** 里没有重名文件（Release 资产名是拍平的）
         ├─ pwsh scripts/make-update-manifest.ps1 -Directory out … → out/update.json
         ├─ 按更新器的规矩自检 update.json
+        ├─ update-signing.ps1 签名并独立验签 → out/update.json.sig
         └─ softprops/action-gh-release 上传 out/** 作为 Release 资产
 ```
 
@@ -111,19 +114,23 @@ $env:MCLAUNCHER_UPDATE_URL = "D:\share\mc-launcher\"   # 目录 → 自动找里
 
 ## 更新器（mclupd）会怎么处理这份清单
 
-1. **全量校验 staging**：清单里任何一个文件缺失、大小不符、sha256 不符 → **整批不动，exit 2**。
+1. **先验签，再碰任何文件**：staging 里缺 `update.json` / `update.json.sig`、签名无效或清单被改过 → **整批不动，exit 1**。
+2. **全量校验 staging**：清单里任何一个文件缺失、大小不符、sha256 不符 → **整批不动，exit 2**。
    半套文件比旧版更糟，所以这里是「一个不对就全退」。
-2. **备份**：把要被替换的文件复制到 `<启动器目录>\.backup\<yyyyMMdd-HHmmss>\`（顺带写 `updater.log`）。
-3. **替换**：目标文件被占用时重试 5 轮（间隔递增），仍失败 → 已替换的回滚并 **exit 3**。
-4. **重启**：`--restart` 指定的程序（一般是 `MCLauncher.exe`）。
+3. **备份**：把要被替换的文件复制到 `<启动器目录>\.backup\<yyyyMMdd-HHmmss>\`（顺带写 `updater.log`）。
+4. **替换**：目标文件被占用时重试 5 轮（间隔递增），仍失败 → 已替换的回滚并 **exit 3**。
+5. **重启**：`--restart` 指定的程序（一般是 `MCLauncher.exe`）。
 
 | 退出码 | 含义 |
 | --- | --- |
 | 0 | 成功 |
-| 1 | 参数不对 / 未预期异常 |
-| 2 | 没有 `update.json`、缺文件、大小不符、sha256 不符（整批未动） |
-| 3 | 替换失败（文件被占用等） |
+| 1 | 参数不对 / 未预期异常 / 暂存清单或签名缺失、验签失败（整批未动） |
+| 2 | 缺文件、大小不符、sha256 不符（整批未动） |
+| 3 | 替换失败（文件被占用等，已替换的回滚） |
 | 4 | 等主进程退出超时 |
+
+客户端侧同理：`mcl update check` 在验签失败时打印一行中文原因并 **exit 3**（「已是最新」才是 exit 0），
+发布自检脚本可以只看退出码，不会把一次验证失败读成「无需更新」。
 
 ## GitHub Release 的坑：资产名会被拍平
 
@@ -172,10 +179,9 @@ mclupd --staging <有 update.json 的目录> --target <启动器目录>
 
 ## 已知限制
 
-- 这套 workflow **没有在 GitHub 上真跑过**（本机没有 Actions 环境）。本地把 6 个 `run` 步骤按顺序原样
-  复刻跑过一遍（真 `dotnet publish` 两条 + 真生成清单 + 真校验，全部退出码 0），Actions 侧还剩
-  `actions/checkout`、`actions/setup-dotnet`、`softprops/action-gh-release` 三个现成 action 没执行过；
-  首次发 tag 时留意日志。
+- 这套 workflow 已在 GitHub 真跑过两次（`v0.1.0`、`v0.1.1`，13 步全绿，19 个资产、18 个文件的 sha256 逐个核对通过）；
+  本机另外把 6 个 `run` 步骤按顺序复刻跑过一遍。换 runner 镜像或升级 action 版本时仍要留意日志。
+- 发布签名是**从签名版本起生效**的：更早的客户端不认识 `update.json.sig`，首次迁移必须让用户从发布页完整装一次新版本。
 - Release 资产名拍平是 GitHub 的行为，不是这套脚本的选择；换托管方式时记得去掉 `-FlattenAssetUrls`。
 - 清单不含 `entry` 字段：重启目标由客户端传 `--restart`（默认 `MCLauncher.exe`）决定。
 - 更新器只做「替换 + 重启」，不处理删除旧文件（例如某个 dll 在新版本里被删掉，它会留在安装目录里）。

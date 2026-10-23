@@ -23,6 +23,15 @@ if (options is null)
 
 try
 {
+    var manifestPath = Path.Combine(options.Staging, "update.json");
+    var signaturePath = manifestPath + ".sig";
+    if (!File.Exists(manifestPath) || !File.Exists(signaturePath))
+        throw new UpdateManifestException("暂存更新缺少清单或发布者签名，已停止更新。");
+    if (new FileInfo(manifestPath).Length > UpdateSignatureVerifier.MaxManifestBytes ||
+        new FileInfo(signaturePath).Length > UpdateSignatureVerifier.MaxSignatureBytes)
+        throw new UpdateManifestException("暂存清单或签名超过大小限制。");
+    var manifest = new UpdateSignatureVerifier().Verify(await File.ReadAllBytesAsync(manifestPath), await File.ReadAllBytesAsync(signaturePath));
+
     if (options.WaitProcessId is { } pid && pid > 0)
     {
         Console.WriteLine($"等待进程 {pid} 退出…");
@@ -47,14 +56,6 @@ try
         }
     }
 
-    var manifestPath = Path.Combine(options.Staging, "update.json");
-    if (!File.Exists(manifestPath))
-    {
-        Console.Error.WriteLine($"暂存目录里没有 update.json：{manifestPath}");
-        return 2;
-    }
-
-    var manifest = UpdateManifestParser.Parse(await File.ReadAllTextAsync(manifestPath));
     Console.WriteLine($"准备更新到 {manifest.Version}（{manifest.Files.Count} 个文件）");
 
     // 先全量校验，一个不对就整体不动 —— 半套文件比旧版更糟
@@ -74,7 +75,7 @@ try
             return 2;
         }
 
-        if (file.Size > 0 && new FileInfo(staged).Length != file.Size)
+        if (new FileInfo(staged).Length != file.Size)
         {
             Console.Error.WriteLine($"文件大小不对：{file.Path}");
             return 2;
@@ -113,6 +114,7 @@ try
 
     // 暂存的 update.json 不再需要，留在暂存目录里也行，顺手清掉避免下次误用
     File.Delete(manifestPath);
+    File.Delete(signaturePath);
 
     log.AppendLine("完成");
     await File.WriteAllTextAsync(Path.Combine(backupDirectory, "updater.log"), log.ToString());
@@ -168,7 +170,7 @@ static async Task<bool> TargetMatchesAsync(string targetRoot, UpdateFile file)
     }
 
     var info = new FileInfo(path);
-    if (file.Size > 0 && info.Length != file.Size)
+    if (info.Length != file.Size)
     {
         return false;
     }

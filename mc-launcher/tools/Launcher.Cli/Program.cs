@@ -833,6 +833,14 @@ static async Task<int> RunAsync(string[] args)
                     return 0;
                 }
 
+                // 签名验证失败和「本来就是最新」都拿不到清单，退出码必须分开，
+                // 否则发布自检脚本会把一次验证失败读成「无需更新」。
+                if (result.Failed)
+                {
+                    Console.Error.WriteLine($"[update] 检查失败：{result.Reason}");
+                    return 3;
+                }
+
                 Console.WriteLine($"[update] 无需更新：{result.Reason}");
                 return 0;
             }

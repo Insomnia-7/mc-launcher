@@ -87,6 +87,10 @@ internal static partial class UiCheck
         Browser(secondVm);
         Accounts();
         Network();
+        var updateVm = (MainViewModel)Resolve(typeof(MainViewModel))!;
+        updateVm.HasUpdate = true;
+        Pump(updateVm.CheckUpdateCommand.ExecuteAsync(null));
+        Check("更新签名失败向用户显示原因并关闭安装入口", !updateVm.HasUpdate && updateVm.StatusText.Contains("更新验证失败") && updateVm.UpdateText.Contains("签名"));
         Console.WriteLine($"[ok] {_checks} 项 WPF 流程检查通过");
         window.Close();
         app.Shutdown();
@@ -258,6 +262,8 @@ public class SetupProxy : DispatchProxy
                     return state.Pending.Task;
                 }
                 return Task.FromResult(state.Page(state.LastRequest));
+            case "CheckAsync" when method.ReturnType == typeof(Task<Launcher.Application.Update.UpdateCheckResult>):
+                return Task.FromResult(new Launcher.Application.Update.UpdateCheckResult(null, Reason: "更新验证失败：发布者签名无效"));
             case "GetModAsync": return Task.FromResult<CfMod?>(new CfMod { Id=123,ClassId=state.CfClassId,Name="CF fixture" });
             case "Protect": return System.Text.Encoding.UTF8.GetBytes((string)args![0]!);
             case "Rewrite": return args![0];
