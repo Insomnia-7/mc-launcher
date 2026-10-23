@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,7 +23,7 @@ if (options is null)
 
 try
 {
-    if (options.WaitProcessId is { } pid)
+    if (options.WaitProcessId is { } pid && pid > 0)
     {
         Console.WriteLine($"等待进程 {pid} 退出…");
         try
@@ -33,6 +34,11 @@ try
         catch (ArgumentException)
         {
             // 已经退了
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            // PID 0 / 系统进程 / 没权限打开句柄：不该因此把更新拦下来，直接继续
+            Console.WriteLine($"打不开进程 {pid}（{ex.Message}），按已退出处理");
         }
         catch (OperationCanceledException)
         {
