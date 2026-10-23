@@ -28,8 +28,8 @@ internal static partial class UiCheck
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, Guid.NewGuid().ToString("N")));
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", Path.Combine(Environment.GetEnvironmentVariable("MCLAUNCHER_HOME")!, "game"));
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-        var app = new App();
-        app.InitializeComponent();
+        var app = new System.Windows.Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
+        app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source=new Uri("/MCLauncher;component/Styles/Controls.xaml",UriKind.Relative) });
         var vm = (MainViewModel)Resolve(typeof(MainViewModel))!;
         var window = new MainWindow(vm);
         Check("首帧构造不进行资源检索", State.Searches == 0);

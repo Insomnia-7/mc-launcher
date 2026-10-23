@@ -208,7 +208,9 @@ base.OnStartup(e);
 
         // 首帧之后再做 Java 扫描与更新检查（构造函数里做会拖慢冷启动）。
         (window.DataContext as MainViewModel)?.StartBackgroundWork();
-        TryUseDarkTitleBar(window);
+        // 标题栏颜色跟着主题走；TryUseDarkTitleBar 会把标题栏硬切成深色，主窗口不能再用它
+        Launcher.App.Appearance.WindowChrome.Target = window;
+        (window.DataContext as MainViewModel)?.RefreshWindowChrome();
     }
 
     /// <summary>Win10 20H1+ / Win11 的深色标题栏。失败就算了，不影响功能。</summary>

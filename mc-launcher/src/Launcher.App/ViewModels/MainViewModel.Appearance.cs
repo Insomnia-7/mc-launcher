@@ -22,6 +22,18 @@ public sealed record ThemeChoice(string Id,ThemeDefinition Definition)
 {
     public string Name => Definition.Name;
     public override string ToString() => Name;
+
+    // 卡片预览用真实主题色（不是统一拿强调色调透明度），一眼就能看出层次
+    public Brush PanelBrush => Pick("PanelBrush");
+    public Brush CardBrush => Pick("CardBrush");
+    public Brush LineBrush => Pick("LineBrush");
+
+    private Brush Pick(string key)
+    {
+        var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(Definition)[key]));
+        brush.Freeze();
+        return brush;
+    }
     public Brush Swatch => new SolidColorBrush((Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(Definition)["BgBrush"]));
     public Brush Accent => new SolidColorBrush((Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(Definition)["AccentBrush"]));
 }
@@ -89,6 +101,13 @@ public sealed partial class MainViewModel
     [RelayCommand] private void OpenAppearance() { IsAppearanceOpen=true; }
     [RelayCommand] private void CloseAppearance() { if(IsWallpaperBusy) return; if(TrySaveAppearance()) IsAppearanceOpen=false; }
     [RelayCommand] private void SaveAppearance() => TrySaveAppearance();
+    /// <summary>把当前主题的配色再同步一次到窗口标题栏（首帧、SourceInitialized、切主题时都要）。</summary>
+    public void RefreshWindowChrome()
+    {
+        try { Appearance.WindowChrome.Sync(ThemeCatalog.Resolve(_appearanceSettings.Theme)); }
+        catch (Exception ex) { Serilog.Log.Debug(ex, "同步标题栏配色失败"); }
+    }
+
     public void FlushAppearance() { if(_appearanceSaveTimer?.IsEnabled is true) TrySaveAppearance(); }
     private bool TrySaveAppearance()
     {

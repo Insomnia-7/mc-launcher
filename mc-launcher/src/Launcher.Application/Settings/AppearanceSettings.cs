@@ -37,8 +37,8 @@ public static class ThemeCatalog
         Make("glacier","冰川微光","#EEF0F5","#EDFAFBFE","#EBFFFFFF","#EAF3F5F9","#D9E5EAF4","#333E506E","#252B37","#656F80","#4669AB","#4669AB","#18EEF0F5"),
         Make("amethyst","紫晶暮色","#1B1922","#EE25222E","#E6302B3A","#D9373143","#CC443B52","#396E6080","#F4F1F7","#B9B0C4","#C2A8E6","#785BA5","#251B1922"),
         Make("forest","松林薄雾","#17201E","#EE212D29","#E62A3732","#D932423B","#CC3D5148","#39657E71","#F0F5F2","#ACBFB5","#9BC9B1","#487D65","#2517201E"),
-        Make("sunset","日落琥珀","#191214","#EE241A1C","#E62E2225","#D935282B","#CC433236","#396B5158","#F7F2EE","#C4B2AC","#F0B27A","#B4703C","#25191214"),
-        Make("aurora","极光青屿","#0E1417","#EE16212A","#E61D2A34","#D9263540","#CC31434F","#39607A8C","#EEF6F9","#A9BEC7","#8FD9C8","#3E8C7C","#250E1417")
+        Make("sunset","日落琥珀","#191214","#EE241A1C","#E62E2225","#D935282B","#CC433236","#396B5158","#F7F2EE","#C4B2AC","#F0B27A","#96582B","#25191214"),
+        Make("aurora","极光青屿","#0E1417","#EE16212A","#E61D2A34","#D9263540","#CC31434F","#39607A8C","#EEF6F9","#A9BEC7","#8FD9C8","#337666","#250E1417")
     };
     public static Dictionary<string,string> Resolve(ThemeDefinition theme)
     {

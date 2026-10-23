@@ -36,7 +36,7 @@
 
         <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False">
           <Rectangle Fill="{DynamicResource BackdropGlowBrush}"/>
-          <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}"><Image.Effect><BlurEffect Radius="9" RenderingBias="Performance"/></Image.Effect></Image>
+          <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}"><Image.Effect><BlurEffect Radius="26" RenderingBias="Performance"/></Image.Effect></Image>
           <Rectangle Fill="{DynamicResource WallpaperTintBrush}"/>
         </Grid>
         <!-- ══════════ 左栏 ══════════ -->

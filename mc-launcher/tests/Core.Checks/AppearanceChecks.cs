@@ -6,7 +6,7 @@ internal static class AppearanceChecks
     public static void Run(Action<string,bool,string?> check)
     {
         void Check(string name,bool ok)=>check(name,ok,null);
-        Check("四套内置主题名称和标识独立",ThemeCatalog.BuiltIns.Count==4 && ThemeCatalog.BuiltIns.Select(t=>t.Id).Distinct().Count()==4);
+        Check("内置主题名称和标识独立",ThemeCatalog.BuiltIns.Count>=4 && ThemeCatalog.BuiltIns.Select(t=>t.Id).Distinct().Count()==ThemeCatalog.BuiltIns.Count);
         foreach(var theme in ThemeCatalog.BuiltIns) Check("主题色表完整："+theme.Definition.Name,ThemeCatalog.Resolve(theme.Definition).Count==ThemeCatalog.ColorKeys.Count);
         foreach(var preset in ThemeCatalog.BuiltIns) {
             var colors=ThemeCatalog.Resolve(preset.Definition);

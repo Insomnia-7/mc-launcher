@@ -21,7 +21,11 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
         var accent=(Color)ColorConverter.ConvertFromString(colors["AccentBrush"]);
         var glow=new LinearGradientBrush(Color.FromArgb(18,accent.R,accent.G,accent.B),Color.FromArgb(0,accent.R,accent.G,accent.B),45);
         glow.Freeze(); resources["BackdropGlowBrush"]=glow;
-        resources["GlassEdgeBrush"]=resources["LineBrush"];
+        // 玻璃边：上亮下暗的 1px 渐变，比一圈实色线更像玻璃；颜色取自主题文字色，深浅主题都成立
+        var text=(Color)ColorConverter.ConvertFromString(colors["TextBrush"]);
+        var edge=new LinearGradientBrush(Color.FromArgb(64,text.R,text.G,text.B),Color.FromArgb(14,text.R,text.G,text.B),90);
+        edge.Freeze(); resources["GlassEdgeBrush"]=edge;
+        WindowChrome.Sync(colors);
     }
     public static BitmapSource Decode(byte[] bytes)
     {

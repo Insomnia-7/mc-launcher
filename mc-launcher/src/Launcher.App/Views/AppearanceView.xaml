@@ -31,17 +31,17 @@
         </Style>
        </ListBox.ItemContainerStyle>
        <ListBox.ItemTemplate>
-        <DataTemplate><Grid>
-         <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-         <Border Width="62" Height="44" CornerRadius="8" Background="{Binding Swatch}" BorderBrush="{Binding Accent}" BorderThickness="0.5" HorizontalAlignment="Left">
-          <Grid Margin="7"><Grid.ColumnDefinitions><ColumnDefinition Width="9"/><ColumnDefinition Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-           <Border Background="{Binding Accent}" Opacity="0.3" CornerRadius="2"/>
-           <StackPanel Grid.Column="2"><Border Background="{Binding Accent}" Opacity="0.3" CornerRadius="2" Height="5" Margin="0,1,0,4"/><Border Background="{Binding Accent}" Opacity="0.18" CornerRadius="2" Height="9"/><Border Background="{Binding Accent}" CornerRadius="2" Width="16" Height="4" HorizontalAlignment="Left" Margin="0,4,0,0"/></StackPanel>
-          </Grid>
-         </Border>
-         <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-        </Grid></DataTemplate>
-       </ListBox.ItemTemplate>
+<DataTemplate><Grid>
+<Grid.ColumnDefinitions><ColumnDefinition Width="78"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<Border Width="66" Height="46" CornerRadius="9" Background="{Binding Swatch}" BorderBrush="{Binding LineBrush}" BorderThickness="1" HorizontalAlignment="Left">
+<Grid Margin="5"><Grid.ColumnDefinitions><ColumnDefinition Width="12"/><ColumnDefinition Width="4"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<Border Background="{Binding PanelBrush}" CornerRadius="3"/>
+<StackPanel Grid.Column="2"><Border Background="{Binding CardBrush}" CornerRadius="2" Height="7"/><Border Background="{Binding CardBrush}" CornerRadius="2" Height="7" Margin="0,3,0,0"/><Border Background="{Binding Accent}" CornerRadius="2" Height="5" Width="26" HorizontalAlignment="Left" Margin="0,3,0,0"/></StackPanel>
+</Grid>
+</Border>
+<TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+</Grid></DataTemplate>
+</ListBox.ItemTemplate>
       </ListBox>
       <WrapPanel Margin="0,2,0,18"><Button Content="导入主题" Command="{Binding ImportThemeCommand}" Style="{StaticResource SecondaryButton}" Height="32" Margin="0,0,8,0"/><Button Content="导出配色" Command="{Binding ExportThemeCommand}" Style="{StaticResource GhostButton}" Height="32"/></WrapPanel>
       <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,0,0,18"/>

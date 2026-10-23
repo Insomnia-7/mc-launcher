@@ -18,7 +18,7 @@ internal static partial class UiCheck
         vm.Download.SelectedCategory=vm.Download.Categories.Single(c=>!c.IsSeparator && c.Category==Launcher.Domain.Content.DownloadCategory.Mod);
         Pump(vm.Download.SearchCommand.ExecuteAsync(null));
         vm.StatusText="就绪 · 界面演示，使用隔离测试数据";
-        Check("构造外观不解码壁纸",vm.WallpaperImage is null && vm.ThemeChoices.Count==4);
+        Check("构造外观不解码壁纸",vm.WallpaperImage is null && vm.ThemeChoices.Count==ThemeCatalog.BuiltIns.Count);
         var window=new MainWindow(vm);
         foreach(var choice in vm.ThemeChoices.ToArray()) {
             vm.SelectedTheme=choice;
@@ -67,7 +67,7 @@ internal static partial class UiCheck
         Check("无效图片不会改变原壁纸或卡住按钮",rejected && ReferenceEquals(vm.WallpaperImage,current) && !vm.IsWallpaperBusy && File.Exists(savedImage));
         var customPath=Path.Combine(root,"theme.json");AppearanceStore.Export(customPath,new(1,"日落玻璃",new() { ["AccentBrush"]="#FFBB99",["BgBrush"]="#2A1B29" }));
         vm.ImportAppearanceTheme(customPath);
-        Check("自定义主题导入并成为可选项",vm.SelectedTheme?.Id=="custom" && vm.ThemeChoices.Count==5);
+        Check("自定义主题导入并成为可选项",vm.SelectedTheme?.Id=="custom" && vm.ThemeChoices.Count==ThemeCatalog.BuiltIns.Count+1);
         var restored=(MainViewModel)Resolve(typeof(MainViewModel))!;
         Check("主题与壁纸设置重新打开可恢复",restored.SelectedTheme?.Name=="日落玻璃" && restored.WallpaperOpacity==0.72 && restored.WallpaperImage is null);
         Pump(restored.LoadAppearanceWallpaperAsync());
@@ -143,9 +143,30 @@ internal static partial class UiCheck
         vm.IsInstanceSection=false;Pump(Task.Delay(450));
         vm.Download.SelectedCategory=vm.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.Mod);
         Pump(Task.Delay(450));
-        vm.OpenAppearanceCommand.Execute(null);Pump(Task.Delay(450));
+        RecordMotion(window,()=>vm.Download.SelectedCategory=vm.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.ResourcePack),"redesign-category.gif");
+        RecordMotion(window,()=>vm.OpenAppearanceCommand.Execute(null),"redesign-dialog.gif");
         CaptureMotion(window,"redesign-appearance.png");
         vm.CloseAppearanceCommand.Execute(null);Pump(Task.Delay(250));
+    }
+    private static void RecordMotion(MainWindow window,Action change,string name)
+    {
+        var grid=(Grid)window.Content;
+        var encoder=new GifBitmapEncoder();
+        for(var i=0;i<16;i++) {
+            if(i==1) change();
+            if(i>0) Pump(Task.Delay(40));
+            var bitmap=new RenderTargetBitmap((int)Math.Ceiling(grid.ActualWidth),(int)Math.Ceiling(grid.ActualHeight),96,96,PixelFormats.Pbgra32);
+            bitmap.Render(grid);
+            var metadata=new BitmapMetadata("gif");
+            metadata.SetQuery("/grctlext/Delay",(ushort)(i is 0 or 15 ? 60 : 4));
+            metadata.SetQuery("/grctlext/Disposal",(byte)2);
+            if(i==0) {
+                metadata.SetQuery("/appext/application",System.Text.Encoding.ASCII.GetBytes("NETSCAPE2.0"));
+                metadata.SetQuery("/appext/data",new byte[] {3,1,0,0,0});
+            }
+            encoder.Frames.Add(BitmapFrame.Create(bitmap,null,metadata,null));
+        }
+        using var stream=File.Create(Path.Combine(AppContext.BaseDirectory,name));encoder.Save(stream);
     }
     private static void CaptureMotion(MainWindow window,string name)
     {
