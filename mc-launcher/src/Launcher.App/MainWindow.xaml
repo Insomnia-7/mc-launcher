@@ -38,6 +38,15 @@
           <Rectangle Fill="{DynamicResource BackdropGlowBrush}"/>
           <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}"><Image.Effect><BlurEffect Radius="26" RenderingBias="Performance"/></Image.Effect></Image>
           <Rectangle Fill="{DynamicResource WallpaperTintBrush}"/>
+                <Rectangle IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <RadialGradientBrush GradientOrigin="0.18,0.02" Center="0.18,0.02" RadiusX="0.95" RadiusY="0.85">
+                            <GradientStop Color="#26FFFFFF" Offset="0" />
+                            <GradientStop Color="#0DFFFFFF" Offset="0.55" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
         </Grid>
         <!-- ══════════ 左栏 ══════════ -->
         <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" CornerRadius="20" Margin="14,14,0,8">
@@ -916,6 +925,9 @@
 
         <views:AppearanceView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="97" Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAppearanceOpen}"/>
 
+        <!-- 切主题时铺一层旧底色淡出，避免整屏瞬间换色 -->
+        <Border x:Name="ThemeFade" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
+                IsHitTestVisible="False" Opacity="0" Background="Transparent" />
         <views:NetworkSettingsView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
                                    Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsNetworkOpen}" />
 

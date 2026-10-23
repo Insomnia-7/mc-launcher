@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Launcher.Application.Settings;
 
@@ -11,13 +12,32 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
     public string DataDirectory => directory;
     public string ImageDirectory => Path.Combine(directory,"appearance-data");
     public AppearanceSettings Read() => AppearanceStore.Read(directory);
-    public void Apply(ThemeDefinition theme)
+    private readonly Dictionary<string,SolidColorBrush> _brushes=new(StringComparer.Ordinal);
+
+    /// <summary>切主题时给出一层旧底色，窗口铺上去淡出，避免整屏「啪」地换色。</summary>
+    public event Action<Color>? Crossfade;
+
+    public void Apply(ThemeDefinition theme) => Apply(theme, animate: true);
+
+    public void Apply(ThemeDefinition theme,bool animate)
     {
         var colors=ThemeCatalog.Resolve(theme);
+        var first=_brushes.Count==0;
+        var duration=animate && !first && Animations.MotionPreferences.Mode!="off"
+            ? TimeSpan.FromMilliseconds(380)
+            : TimeSpan.Zero;
+
+        var oldBg=resources["BgBrush"] is SolidColorBrush old ? old.Color : (Color?)null;
+
+        // 颜色本身直接落到目标值：ResourceDictionary 里的画刷会被 WPF 冻结，动画 Color 会抛
+        // 「对象已密封」；真正的顺滑交给窗口那层旧底色淡出（Crossfade），观感等价且不失效。
         foreach(var pair in colors) {
-            var brush=new SolidColorBrush((Color)ColorConverter.ConvertFromString(pair.Value));
-            brush.Freeze(); resources[pair.Key]=brush;
+            var target=(Color)ColorConverter.ConvertFromString(pair.Value);
+            if(_brushes.TryGetValue(pair.Key,out var brush) && !brush.IsFrozen) brush.Color=target;
+            else { brush=new SolidColorBrush(target); _brushes[pair.Key]=brush; }
+            resources[pair.Key]=brush;
         }
+
         var accent=(Color)ColorConverter.ConvertFromString(colors["AccentBrush"]);
         var glow=new LinearGradientBrush(Color.FromArgb(18,accent.R,accent.G,accent.B),Color.FromArgb(0,accent.R,accent.G,accent.B),45);
         glow.Freeze(); resources["BackdropGlowBrush"]=glow;
@@ -25,7 +45,8 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
         var text=(Color)ColorConverter.ConvertFromString(colors["TextBrush"]);
         var edge=new LinearGradientBrush(Color.FromArgb(64,text.R,text.G,text.B),Color.FromArgb(14,text.R,text.G,text.B),90);
         edge.Freeze(); resources["GlassEdgeBrush"]=edge;
-        WindowChrome.Sync(colors);
+        WindowChrome.Sync(colors,duration);
+        if(animate && !first && oldBg is { } oldColor) Crossfade?.Invoke(oldColor);
     }
     public static BitmapSource Decode(byte[] bytes)
     {

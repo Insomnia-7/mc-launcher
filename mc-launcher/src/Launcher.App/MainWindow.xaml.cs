@@ -20,8 +20,9 @@ public partial class MainWindow : Window
         };
         viewModel.Download.PropertyChanging += categoryChanging;
         viewModel.PropertyChanging += sectionChanging;
-        Closed += (_,_) => { viewModel.Download.PropertyChanging -= categoryChanging; viewModel.PropertyChanging -= sectionChanging; categoryMotion.Clear(); };
+        Closed += (_,_) => { viewModel.Download.PropertyChanging -= categoryChanging; viewModel.PropertyChanging -= sectionChanging; viewModel.AppearanceCrossfade -= PlayThemeFade; categoryMotion.Clear(); };
         DataContext = viewModel;
+        viewModel.AppearanceCrossfade += PlayThemeFade;
         ContentRendered += async (_,_) => await viewModel.LoadAppearanceWallpaperAsync();
         Closing += (_,_) => viewModel.FlushAppearance();
     }
@@ -70,5 +71,23 @@ public partial class MainWindow : Window
         }
 
         await viewModel.ImportModpackFileAsync(paths[0]);
+    }
+    /// <summary>
+    /// 切主题时先铺一层「旧底色」再淡出：颜色本身在 AppearanceManager 里插值，
+    /// 这层遮罩负责兜住整屏的瞬时变化，看起来才像渐变而不是闪一下。
+    /// </summary>
+    private void PlayThemeFade(System.Windows.Media.Color previousBackground)
+    {        if (Animations.MotionPreferences.Mode == "off") return;
+
+        ThemeFade.Background = new System.Windows.Media.SolidColorBrush(previousBackground);
+        ThemeFade.BeginAnimation(OpacityProperty, null);
+        ThemeFade.Opacity = 0.88;
+
+        var animation = new System.Windows.Media.Animation.DoubleAnimation(0.88, 0, TimeSpan.FromMilliseconds(360))
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+            FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop,
+        };
+        ThemeFade.BeginAnimation(OpacityProperty, animation);
     }
 }

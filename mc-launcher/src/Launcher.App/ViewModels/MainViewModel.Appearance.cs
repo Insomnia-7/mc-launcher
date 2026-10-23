@@ -45,6 +45,8 @@ public sealed partial class MainViewModel
     private DispatcherTimer? _appearanceSaveTimer;
     private bool _readingAppearance;
     private int _wallpaperRevision;
+    /// <summary>切主题时给出旧底色，窗口铺一层淡出，避免整屏瞬间换色。</summary>
+    public event Action<Color>? AppearanceCrossfade;
     public IReadOnlyList<MotionChoice> MotionChoices { get; } = new[] { new MotionChoice("smooth","流畅动画"),new MotionChoice("system","跟随系统"),new MotionChoice("off","关闭动画") };
     [ObservableProperty] private MotionChoice? _selectedMotion;
     public ObservableCollection<ThemeChoice> ThemeChoices { get; }=[];
@@ -62,6 +64,7 @@ public sealed partial class MainViewModel
     {
         _readingAppearance=true;
         _appearance=new(AppPaths.DataDirectory,System.Windows.Application.Current.Resources);
+        _appearance.Crossfade+=color=>AppearanceCrossfade?.Invoke(color);
         _appearanceSettings=_appearance.Read();
         foreach(var theme in ThemeCatalog.BuiltIns) ThemeChoices.Add(new(theme.Id,theme.Definition));
         if(_appearanceSettings.CustomTheme is { } custom) ThemeChoices.Add(new("custom",custom));
@@ -81,8 +84,17 @@ public sealed partial class MainViewModel
     partial void OnSelectedThemeChanged(ThemeChoice? value)
     {
         if(_readingAppearance || value is null) return;
-        _appearanceSettings=_appearanceSettings with { ThemeId=value.Id };
-        _appearance.Apply(value.Definition); SaveAppearance();
+        try
+        {
+            _appearanceSettings=_appearanceSettings with { ThemeId=value.Id };
+            _appearance.Apply(value.Definition);
+            SaveAppearance();
+        }
+        catch(Exception ex)
+        {
+            Serilog.Log.Error(ex,"切换主题失败：{Theme}",value.Id);
+            AppearanceHint="切换主题失败："+ex.Message;
+        }
     }
     partial void OnSelectedMotionChanged(MotionChoice? value)
     {

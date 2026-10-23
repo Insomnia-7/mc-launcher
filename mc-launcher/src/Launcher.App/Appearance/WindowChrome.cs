@@ -2,12 +2,14 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Launcher.App.Appearance;
 
 /// <summary>
 /// 让窗口标题栏跟着主题走：Win11 用 DWM 的 caption/border/text 三个颜色属性，
 /// Win10 只能退到「深/浅」二选一。取不到句柄或属性不被支持时静默跳过。
+/// 切主题时按帧插值，避免标题栏「啪」地一下换色。
 /// </summary>
 internal static class WindowChrome
 {
@@ -17,10 +19,19 @@ internal static class WindowChrome
     private const int DwmCaptionColor = 35;
     private const int DwmTextColor = 36;
 
+    private static DispatcherTimer? _timer;
+    private static Color _caption;
+    private static Color _border;
+    private static Color _text;
+    private static bool _primed;
+
     /// <summary>主窗口，App 在 Show 之后登记进来。</summary>
     public static Window? Target { get; set; }
 
-    public static void Sync(IReadOnlyDictionary<string, string> colors)
+    public static void Sync(IReadOnlyDictionary<string, string> colors) => Sync(colors, TimeSpan.Zero);
+
+    /// <summary>transition 大于 0 时按 16ms 一帧把标题栏颜色推到目标值。</summary>
+    public static void Sync(IReadOnlyDictionary<string, string> colors, TimeSpan transition)
     {
         if (Target is null) return;
         var hwnd = new WindowInteropHelper(Target).Handle;
@@ -41,9 +52,34 @@ internal static class WindowChrome
             if (Set(hwnd, DwmUseImmersiveDarkMode, dark) != 0)
                 Set(hwnd, DwmUseImmersiveDarkModeLegacy, dark);
 
-            SetColor(hwnd, DwmCaptionColor, caption);
-            SetColor(hwnd, DwmBorderColor, border);
-            SetColor(hwnd, DwmTextColor, text);
+            if (!_primed || transition <= TimeSpan.Zero || _timer is { IsEnabled: true })
+            {
+                _caption = caption; _border = border; _text = text;
+                Apply(hwnd);
+                _primed = true;
+                return;
+            }
+
+            var steps = Math.Max(1, (int)(transition.TotalMilliseconds / 16));
+            var frame = 0;
+            var fromCaption = _caption;
+            var fromBorder = _border;
+            var fromText = _text;
+
+            _timer?.Stop();
+            _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+            _timer.Tick += (_, _) =>
+            {
+                frame++;
+                var t = Math.Min(1d, frame / (double)steps);
+                var eased = 1 - Math.Pow(1 - t, 3);   // easeOutCubic
+                _caption = Lerp(fromCaption, caption, eased);
+                _border = Lerp(fromBorder, border, eased);
+                _text = Lerp(fromText, text, eased);
+                Apply(hwnd);
+                if (t >= 1d) { _timer!.Stop(); _caption = caption; _border = border; _text = text; Apply(hwnd); }
+            };
+            _timer.Start();
         }
         catch (DllNotFoundException)
         {
@@ -54,6 +90,19 @@ internal static class WindowChrome
             // 老系统不认这些属性，忽略
         }
     }
+
+    private static void Apply(IntPtr hwnd)
+    {
+        SetColor(hwnd, DwmCaptionColor, _caption);
+        SetColor(hwnd, DwmBorderColor, _border);
+        SetColor(hwnd, DwmTextColor, _text);
+    }
+
+    private static Color Lerp(Color from, Color to, double t) => Color.FromArgb(
+        (byte)Math.Round(from.A + (to.A - from.A) * t),
+        (byte)Math.Round(from.R + (to.R - from.R) * t),
+        (byte)Math.Round(from.G + (to.G - from.G) * t),
+        (byte)Math.Round(from.B + (to.B - from.B) * t));
 
     private static Color Parse(IReadOnlyDictionary<string, string> colors, string key) =>
         colors.TryGetValue(key, out var hex) && hex is { Length: > 0 }
