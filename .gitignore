@@ -16,6 +16,7 @@
 !/scripts/README-release.md
 
 # ── 启动器目录里的构建产物与临时文件也不入库 ──
+mc-launcher/**/scratch/
 mc-launcher/**/bin/
 mc-launcher/**/obj/
 mc-launcher/dist/

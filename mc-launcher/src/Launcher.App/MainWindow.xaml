@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Launcher.App.ViewModels"
         xmlns:views="clr-namespace:Launcher.App.Views"
+             xmlns:anim="clr-namespace:Launcher.App.Animations"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="MC Launcher" Height="640" Width="1000"
@@ -26,7 +27,7 @@
         </Grid.RowDefinitions>
 
         <!-- ══════════ 左栏 ══════════ -->
-        <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource PanelBrush}">
+        <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0">
             <DockPanel>
                 <!-- 顶部两个分区按钮：游戏版本 / 下载 -->
                 <Grid DockPanel.Dock="Top" Margin="12,14,12,10">
@@ -169,7 +170,7 @@
         <ScrollViewer Grid.Row="0" Grid.Column="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       Visibility="{Binding IsInstanceSection, Converter={StaticResource BoolToVis}}">
-            <Grid Margin="32,28,32,24">
+            <Grid Margin="32,28,32,24" MaxWidth="1120" anim:PageTransition.AutoPlay="True">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -249,7 +250,7 @@
             </StackPanel>
 
             <Button Grid.Row="1" Content="启动游戏"
-                    Style="{StaticResource PrimaryButton}"
+                    Style="{StaticResource PrimaryButton}" anim:PressFeedback.Scale="0.97"
                     Command="{Binding LaunchCommand}"
                     Margin="0,0,0,12" />
 
@@ -550,7 +551,7 @@
         </ScrollViewer>
 
         <!-- ══════════ 右：下载页 ══════════ -->
-        <Grid Grid.Row="0" Grid.Column="1" Margin="32,28,32,20"
+        <Grid Grid.Row="0" Grid.Column="1" Margin="32,28,32,20" MaxWidth="1120" anim:PageTransition.AutoPlay="True"
               Visibility="{Binding IsDownloadSection, Converter={StaticResource BoolToVis}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -865,7 +866,7 @@
                             Visibility="{Binding Download.IsSearchMode, Converter={StaticResource BoolToVis}}" />
 
                     <Button Grid.Column="2" Content="下载并安装" Height="40" MinWidth="128"
-                            Style="{StaticResource PrimaryButton}"
+                            Style="{StaticResource PrimaryButton}" anim:PressFeedback.Scale="0.97"
                             Command="{Binding Download.InstallVersionCommand}"
                             Visibility="{Binding Download.IsVersionMode, Converter={StaticResource BoolToVis}}" />
                 </Grid>
@@ -935,7 +936,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="3" Content="{Binding ConfirmOkText}" Height="32" MinWidth="88"
-                                Style="{StaticResource PrimaryButton}"
+                                Style="{StaticResource PrimaryButton}" anim:PressFeedback.Scale="0.97"
                                 Command="{Binding ConfirmOkCommand}" />
                         <Button Grid.Column="1" Content="取消" Height="32" MinWidth="72"
                                 Style="{StaticResource SecondaryButton}"
