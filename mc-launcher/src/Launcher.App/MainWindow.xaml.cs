@@ -1,6 +1,8 @@
+using System.Windows.Media.Animation;
 using System.IO;
 using Launcher.App.Animations;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Launcher.App.ViewModels;
 
@@ -20,9 +22,10 @@ public partial class MainWindow : Window
         };
         viewModel.Download.PropertyChanging += categoryChanging;
         viewModel.PropertyChanging += sectionChanging;
-        Closed += (_,_) => { viewModel.Download.PropertyChanging -= categoryChanging; viewModel.PropertyChanging -= sectionChanging; viewModel.AppearanceCrossfade -= PlayThemeFade; categoryMotion.Clear(); };
+        Closed += (_,_) => { viewModel.Download.PropertyChanging -= categoryChanging; viewModel.PropertyChanging -= sectionChanging; viewModel.AppearanceCrossfade -= PlayThemeFade; viewModel.InstanceRevealed -= RevealInstance; categoryMotion.Clear(); };
         DataContext = viewModel;
         viewModel.AppearanceCrossfade += PlayThemeFade;
+        viewModel.InstanceRevealed += RevealInstance;
         ContentRendered += async (_,_) => await viewModel.LoadAppearanceWallpaperAsync();
         Closing += (_,_) => viewModel.FlushAppearance();
     }
@@ -89,5 +92,34 @@ public partial class MainWindow : Window
             FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop,
         };
         ThemeFade.BeginAnimation(OpacityProperty, animation);
+    }
+    /// <summary>
+    /// 装完一个版本后把它滚进视野并给一次高亮脉冲。
+    /// <para>
+    /// 只设 SelectedItem 不够：列表是虚拟化的，滚到别处时用户看不到选中项，会以为没装成功。
+    /// 容器可能还没生成（刚 Add 进集合），所以找不到就等一帧再试一次。
+    /// </para>
+    /// </summary>
+    private void RevealInstance(InstanceCard card)
+    {
+        InstanceList.ScrollIntoView(card);
+        TryPulse(card, retry: true);
+    }
+
+    private void TryPulse(InstanceCard card, bool retry)
+    {
+        if (InstanceList.ItemContainerGenerator.ContainerFromItem(card) is not ListBoxItem container)
+        {
+            if (!retry) return;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() => TryPulse(card, retry: false)));
+            return;
+        }
+
+        var pulse = new DoubleAnimation(0.25, 1, TimeSpan.FromMilliseconds(520))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        container.BeginAnimation(UIElement.OpacityProperty, pulse);
     }
 }

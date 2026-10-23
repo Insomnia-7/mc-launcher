@@ -98,6 +98,9 @@ public sealed partial class MainViewModel
         finally { IsLoadingSetupVersions = false; }
     }
 
+    /// <summary>安装向导装完后通知窗口：把新版本滚进视野并给一次高亮脉冲。</summary>
+    public event Action<InstanceCard>? InstanceRevealed;
+
     private bool CanInstallSetup() => !IsSetupBusy && !IsLoadingSetupVersions && !IsLoggingIn && !IsBusy && !Download.IsBusy;
 
     [RelayCommand(CanExecute = nameof(CanInstallSetup))]
@@ -139,6 +142,8 @@ public sealed partial class MainViewModel
             RefreshInstances();
             SelectedInstance = Instances.FirstOrDefault(i => i.InstanceId == version.Id);
             IsInstanceSection = true;
+            // 列表可能滚到了别处：让窗口把它滚进视野并闪一下，证明「新装的是这一行」
+            if (SelectedInstance is { } revealed) InstanceRevealed?.Invoke(revealed);
             SetupStatus = StatusText = $"{version.Id} 已准备好，可以启动游戏。";
             succeeded = true;
         }

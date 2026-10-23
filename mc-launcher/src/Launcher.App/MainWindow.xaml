@@ -95,7 +95,7 @@
 
                 <Button DockPanel.Dock="Bottom" Content="外观与主题…" Command="{Binding OpenAppearanceCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" ToolTip="主题、壁纸 · Ctrl+,"/>
                 <!-- 版本列表 -->
-                <ListBox ItemsSource="{Binding Instances}"
+                <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}"
                          SelectedItem="{Binding SelectedInstance}"
                          ItemContainerStyle="{StaticResource InstanceItem}"
                          Background="Transparent" BorderThickness="0"
