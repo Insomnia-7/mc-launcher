@@ -60,26 +60,45 @@ internal static class WindowChrome
                 return;
             }
 
-            var steps = Math.Max(1, (int)(transition.TotalMilliseconds / 16));
-            var frame = 0;
+            var started = DateTime.UtcNow;
             var fromCaption = _caption;
             var fromBorder = _border;
             var fromText = _text;
 
             _timer?.Stop();
-            _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
-            _timer.Tick += (_, _) =>
+            var timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+            _timer = timer;
+            timer.Tick += (_, _) =>
             {
-                frame++;
-                var t = Math.Min(1d, frame / (double)steps);
+                // 标题栏插值也靠 DispatcherTimer：窗口最小化时这个计时器仍在跑，
+                // 但系统会停掉 DWM 之外的渲染；不要在这里假设「一定跑满 frames 次」，
+                // 用真实经过时间推进，最小化再恢复也不会停在中间色。
+                var elapsed = DateTime.UtcNow - started;
+                var t = transition.TotalMilliseconds <= 0 ? 1d : Math.Min(1d, elapsed.TotalMilliseconds / transition.TotalMilliseconds);
                 var eased = 1 - Math.Pow(1 - t, 3);   // easeOutCubic
                 _caption = Lerp(fromCaption, caption, eased);
                 _border = Lerp(fromBorder, border, eased);
                 _text = Lerp(fromText, text, eased);
                 Apply(hwnd);
-                if (t >= 1d) { _timer!.Stop(); _caption = caption; _border = border; _text = text; Apply(hwnd); }
+                if (t >= 1d)
+                {
+                    timer.Stop();
+                    _caption = caption; _border = border; _text = text;
+                    Apply(hwnd);
+                }
             };
-            _timer.Start();
+            timer.Start();
+            // 兜底：前台被抢占、窗口被最小化到托盘时 Tick 可能长时间不来，
+            // 到点直接落到目标色，避免标题栏一直是半途的中间色。
+            var guard = new DispatcherTimer { Interval = transition + TimeSpan.FromMilliseconds(600) };
+            guard.Tick += (_, _) =>
+            {
+                guard.Stop();
+                timer.Stop();
+                _caption = caption; _border = border; _text = text;
+                Apply(hwnd);
+            };
+            guard.Start();
         }
         catch (DllNotFoundException)
         {
