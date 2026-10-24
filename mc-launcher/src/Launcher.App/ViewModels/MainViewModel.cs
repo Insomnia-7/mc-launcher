@@ -112,6 +112,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         GameRoot = AppPaths.GameRoot;
         GameRootProblem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot) ?? string.Empty;
+        GameRootNotice = AppPaths.GameRootFallbackNotice ?? string.Empty;
 
         Download = new DownloadViewModel(
             modrinth, curseForge, modInstallService, curseForgeInstallService, modpackDownloadService,
@@ -121,7 +122,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         Download.InstancesChanged += RefreshInstances;
 
-        StatusText = HasGameRootProblem ? GameRootProblem : $"就绪 · 游戏目录 {GameRoot}";
+        StatusText = HasGameRootProblem ? GameRootProblem
+            : HasGameRootNotice ? GameRootNotice.Split('\n')[0]
+            : $"就绪 · 游戏目录 {GameRoot}";
         InitializeAppearance();
         InitializeSetup(meta);
         RefreshAccountChoices(selectCurrent: true);
@@ -163,6 +166,7 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.LogInformation("游戏目录由环境变量指定，本次切换只在当前进程内生效");
 
         GameRootProblem = string.Empty;
+        GameRootNotice = string.Empty;
         SetupError = string.Empty;
         OnPropertyChanged(nameof(GameRoot));
         RefreshInstances();
@@ -837,6 +841,18 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool HasGameRootProblem => GameRootProblem.Length > 0;
 
+    /// <summary>上次记住的游戏目录失效、已经回退到默认目录时的一句说明（不影响使用）。</summary>
+    [ObservableProperty]
+    private string _gameRootNotice = string.Empty;
+
+    public bool HasGameRootNotice => GameRootNotice.Length > 0;
+
+    partial void OnGameRootNoticeChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasGameRootNotice));
+        OnPropertyChanged(nameof(EmptyStateHint));
+    }
+
     partial void OnGameRootProblemChanged(string value)
     {
         OnPropertyChanged(nameof(HasGameRootProblem));
@@ -1077,7 +1093,9 @@ public sealed partial class MainViewModel : ObservableObject
         HasGameRootProblem
             ? GameRootProblem
             : Instances.Count == 0
-            ? "还没有版本。\n点击左下角「安装向导」一键准备，或前往「下载」选择版本。"
+            ? (HasGameRootNotice
+                ? GameRootNotice + "\n还没有版本。\n点击左下角「安装向导」一键准备，或前往「下载」选择版本。"
+                : "还没有版本。\n点击左下角「安装向导」一键准备，或前往「下载」选择版本。")
             : "「启动游戏」使用上方显示的身份启动当前版本；\n"
               + "左侧「下载」里可以装模组、整合包、资源包、数据包与光影包；\n"
               + "下面的「版本设置」能改内存、Java 和额外参数，保存后写进这个版本的 settings.json。";

@@ -289,16 +289,23 @@ public static class AppPaths
 
     public static string GameRootOverrideFile => Path.Combine(DataDirectory, "game-root.txt");
 
+    /// <summary>
+    /// 上次记住的游戏目录这次不可用时，这里放一句给用户看的中文说明（正常时是 null）。
+    /// 界面上会把它当作「游戏目录有问题」的提示，并且目录已经回退到默认位置。
+    /// </summary>
+    public static string? GameRootFallbackNotice { get; private set; }
+
     private static string ResolveGameRoot()
     {
         if (Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 } custom)
             return custom;
 
+        var fallback = Path.Combine(DataDirectory, "game");
+        string? saved = null;
         try
         {
-            if (File.Exists(GameRootOverrideFile)
-                && File.ReadAllText(GameRootOverrideFile).Trim() is { Length: > 0 } saved)
-                return saved;
+            if (File.Exists(GameRootOverrideFile))
+                saved = File.ReadAllText(GameRootOverrideFile).Trim();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -306,7 +313,24 @@ public static class AppPaths
             Serilog.Log.Warning(ex, "读取游戏目录设置失败：{File}", GameRootOverrideFile);
         }
 
-        return Path.Combine(DataDirectory, "game");
+        if (string.IsNullOrEmpty(saved)) return fallback;
+
+        // 上次选的目录这次用不了（U 盘拔了、盘符变了、路径被文件占住）：不能每次都把
+        // 用户卡在一个空列表上，先回退到默认目录，把原因留在界面上，文件另存一份不直接删。
+        var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(saved);
+        if (problem is null) return saved;
+
+        GameRootFallbackNotice = $"上次用的游戏目录现在打不开：{saved}\n{problem}\n已临时改用默认目录 {fallback}；可以用下面的按钮重新选一个。";
+        Serilog.Log.Warning("记住的游戏目录不可用，回退到默认目录：{Saved} -> {Fallback}", saved, fallback);
+        try
+        {
+            File.Move(GameRootOverrideFile, Path.Combine(DataDirectory, "game-root.broken.txt"), overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Serilog.Log.Warning(ex, "备份失效的游戏目录设置失败：{File}", GameRootOverrideFile);
+        }
+        return fallback;
     }
 
     /// <summary>把用户选的目录记下来并立即生效；环境变量优先的情况下返回 false。</summary>
