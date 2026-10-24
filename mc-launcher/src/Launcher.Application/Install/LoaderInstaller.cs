@@ -34,6 +34,8 @@ public sealed class LoaderInstaller(
             throw new NotSupportedException($"{kind} 走 installer jar 流程，M3 第二阶段再接");
 
         var available = await loaders.GetLoaderVersionsAsync(kind, gameVersion, ct).ConfigureAwait(false);
+        if (available.Count == 0)
+            throw new InvalidOperationException($"{kind} 没有适用于 {gameVersion} 的加载器版本");
         var version = loaderVersion ?? available[0];
 
         if (!available.Contains(version, StringComparer.Ordinal))

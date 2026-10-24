@@ -62,8 +62,9 @@ public sealed class ForgeInstallerRunner(
 
         // ② 找 Java：1.20.1 的 Forge 需要 17+，取满足条件的最低版本省内存
         var javas = await javaLocator.DiscoverAsync(ct).ConfigureAwait(false);
-        var java = javas.Where(j => j.MajorVersion >= 17).OrderBy(j => j.MajorVersion).FirstOrDefault()
-            ?? throw new InvalidOperationException("没有找到 Java 17+，Forge installer 需要它来打补丁");
+        var requiredJava = InstallerJavaRequirement.Read(gameRoot, minecraftVersion, 17);
+        var java = javas.Where(j => j.MajorVersion >= requiredJava).OrderBy(j => j.MajorVersion).FirstOrDefault()
+            ?? throw new InvalidOperationException($"没有找到 Java {requiredJava}+，Forge installer 需要它来打补丁");
 
         // ②.5 Forge installer 要求目标目录里存在 launcher_profiles.json，否则直接报
         //     "There is no minecraft launcher profile ... you need to run the launcher first!"
@@ -122,6 +123,14 @@ public sealed class ForgeInstallerRunner(
         {
             TryKill(process);
             throw new TimeoutException($"Forge installer 超过 {(installTimeout ?? DefaultTimeout).TotalMinutes:F0} 分钟未结束，已终止");
+        }
+
+        catch (OperationCanceledException)
+        {
+            TryKill(process);
+            // The JSON may be written before processors finish; do not treat a cancelled install as complete.
+            File.Delete(versionJson);
+            throw;
         }
 
         if (process.ExitCode != 0 || !File.Exists(versionJson))
@@ -283,7 +292,7 @@ public sealed class ForgeInstallerRunner(
     {
         try
         {
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); process.WaitForExit(5000); }
         }
         catch
         {

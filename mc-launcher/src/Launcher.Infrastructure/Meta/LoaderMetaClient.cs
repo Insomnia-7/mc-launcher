@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Xml.Linq;
 using Launcher.Application.Abstractions;
 using Launcher.Domain.Loaders;
 using Launcher.Domain.Versions;
@@ -25,43 +26,81 @@ public sealed class LoaderMetaClient : ILoaderMetaClient
     public async Task<IReadOnlyList<string>> GetLoaderVersionsAsync(
         LoaderKind kind, string gameVersion, CancellationToken ct = default)
     {
+        if (kind is LoaderKind.Forge or LoaderKind.NeoForge)
+            return await GetMavenVersionsAsync(kind, gameVersion, ct).ConfigureAwait(false);
+        var game = Uri.EscapeDataString(gameVersion);
         var url = kind switch
         {
-            LoaderKind.Fabric => $"{FabricBase}/versions/loader/{gameVersion}",
-            LoaderKind.Quilt => $"{QuiltBase}/versions/loader/{gameVersion}",
-            _ => throw new NotSupportedException($"{kind} 的 meta 还没接入"),
+            LoaderKind.Fabric => $"{FabricBase}/versions/loader/{game}",
+            LoaderKind.Quilt => $"{QuiltBase}/versions/loader/{game}",
+            _ => throw new NotSupportedException($"{kind} 不提供加载器版本列表"),
         };
-
-        var json = await GetStringAsync(url, ct).ConfigureAwait(false);
+        string json;
+        try { json = await GetStringAsync(url, ct).ConfigureAwait(false); }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound) { return []; }
         using var document = JsonDocument.Parse(json);
-
         var versions = new List<string>();
         foreach (var element in document.RootElement.EnumerateArray())
         {
-            // Fabric: { "loader": { "version": "0.16.9", "stable": true } }
-            // Quilt : { "version": "0.27.1", ... }
-            if (element.TryGetProperty("loader", out var loader) &&
-                loader.TryGetProperty("version", out var fabricVersion))
-            {
-                versions.Add(fabricVersion.GetString()!);
-            }
-            else if (element.TryGetProperty("version", out var quiltVersion))
-            {
-                versions.Add(quiltVersion.GetString()!);
-            }
+            var item = element.TryGetProperty("loader", out var loader) ? loader : element;
+            if (item.TryGetProperty("version", out var version) && version.GetString() is { Length: > 0 } value)
+                versions.Add(value);
         }
-
-        if (versions.Count == 0) throw new InvalidOperationException($"{kind} 没有适用于 {gameVersion} 的加载器版本");
-        return versions;
+        return NewestFirst(versions);
     }
+
+    private async Task<IReadOnlyList<string>> GetMavenVersionsAsync(LoaderKind kind, string game, CancellationToken ct)
+    {
+        string prefix;
+        string url;
+        var stripPrefix = false;
+        if (kind == LoaderKind.Forge)
+        {
+            prefix = game + "-";
+            stripPrefix = true;
+            url = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml";
+        }
+        else if (game == "1.20.1")
+        {
+            prefix = game + "-";
+            stripPrefix = true;
+            url = "https://maven.neoforged.net/releases/net/neoforged/forge/maven-metadata.xml";
+        }
+        else
+        {
+            // NeoForge 21.4.x -> MC 1.21.4; 26.3.0.x -> MC 26.3.
+            // Exact component boundaries prevent 1.21.1 from matching 1.21.10.
+            if (!Version.TryParse(game, out var parsed)) return [];
+            if (parsed.Major == 1 && parsed.Minor >= 20)
+                prefix = $"{parsed.Minor}.{Math.Max(0, parsed.Build)}.";
+            else if (parsed.Major >= 26)
+                prefix = $"{parsed.Major}.{parsed.Minor}.{Math.Max(0, parsed.Build)}.";
+            else return [];
+            url = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
+        }
+        var xml = await GetStringAsync(url, ct).ConfigureAwait(false);
+        var versions = XDocument.Parse(xml).Descendants("version").Select(v => v.Value)
+            .Where(v => v.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(v => stripPrefix ? v[prefix.Length..] : v);
+        return NewestFirst(versions);
+    }
+
+    private static IReadOnlyList<string> NewestFirst(IEnumerable<string> versions) => versions
+        .Distinct(StringComparer.Ordinal)
+        .OrderByDescending(v => Version.TryParse(v.Split('-')[0], out var version) ? version : new Version())
+        .ThenBy(v => v.Contains('-'))
+        .ThenByDescending(v => v, StringComparer.Ordinal)
+        .ToArray();
 
     public async Task<VersionJson> GetProfileAsync(
         LoaderKind kind, string gameVersion, string loaderVersion, CancellationToken ct = default)
     {
+        var game = Uri.EscapeDataString(gameVersion);
+        var version = Uri.EscapeDataString(loaderVersion);
         var url = kind switch
         {
-            LoaderKind.Fabric => $"{FabricBase}/versions/loader/{gameVersion}/{loaderVersion}/profile/json",
-            LoaderKind.Quilt => $"{QuiltBase}/versions/loader/{gameVersion}/{loaderVersion}/profile/json",
+            LoaderKind.Fabric => $"{FabricBase}/versions/loader/{game}/{version}/profile/json",
+            LoaderKind.Quilt => $"{QuiltBase}/versions/loader/{game}/{version}/profile/json",
             _ => throw new NotSupportedException($"{kind} 的 profile 还没接入"),
         };
 

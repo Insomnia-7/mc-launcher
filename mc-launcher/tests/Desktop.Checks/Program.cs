@@ -46,8 +46,8 @@ internal static class Program
         var javaPath = Path.Combine(data, OperatingSystem.IsWindows() ? "java.exe" : "java"); File.WriteAllBytes(javaPath, [0]);
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
         var log = new BindingLog(); Logger.Sink = log;
-        var http = new OfflineHandler(); var launch = new TestLauncher();
-        using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch); });
+        var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture();
+        using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); });
         var clock = Stopwatch.StartNew();
         var model = services.GetRequiredService<MainViewModel>();
         var window = new MainWindow { DataContext = model, Width = 1180, Height = 800 }; PlatformUi.Window = window;
@@ -175,11 +175,13 @@ internal static class Program
             Check("关闭动画也覆盖阴影", hoverShadow.Transitions?.Count==0);
             libraryScroll.Offset=default; Capture("home-compact");
             Check("最小窗口下启动入口仍在窗口内", Find<Button>("LaunchButton").TranslatePoint(new Point(0,0),window) is { X:>=0,Y:>=0 } p && p.X+Find<Button>("LaunchButton").Bounds.Width<=window.ClientSize.Width+1);
+            VersionInstallChecks.Run(model, window, installFixture, Pump, Check, Capture, Click);
+            var metadataChecks=VersionInstallChecks.CheckMetadataAsync(Check); PumpUntil(()=>metadataChecks.IsCompleted,3000); metadataChecks.GetAwaiter().GetResult();
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {
                 var portableModel=portableServices.GetRequiredService<MainViewModel>();
-                Check("缺少 Windows 加密服务时仍能创建跨平台首页", portableModel.Instances.Count==3);
+                Check("缺少 Windows 加密服务时仍能创建跨平台首页", portableModel.Instances.Count>=3);
                 Check("缺少安全存储时禁用微软登录入口", !portableModel.LoginCommand.CanExecute(null));
             }
             File.WriteAllText(Path.Combine(root,"checks.json"),JsonSerializer.Serialize(new { passed, viewConstructionAndFirstLayoutMs=readyMs, networkRequestsBeforeUserActions=0, launchRequests=launch.Starts, bindingErrors=log.Errors },new JsonSerializerOptions{WriteIndented=true}));

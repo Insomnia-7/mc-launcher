@@ -90,7 +90,7 @@ public sealed class NeoForgeInstallerRunner(
         }
 
         // ④ 找 Java：MC ≥ 1.20.5 要 21，更早要 17；取满足条件的最低版本省内存
-        var requiredJava = RequiredJavaMajor(profile.MinecraftVersion ?? minecraftVersion);
+        var requiredJava = InstallerJavaRequirement.Read(gameRoot, minecraftVersion, RequiredJavaMajor(profile.MinecraftVersion ?? minecraftVersion));
         var javas = await javaLocator.DiscoverAsync(ct).ConfigureAwait(false);
         var java = javas.Where(j => j.MajorVersion >= requiredJava).OrderBy(j => j.MajorVersion).FirstOrDefault()
             ?? throw new InvalidOperationException(
@@ -152,6 +152,14 @@ public sealed class NeoForgeInstallerRunner(
             throw new TimeoutException(
                 $"NeoForge installer 超过 {(installTimeout ?? DefaultTimeout).TotalMinutes:F0} 分钟未结束，已终止"
                 + FormatSeedFailures(seedFailures));
+        }
+
+        catch (OperationCanceledException)
+        {
+            TryKill(process);
+            // The JSON may be written before processors finish; do not treat a cancelled install as complete.
+            File.Delete(versionJson);
+            throw;
         }
 
         if (process.ExitCode != 0 || !File.Exists(versionJson))
@@ -542,7 +550,7 @@ public sealed class NeoForgeInstallerRunner(
     {
         try
         {
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); process.WaitForExit(5000); }
         }
         catch
         {

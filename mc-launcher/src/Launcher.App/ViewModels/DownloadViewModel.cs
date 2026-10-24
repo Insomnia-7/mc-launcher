@@ -13,6 +13,8 @@ using Launcher.Application.Install;
 using Launcher.Application.Mods;
 using Launcher.Application.Settings;
 using Launcher.Domain.Content;
+using Launcher.Domain.Loaders;
+using Launcher.Application.Java;
 using Launcher.Domain.Versions;
 using Microsoft.Extensions.Logging;
 
@@ -143,7 +145,9 @@ public sealed partial class DownloadViewModel : ObservableObject
         IVersionMetaClient meta,
         ILogger<DownloadViewModel> logger,
         Func<string> gameRoot,
-        Func<string?> currentInstance)
+        Func<string?> currentInstance,
+        ILoaderMetaClient loaderMeta, LoaderInstaller loaderInstaller, IForgeInstaller forgeInstaller,
+        INeoForgeInstaller neoForgeInstaller, IJavaProvisioner javaProvisioner)
     {
         _modrinth = modrinth;
         _curseForge = curseForge;
@@ -155,6 +159,9 @@ public sealed partial class DownloadViewModel : ObservableObject
         _logger = logger;
         _gameRoot = gameRoot;
         _currentInstance = currentInstance;
+        _loaderMeta = loaderMeta; _loaderInstaller = loaderInstaller;
+        _forgeInstaller = forgeInstaller; _neoForgeInstaller = neoForgeInstaller; _javaProvisioner = javaProvisioner;
+        InitializeInstallLoaders();
 
         // 上两块：游戏本体 + 模组；中间一条线；下面四块是资源包类内容
         Categories =
@@ -259,6 +266,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         {
             DownloadSourceStore.Write(source, AppPaths.DataDirectory);
             DownloadSource = source;
+            if (IsVersionConfiguration && ShowsInstallLoaderVersions) _ = ReloadLoaderVersionsAsync();
             Status = source == DownloadSource.Bmclapi                ? "已切到 BMCLAPI 镜像：游戏本体、libraries、assets、Fabric meta 走镜像；Modrinth / CurseForge 不受影响"
                 : "已切回官方源";
         }
@@ -323,6 +331,11 @@ public sealed partial class DownloadViewModel : ObservableObject
     partial void OnSelectedCategoryChanged(CategoryItem? value)
     {
         OnPropertyChanged(nameof(IsVersionMode));
+        OnPropertyChanged(nameof(IsVersionList));
+        OnPropertyChanged(nameof(IsVersionConfiguration));
+        OnPropertyChanged(nameof(InstallGameVersion));
+        OnPropertyChanged(nameof(ShowsBrowseControls));
+        OnPropertyChanged(nameof(DiscoverHeading));
         OnPropertyChanged(nameof(IsSearchMode));
         OnPropertyChanged(nameof(ShowsSourcePicker));
         OnPropertyChanged(nameof(ShowsCurseForgeHint));
@@ -388,6 +401,8 @@ public sealed partial class DownloadViewModel : ObservableObject
         InstallVersionCommand.NotifyCanExecuteChanged();
         CanCancel = value;
         OnPropertyChanged(nameof(CanEditSearch));
+        OnPropertyChanged(nameof(CanConfigureVersion));
+        BackToVersionsCommand.NotifyCanExecuteChanged();
         NotifyPaging();
     }
 
@@ -426,6 +441,14 @@ public sealed partial class DownloadViewModel : ObservableObject
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
+        OnPropertyChanged(nameof(IsVersionList));
+        OnPropertyChanged(nameof(IsVersionConfiguration));
+        OnPropertyChanged(nameof(InstallGameVersion));
+        OnPropertyChanged(nameof(ShowsBrowseControls));
+        OnPropertyChanged(nameof(DiscoverHeading));
+        if (SelectedInstallLoader != InstallLoaders[0]) SelectedInstallLoader = InstallLoaders[0];
+        else _ = ReloadLoaderVersionsAsync();
+        NotifyInstallSelection();
         InstallVersionCommand.NotifyCanExecuteChanged();
 
         // 900 个条目全遍历一次，代价可忽略，但能保证高亮只落在一个上
@@ -639,13 +662,19 @@ public sealed partial class DownloadViewModel : ObservableObject
         InstancesChanged?.Invoke();
     }
 
-    private bool CanInstallVersion() => !IsBusy && SelectedVersion is not null;
+    private bool CanInstallVersion() => !IsBusy && SelectedVersion is not null && !IsLoadingLoaderVersions
+        && (SelectedInstallLoader?.Kind == LoaderKind.Vanilla
+            || SelectedInstallLoaderVersion is not null && InstallLoaderVersions.Contains(SelectedInstallLoaderVersion));
 
     /// <summary>版本列表里的叶子点击。</summary>
     [RelayCommand]
     private void SelectVersion(VersionItem? item)
     {
-        if (item is not null) SelectedVersion = item;
+        if (!IsBusy && item is not null)
+        {
+            SelectedVersion = item;
+            Status = "选择安装方式和加载器版本后，点击开始安装。";
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanInstallVersion))]
@@ -653,7 +682,10 @@ public sealed partial class DownloadViewModel : ObservableObject
     {
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装游戏版本");
         if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
-        if (SelectedVersion is not { } version) return;
+        if (SelectedVersion is not { } version || !CanInstallVersion()) return;
+        var root = _gameRoot();
+        var loader = SelectedInstallLoader!.Kind;
+        var loaderVersion = SelectedInstallLoaderVersion;
         // 一个原版版本落地 500–600 MB，留余量；空间不够就别开始下
         if (Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(_gameRoot(), VersionInstallReserveBytes) is { } disk)
         {
@@ -677,8 +709,14 @@ public sealed partial class DownloadViewModel : ObservableObject
                 Status = $"{p.Percent:F0}%  {p.CompletedBytes / 1024.0 / 1024.0:F1} MB  {p.CurrentFile}";
             });
 
-            var summary = await _gameInstaller.InstallAsync(version.Id, _gameRoot(), includeAssets: true, progress, cts.Token);
-            Status = $"{version.Id} 安装完成 · 下载 {summary.DownloadedFiles} / 跳过 {summary.SkippedFiles}";
+            var summary = await _gameInstaller.InstallAsync(version.Id, root, includeAssets: true, progress, cts.Token);
+            var installedId = version.Id;
+            if (loader != LoaderKind.Vanilla)
+            {
+                Status = $"正在安装 {loader} {loaderVersion}…";
+                installedId = await InstallSelectedLoaderAsync(version.Id, root, loader, loaderVersion!, progress, cts.Token);
+            }
+            Status = $"{installedId} 安装完成 · 本体下载 {summary.DownloadedFiles} / 跳过 {summary.SkippedFiles}";
             InstancesChanged?.Invoke();
         }
         catch (Exception ex) when (IsCancellation(ex))

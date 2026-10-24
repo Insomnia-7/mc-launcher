@@ -83,7 +83,9 @@ public sealed partial class MainViewModel : ObservableObject
         ModUpdateService modUpdates,
         InstanceExportService exportService,
         ModUpdateInstaller modUpdateInstaller,
-        ISkinService skins)
+        ISkinService skins,
+        ILoaderMetaClient loaderMeta, LoaderInstaller loaderInstaller,
+        IForgeInstaller forgeInstaller, INeoForgeInstaller neoForgeInstaller)
     {
         _logger = logger;
         _secretProtector = secretProtector;
@@ -115,7 +117,8 @@ public sealed partial class MainViewModel : ObservableObject
             modrinth, curseForge, modInstallService, curseForgeInstallService, modpackDownloadService,
             installer, meta, downloadLogger,
             () => GameRoot,
-            () => SelectedInstance?.InstanceId);
+            () => SelectedInstance?.InstanceId,
+            loaderMeta, loaderInstaller, forgeInstaller, neoForgeInstaller, javaProvisioner);
 
         Download.InstancesChanged += RefreshInstances;
 
