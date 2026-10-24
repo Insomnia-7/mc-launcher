@@ -75,12 +75,15 @@ public partial class MainWindow : Window
 
         await viewModel.ImportModpackFileAsync(paths[0]);
     }
+    private System.Windows.Threading.DispatcherTimer? _themeFadeWatchdog;
+
     /// <summary>
     /// 切主题时先铺一层「旧底色」再淡出：颜色本身在 AppearanceManager 里插值，
     /// 这层遮罩负责兜住整屏的瞬时变化，看起来才像渐变而不是闪一下。
     /// </summary>
     private void PlayThemeFade(System.Windows.Media.Color previousBackground)
-    {        if (Animations.MotionPreferences.Mode == "off") return;
+    {
+        if (Animations.MotionPreferences.Mode == "off") return;
 
         ThemeFade.Background = new System.Windows.Media.SolidColorBrush(previousBackground);
         ThemeFade.BeginAnimation(OpacityProperty, null);
@@ -92,6 +95,24 @@ public partial class MainWindow : Window
             FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop,
         };
         ThemeFade.BeginAnimation(OpacityProperty, animation);
+
+        // 兜底：动画靠渲染帧推进，窗口最小化 / 远程桌面断帧 / 离屏截图时帧不来了，
+        // 遮罩会以 0.88 一直盖在界面上（整窗发暗）。到点还没退干净就把它直接撤掉。
+        _themeFadeWatchdog?.Stop();
+        var watchdog = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(700),
+        };
+        watchdog.Tick += (_, _) =>
+        {
+            watchdog.Stop();
+            if (ReferenceEquals(_themeFadeWatchdog, watchdog)) _themeFadeWatchdog = null;
+            if (ThemeFade.Opacity <= 0.01) return;
+            ThemeFade.BeginAnimation(OpacityProperty, null);
+            ThemeFade.Opacity = 0;
+        };
+        _themeFadeWatchdog = watchdog;
+        watchdog.Start();
     }
     /// <summary>
     /// 装完一个版本后把它滚进视野并给一次高亮脉冲。
