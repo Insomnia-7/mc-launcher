@@ -1,10 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop" xmlns:views="using:Launcher.Desktop.Views"
         xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.MainWindow" Title="MC Launcher" Width="1180" Height="800" MinWidth="900" MinHeight="640" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
   <Window.Styles>
-    <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,24,32,16" /></Style>
-    <Style Selector="Grid#PageToolbar"><Setter Property="Margin" Value="0,0,0,22" /></Style>
-    <Style Selector="Grid#PageContent.catalog"><Setter Property="Margin" Value="24,8,24,8" /></Style>
-    <Style Selector="Grid#PageContent.catalog > Grid#PageToolbar"><Setter Property="Margin" Value="0,0,0,4" /></Style>
+    <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,12,32,16" /></Style>
+    <Style Selector="Grid#PageContent.catalog"><Setter Property="Margin" Value="24,4,24,8" /></Style>
+    <Style Selector="Button.caption"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="32" /><Setter Property="MinHeight" Value="32" /><Setter Property="Padding" Value="10" /><Setter Property="CornerRadius" Value="8" /><Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="RenderTransform" Value="none" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+    <Style Selector="Button.caption:pointerover, Button.caption:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
+    <Style Selector="Button.caption.close:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource AccentFillBrush}" /></Style>
+    <Style Selector="Button.caption.close:pointerover"><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /></Style>
   </Window.Styles>
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
@@ -12,13 +14,28 @@
     <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenAppearanceCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CloseTopOverlayCommand}" />
   </Window.KeyBindings>
-  <Grid RowDefinitions="*,Auto" ColumnDefinitions="236,*">
-    <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False">
+  <Grid RowDefinitions="44,*,Auto" ColumnDefinitions="236,*" Margin="{Binding $parent[Window].OffScreenMargin}">
+    <Grid Grid.RowSpan="3" Grid.ColumnSpan="2" IsHitTestVisible="False">
       <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}" />
       <Border Background="{DynamicResource WallpaperTintBrush}" IsVisible="{Binding WallpaperImage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
       <Border Background="{DynamicResource BackdropGlowBrush}" />
     </Grid>
-    <Border Grid.Row="0" Grid.Column="0" CornerRadius="24" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" Margin="16,16,0,8" Padding="14,20,14,12">
+    <Border x:Name="WindowHeader" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto" Margin="12,0,8,0">
+        <Border x:Name="TitleDragArea" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar">
+          <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center" IsHitTestVisible="False"><icons:UiIcon Kind="Tile.AppLogo" Width="22" Height="22" /><TextBlock Text="MC Launcher" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" /><Border Width="1" Height="12" Background="{DynamicResource LineBrush}" Margin="4,0" /><TextBlock Text="JAVA EDITION" Classes="eyebrow" FontSize="9" LetterSpacing="1.2" VerticalAlignment="Center" /></StackPanel>
+        </Border>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" WindowDecorationProperties.ElementRole="User">
+          <ToggleButton x:Name="ThemeToggle" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" Margin="0,0,8,0" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
+          <StackPanel x:Name="CaptionButtons" Orientation="Horizontal" Spacing="3">
+            <Button x:Name="MinimizeButton" Classes="quiet caption" Click="MinimizeWindow" WindowDecorationProperties.ElementRole="MinimizeButton" ToolTip.Tip="最小化" AutomationProperties.Name="最小化"><Path Data="M 2,7 L 12,7" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
+            <Button x:Name="MaximizeButton" Classes="quiet caption" Click="ToggleMaximizeWindow" WindowDecorationProperties.ElementRole="MaximizeButton" ToolTip.Tip="最大化" AutomationProperties.Name="最大化"><Path x:Name="MaximizeGlyph" Data="M 2,2 L 12,2 12,12 2,12 Z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
+            <Button x:Name="CloseWindowButton" Classes="quiet caption close" Click="CloseWindow" WindowDecorationProperties.ElementRole="CloseButton" ToolTip.Tip="关闭" AutomationProperties.Name="关闭窗口"><icons:UiIcon Kind="ActionClose" Width="15" Height="15" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border Grid.Row="1" Grid.Column="0" CornerRadius="24" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" Margin="16,8,0,8" Padding="14,20,14,12">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="23">
           <Grid ColumnDefinitions="42,*" Margin="8,0,0,0">
@@ -34,8 +51,7 @@
         <StackPanel DockPanel.Dock="Bottom" Spacing="3" Margin="0,12,0,0">
           <Border Height="1" Background="{DynamicResource LineBrush}" Margin="8,0,8,10" />
           <Button Classes="quiet" Command="{Binding OpenSetupCommand}"  AutomationProperties.Name="添加游戏版本"><icons:IconLabel Icon="ActionPlus" Text="添加游戏版本" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-          <Button Classes="quiet" Command="{Binding OpenAppearanceCommand}"  AutomationProperties.Name="外观与主题"><icons:IconLabel Icon="ActionSettings" Text="外观与主题" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-          <Button Classes="quiet" Command="{Binding OpenNetworkCommand}"  AutomationProperties.Name="网络设置"><icons:IconLabel Icon="ActionGlobe" Text="网络设置" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          <Button x:Name="SettingsEntry" Classes="quiet" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" Foreground="{Binding $parent[Button].Foreground}" /></Button>
         </StackPanel>
         <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Margin="0,12,0,0" AutomationProperties.Name="游戏版本列表">
           <ListBox.ItemTemplate><DataTemplate x:DataType="vm:InstanceCard">
@@ -47,15 +63,12 @@
         </ListBox>
       </DockPanel>
     </Border>
-    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDownloadSection}" Grid.Column="1" RowDefinitions="Auto,*">
-      <Grid x:Name="PageToolbar" ColumnDefinitions="*,Auto">
-        <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
-      </Grid>
-      <TransitioningContentControl x:Name="PageHost" Grid.Row="1"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
+    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDownloadSection}" Grid.Row="1" Grid.Column="1">
+      <TransitioningContentControl x:Name="PageHost"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
     </Grid>
-    <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="24,8,24,12">
+    <Border Grid.Row="2" Grid.ColumnSpan="2" Padding="24,8,24,12">
       <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="JAVA EDITION" Classes="eyebrow" FontSize="8" Margin="20,0,0,0" /></Grid>
     </Border>
-    <ContentControl x:Name="OverlayHost" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
+    <ContentControl x:Name="OverlayHost" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
   </Grid>
 </Window>

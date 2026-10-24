@@ -5,7 +5,7 @@
     <AssemblyName>MCLauncher.Desktop</AssemblyName>
     <RootNamespace>Launcher.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>0.2.0-preview.5</Version>
+    <Version>0.2.0-preview.6</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />

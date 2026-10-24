@@ -104,6 +104,17 @@ internal static class ResourceCenterChecks
         var searchPanel=window.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ResourceSearchPanel");
         check("搜索区紧凑并给资源列表保留更大高度",searchPanel.Bounds.Height<=125 && resultsScroll.Bounds.Height>=420 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<220});
         check("资源列表不再显示中文简介提示行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.TranslationHint));
+        check("下载量与更新日期跟在介绍末尾，介绍字号略增",window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.ActivityText) && window.GetVisualDescendants().OfType<TextBlock>().Any(t=>ReferenceEquals(t.DataContext,item)&&t.Text==item.DescriptionText&&t.FontSize==13&&t.MaxLines==2));
+        foreach(var category in new[]{DownloadCategory.ResourcePack,DownloadCategory.Shader,DownloadCategory.Datapack})
+        {
+            vm.SelectedCategory=vm.Categories.First(c=>c.Category==category); Wait(vm.SearchCommand.ExecuteAsync(null));
+            var pack=vm.Results.Single();
+            check(category+"列表省去不适用的加载器标注",!pack.ShowsLoaders&&!pack.SummaryText.Contains("加载器")&&!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text=="不限定加载器"));
+            Wait(vm.OpenResourceCommand.ExecuteAsync(pack));
+            check(category+"版本分组和已选说明也省去加载器",!vm.ResourceDetailSummary.Contains("加载器")&&!vm.ResourceReleaseSummary.Contains("加载器")&&vm.ResourceReleaseGroups.All(g=>!g.Header.Contains("Fabric")&&!g.Header.Contains("加载器")));
+            vm.BackToResourcesCommand.Execute(null);
+        }
+        vm.SelectedCategory=vm.Categories.First(c=>c.Category==DownloadCategory.Mod); Wait(vm.SearchCommand.ExecuteAsync(null));item=vm.Results.Single();
         click(window.GetVisualDescendants().OfType<Button>().Single(b=>ReferenceEquals(b.DataContext,item)));pump(100);
         check("点击项目进入版本页面，默认匹配当前实例",vm.IsResourceDetail&&!vm.IsResourceList&&vm.ResourceGameVersion=="1.21.4"&&vm.ResourceLoader=="fabric"&&vm.SelectedResourceRelease?.Id=="old");
         check("顶部解析指定版本的必需依赖且排除可选依赖",vm.ResourceDependencyHint.Contains("Fabric API")&&!vm.ResourceDependencyHint.Contains("optional")&&vm.ResourceDependencyHint.Contains("dep-file"));

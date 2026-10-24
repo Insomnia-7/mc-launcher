@@ -25,6 +25,12 @@ public sealed partial class MainViewModel
     public string LaunchTitle => IsBusy ? "正在准备…" : "启动游戏";
     public string WorldCaption => HasInstances ? "你的世界，随时出发。" : "从一个新世界开始。";
     public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsAppearanceOpen || IsNetworkOpen || IsConfirmOpen;
+    public bool IsPreferencesOpen => IsAppearanceOpen || IsNetworkOpen;
+    partial void OnIsNetworkOpenChanged(bool value)
+    {
+        if (value) IsAppearanceOpen=false;
+        OnPropertyChanged(nameof(IsPreferencesOpen));
+    }
     partial void OnSkinHeadChanging(object? value) { if (SkinHead is IDisposable old) old.Dispose(); }
     partial void OnIsAccountsOpenChanged(bool value)
     {

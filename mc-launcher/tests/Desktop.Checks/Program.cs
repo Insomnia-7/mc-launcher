@@ -101,10 +101,11 @@ internal static class Program
             if(args.Contains("--live-catalog"))
             {
                 void WaitLive(Task task) { PumpUntil(()=>task.IsCompleted,45000); if(!task.IsCompleted) throw new TimeoutException("Live request timed out");task.GetAwaiter().GetResult();Pump(100); }
-                model.IsInstanceSection=false;model.Download.SelectedCategory=model.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.Mod);model.Download.Query="sodium";
+                var livePacks=args.Contains("--live-packs");
+                model.IsInstanceSection=false;model.Download.SelectedCategory=model.Download.Categories.First(c=>c.Category==(livePacks?Launcher.Domain.Content.DownloadCategory.ResourcePack:Launcher.Domain.Content.DownloadCategory.Mod));model.Download.Query=livePacks?"":"sodium";
                 WaitLive(model.Download.SearchCommand.ExecuteAsync(null));
-                Check("真实平台返回项目元数据",model.Download.Results.Any(i=>i.Slug=="sodium"&&i.DownloadsText.Length>0));
-                var project=model.Download.Results.First(i=>i.Slug=="sodium");PumpUntil(()=>project.IconBytes is {Length:>0},25000);
+                Check("真实平台返回项目元数据",model.Download.Results.Any(i=>(livePacks||i.Slug=="sodium")&&i.DownloadsText.Length>0));
+                var project=model.Download.Results.First(i=>livePacks||i.Slug=="sodium");PumpUntil(()=>project.IconBytes is {Length:>0},25000);
                 Check("真实项目原色图标下载成功",project.IconBytes is {Length:>0});Capture("live-resource-list");
                 WaitLive(model.Download.OpenResourceCommand.ExecuteAsync(project));
                 Check("真实项目版本可按游戏版本浏览",model.Download.ResourceReleaseGroups.Count>0);Capture("live-resource-versions");
@@ -124,10 +125,35 @@ internal static class Program
             Capture("home-light");
             Click(Find<Button>("AccountEntry")); Check("账号入口可点击", model.IsAccountsOpen);
             Capture("accounts"); model.CloseAccountsCommand.Execute(null); Pump(50);
-            model.OpenAppearanceCommand.Execute(null); Pump(50); Check("主题面板可打开", Find<ListBox>("ThemeList").IsEffectivelyVisible);
+            Click(Find<Button>("SettingsEntry")); Check("设置入口打开外观选项", model.IsPreferencesOpen && Find<ListBox>("ThemeList").IsEffectivelyVisible);
+            var preferences=Find<Border>("PreferencesSurface");
+            Click(Find<Button>("NetworkSettingsTab"));
+            Check("外观与网络在同一设置窗口内切换", model.IsNetworkOpen && !model.IsAppearanceOpen && ReferenceEquals(preferences,Find<Border>("PreferencesSurface")) && !Find<ListBox>("ThemeList").IsEffectivelyVisible);
+            model.ProxyModeIndex=1; model.SaveNetworkCommand.Execute(null);
+            Check("统一设置保留网络保存功能", Launcher.Application.Settings.ProxySettingsStore.Read(data).Mode==Launcher.Application.Settings.ProxyMode.Direct);
+            model.ProxyModeIndex=2; model.ProxyAddress="invalid proxy"; model.SaveNetworkCommand.Execute(null);
+            Check("无效代理提示错误且不覆盖已保存配置", model.NetworkHint.Length>0 && Launcher.Application.Settings.ProxySettingsStore.Read(data).Mode==Launcher.Application.Settings.ProxyMode.Direct);
+            Capture("settings-network");
+            model.CloseTopOverlayCommand.Execute(null); Pump(60);
+            Check("统一设置可关闭并恢复页面操作", !model.IsPreferencesOpen && !model.HasOverlay);
+            model.OpenNetworkCommand.Execute(null); Pump(50);
+            Check("网络诊断快捷入口仍打开统一设置的网络选项", model.IsNetworkOpen && Find<Border>("PreferencesSurface").IsEffectivelyVisible && model.ProxyModeIndex==1);
+            Click(Find<Button>("AppearanceSettingsTab"));
+            Check("网络返回外观时仅显示一个设置面板", model.IsAppearanceOpen && !model.IsNetworkOpen && model.IsPreferencesOpen);
             model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); Pump(50);
             Check("主题切换与保存", !model.IsLightTheme && File.ReadAllText(Path.Combine(data,"appearance.json")).Contains("aurora"));
             Capture("appearance"); model.CloseAppearanceCommand.Execute(null); Pump(50); Capture("home-dark");
+            if(OperatingSystem.IsWindows())
+            {
+                Check("一体化标题栏保留可缩放窗口", window.ExtendClientAreaToDecorationsHint && window.CanResize && Find<Button>("MaximizeButton").IsEffectivelyVisible);
+                Click(Find<Button>("MaximizeButton"));
+                Check("最大化后提供还原入口", window.WindowState==WindowState.Maximized && Avalonia.Automation.AutomationProperties.GetName(Find<Button>("MaximizeButton"))=="还原窗口");
+                Click(Find<Button>("MaximizeButton"));
+                Check("还原按钮恢复普通窗口", window.WindowState==WindowState.Normal);
+                Click(Find<Button>("MinimizeButton"));
+                Check("标题栏最小化按钮可用", window.WindowState==WindowState.Minimized);
+                window.WindowState=WindowState.Normal; window.Activate(); Pump(60);
+            }
             Click(Find<ToggleButton>("ThemeToggle"));
             Check("昼夜按钮可切回白天并保存", model.IsLightTheme && Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="glacier");
             var primaryForeground=(ISolidColorBrush)Avalonia.Application.Current!.Resources["PrimaryTextBrush"]!;

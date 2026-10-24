@@ -115,6 +115,11 @@ public sealed partial class MainViewModel
         _appearanceSaveTimer.Stop(); _appearanceSaveTimer.Start();
     }
     [RelayCommand] private void OpenAppearance() { IsAppearanceOpen=true; }
+    partial void OnIsAppearanceOpenChanged(bool value)
+    {
+        if(value) IsNetworkOpen=false;
+        OnPropertyChanged(nameof(IsPreferencesOpen));
+    }
     [RelayCommand] private void CloseAppearance() { if(IsWallpaperBusy) return; if(TrySaveAppearance()) IsAppearanceOpen=false; }
     [RelayCommand] private void SaveAppearance() => TrySaveAppearance();
     public void FlushAppearance() { if(_appearanceSaveTimer?.IsEnabled is true) TrySaveAppearance(); }

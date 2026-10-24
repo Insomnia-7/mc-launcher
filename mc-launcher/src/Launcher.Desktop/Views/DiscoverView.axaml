@@ -31,12 +31,14 @@
       <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding Download.Results}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:DownloadItem">
           <Button Classes="nav" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
-            <Grid ColumnDefinitions="48,*" ColumnSpacing="10">
-              <Border Width="44" Height="44" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Top"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
+            <Grid ColumnDefinitions="52,*" ColumnSpacing="12">
+              <Border Width="52" Height="52" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="42" Height="42" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
               <StackPanel Grid.Column="1" Spacing="3">
-                <WrapPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="14" FontWeight="SemiBold" Margin="0,0,10,0" /><TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" /></WrapPanel>
-                <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="12" MaxLines="1" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
-                <TextBlock Text="{Binding SummaryText}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                <WrapPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="15" FontWeight="SemiBold" Margin="0,0,10,0" /><TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" Margin="0,0,12,0" VerticalAlignment="Center" /><TextBlock Text="{Binding LoadersText}" IsVisible="{Binding ShowsLoaders}" Classes="muted" FontSize="11" VerticalAlignment="Center" /></WrapPanel>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                  <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="13" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
+                  <TextBlock Grid.Column="1" Text="{Binding ActivityText}" Classes="muted" FontSize="11" VerticalAlignment="Bottom" />
+                </Grid>
               </StackPanel>
             </Grid>
           </Button>

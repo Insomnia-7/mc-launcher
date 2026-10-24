@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Automation;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.Platform.Storage;
 using Launcher.App.ViewModels;
@@ -17,6 +20,21 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Windows supports extended native hit-testing, including drag and snap layouts.
+        // Other desktops keep their native frame until their platform builds are verified.
+        if (OperatingSystem.IsWindows())
+        {
+            ExtendClientAreaToDecorationsHint=true;
+            ExtendClientAreaTitleBarHeightHint=44;
+            WindowDecorations=WindowDecorations.BorderOnly;
+        }
+        else
+        {
+            CaptionButtons.IsVisible=false;
+            TitleDragArea.IsVisible=false;
+        }
+        PropertyChanged += (_, e) => { if(e.Property==WindowStateProperty) UpdateCaption(); };
+        UpdateCaption();
         DataContextChanged += (_, _) =>
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
@@ -35,6 +53,17 @@ public sealed partial class MainWindow : Window
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         DragDrop.SetAllowDrop(this, true);
+    }
+    private void MinimizeWindow(object? sender,RoutedEventArgs e) => WindowState=WindowState.Minimized;
+    private void ToggleMaximizeWindow(object? sender,RoutedEventArgs e) => WindowState=WindowState==WindowState.Maximized?WindowState.Normal:WindowState.Maximized;
+    private void CloseWindow(object? sender,RoutedEventArgs e) => Close();
+    private void UpdateCaption()
+    {
+        var maximized=WindowState==WindowState.Maximized;
+        MaximizeGlyph.Data=Geometry.Parse(maximized?"M 4,2 L 12,2 12,10 M 2,4 L 10,4 10,12 2,12 Z":"M 2,2 L 12,2 12,12 2,12 Z");
+        var label=maximized?"还原窗口":"最大化";
+        ToolTip.SetTip(MaximizeButton,label);
+        AutomationProperties.SetName(MaximizeButton,label);
     }
     private void UpdateMotion() => Classes.Set("reduced-motion", !MotionPreferences.Enabled);
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)

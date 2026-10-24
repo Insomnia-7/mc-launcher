@@ -28,7 +28,9 @@ public sealed partial class DownloadItem(string source,DownloadCategory category
     public string TranslationHint=>TranslatedDescription is not null ? "中文简介 · MCIM 自动翻译"
         : ResourceChinese.Lookup(Slug,Title).Summary is not null ? "中文简介 · 内置说明"
         : ResourceChinese.HasChinese(Description) ? "中文简介" : "暂无中文简介 · 显示原文";
-    public string SummaryText=>$"{LoadersText} · {DownloadsText} · {UpdatedText}";
+    public bool ShowsLoaders=>Category.UsesLoader();
+    public string ActivityText=>$"{DownloadsText} · {UpdatedText}";
+    public string SummaryText=>ShowsLoaders?$"{LoadersText} · {ActivityText}":ActivityText;
     [ObservableProperty] private byte[]? _iconBytes;
     [ObservableProperty] private string? _translatedDescription;
     partial void OnTranslatedDescriptionChanged(string? value) { OnPropertyChanged(nameof(DescriptionText));OnPropertyChanged(nameof(TranslationHint)); }
@@ -42,6 +44,7 @@ public sealed partial class ResourceReleaseItem : ObservableObject
     public required string FileName {get;init;}
     public required IReadOnlyList<string> GameVersions {get;init;}
     public required IReadOnlyList<string> Loaders {get;init;}
+    public bool UsesLoader {get;init;}=true;
     public required string Metadata {get;init;}
     public ModrinthVersion? Modrinth {get;init;}
     public CfFile? CurseForge {get;init;}
@@ -57,9 +60,9 @@ public sealed partial class ResourceReleaseItem : ObservableObject
     public bool IsBeta=>ReleaseChannel=="测试版";
     public bool IsAlpha=>ReleaseChannel=="开发版";
     public string DownloadText=>ReleaseChannel=="未标注类型"?"下载此版本":"下载"+ReleaseChannel;
-    public string LoaderText=>Loaders.Count==0?"不限定加载器":string.Join(" / ",Loaders.Select(ResourceChinese.Loader));
+    public string LoaderText=>!UsesLoader?"":Loaders.Count==0?"加载器未标注":string.Join(" / ",Loaders.Select(ResourceChinese.Loader));
     public string GameText=>string.Join(", ",GameVersions.Take(4))+(GameVersions.Count>4?$" 等 {GameVersions.Count} 个版本":"");
-    public string Header=>$"{ReleaseChannel} · {LoaderText} · {GameText}";
+    public string Header=>string.Join(" · ",new[]{ReleaseChannel,LoaderText,GameText}.Where(s=>s.Length>0));
 }
 
 public sealed partial class ResourceReleaseGroup(string header,IReadOnlyList<ResourceReleaseItem> releases) : ObservableObject

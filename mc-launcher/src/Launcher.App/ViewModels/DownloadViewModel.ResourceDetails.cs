@@ -36,7 +36,7 @@ public sealed partial class DownloadViewModel
     public bool ShowsResourceLoaderFilter=>OpenedResource?.Category.UsesLoader()==true;
     public bool ShowsResourceDependencies=>IsResourceDetail && OpenedResource?.Category==DownloadCategory.Mod;
     public string ResourceInstallButtonText=>SelectedResourceRelease is {ReleaseChannel:not "未标注类型"} release?"安装"+release.ReleaseChannel:"安装所选版本";
-    public string ResourceReleaseSummary=>SelectedResourceRelease is { } release ? $"已选：{release.Name} · {release.ReleaseChannel} · {release.LoaderText}" : "请选择发布版本";
+    public string ResourceReleaseSummary=>SelectedResourceRelease is { } release ? "已选："+string.Join(" · ",new[]{release.Name,release.ReleaseChannel,release.LoaderText}.Where(s=>s.Length>0)) : "请选择发布版本";
 
     private DownloadItem ModrinthItem(ModrinthProject hit,DownloadCategory category)=>new(ModrinthSource,category,hit.ProjectId,hit.Title,hit.Author??"未知作者","",hit.Description)
     {
@@ -181,7 +181,7 @@ public sealed partial class DownloadViewModel
     private ResourceReleaseItem MrRelease(ModrinthVersion v)=>new()
     {
         Id=v.Id,Name=v.Name,FileName=v.PrimaryFile?.Filename??"没有可下载文件",GameVersions=v.GameVersions,
-        Loaders=v.Loaders.Where(ResourceChinese.IsLoader).ToArray(),Modrinth=v,
+        Loaders=v.Loaders.Where(ResourceChinese.IsLoader).ToArray(),UsesLoader=OpenedResource?.Category.UsesLoader()==true,Modrinth=v,
         Metadata=$"{ResourceChinese.Date(v.DatePublished)} · {ResourceChinese.Count(v.Downloads)} 次下载 · {(v.PrimaryFile?.Size??0)/1024d/1024d:0.##} MB",
         SelectCommand=SelectResourceReleaseCommand,InstallCommand=InstallResourceReleaseCommand,
     };
@@ -189,7 +189,7 @@ public sealed partial class DownloadViewModel
     {
         Id=f.Id.ToString(),Name=f.DisplayName,FileName=f.FileName,
         GameVersions=f.GameVersions.Where(v=>v.Length>0 && char.IsDigit(v[0])).ToArray(),
-        Loaders=f.GameVersions.Where(ResourceChinese.IsLoader).Select(v=>v.ToLowerInvariant()).Distinct().ToArray(),CurseForge=f,
+        Loaders=f.GameVersions.Where(ResourceChinese.IsLoader).Select(v=>v.ToLowerInvariant()).Distinct().ToArray(),UsesLoader=OpenedResource?.Category.UsesLoader()==true,CurseForge=f,
         Metadata=$"{ResourceChinese.Date(f.FileDate)} · {ResourceChinese.Count(f.DownloadCount)} 次下载 · {f.FileLength/1024d/1024d:0.##} MB",
         SelectCommand=SelectResourceReleaseCommand,InstallCommand=InstallResourceReleaseCommand,
     };
