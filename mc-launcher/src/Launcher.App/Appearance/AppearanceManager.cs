@@ -29,15 +29,29 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
 
         var oldBg=resources["BgBrush"] is SolidColorBrush old ? old.Color : (Color?)null;
 
-        // 颜色本身直接落到目标值：ResourceDictionary 里的画刷会被 WPF 冻结，动画 Color 会抛
-        // 「对象已密封」；真正的顺滑交给窗口那层旧底色淡出（Crossfade），观感等价且不失效。
+        // 画刷是我们自己建的（不是 ResourceDictionary 里被冻结的那些），所以可以真做 Color 动画：
+        // 基值先写终值，再从旧色补间；FillBehavior.Stop 让动画结束后自然停在基值上。
+        // 之前用「整屏铺旧底色再淡出」代替，浅色主题切深色时反而整窗暗一下，观感更差。
         foreach(var pair in colors) {
             var target=(Color)ColorConverter.ConvertFromString(pair.Value);
-            if(_brushes.TryGetValue(pair.Key,out var brush) && !brush.IsFrozen) brush.Color=target;
-            else { brush=new SolidColorBrush(target); _brushes[pair.Key]=brush; }
+            if(!_brushes.TryGetValue(pair.Key,out var brush) || brush.IsFrozen) {
+                brush=new SolidColorBrush(target);
+                _brushes[pair.Key]=brush;
+                resources[pair.Key]=brush;
+                continue;
+            }
+            var from=brush.Color;
+            brush.BeginAnimation(SolidColorBrush.ColorProperty,null);
+            brush.Color=target;
+            if(duration>TimeSpan.Zero && from!=target) {
+                var fade=new ColorAnimation(from,target,duration) {
+                    EasingFunction=Animations.MotionCore.EaseOut(),
+                    FillBehavior=FillBehavior.Stop,
+                };
+                brush.BeginAnimation(SolidColorBrush.ColorProperty,fade);
+            }
             resources[pair.Key]=brush;
         }
-
         var accent=(Color)ColorConverter.ConvertFromString(colors["AccentBrush"]);
         var glow=new LinearGradientBrush(Color.FromArgb(18,accent.R,accent.G,accent.B),Color.FromArgb(0,accent.R,accent.G,accent.B),45);
         glow.Freeze(); resources["BackdropGlowBrush"]=glow;
@@ -46,7 +60,7 @@ public sealed class AppearanceManager(string directory, ResourceDictionary resou
         var edge=new LinearGradientBrush(Color.FromArgb(64,text.R,text.G,text.B),Color.FromArgb(14,text.R,text.G,text.B),90);
         edge.Freeze(); resources["GlassEdgeBrush"]=edge;
         WindowChrome.Sync(colors,duration);
-        if(animate && !first && oldBg is { } oldColor) Crossfade?.Invoke(oldColor);
+        _ = oldBg;   // 底色不再需要：颜色本身在渐变了
     }
     public static BitmapSource Decode(byte[] bytes)
     {

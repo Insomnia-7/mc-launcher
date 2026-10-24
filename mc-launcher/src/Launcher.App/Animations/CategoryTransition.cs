@@ -19,7 +19,23 @@ public sealed class CategoryTransition(FrameworkElement page, Image snapshot)
         var revision = _revision;
         var ratio = Math.Min(1, 1920 / page.ActualWidth);
         var image = new RenderTargetBitmap((int)Math.Ceiling(page.ActualWidth * ratio), (int)Math.Ceiling(page.ActualHeight * ratio), 96 * ratio, 96 * ratio, PixelFormats.Pbgra32);
+        // 页面此刻可能还挂着上一段切页动画的 Translate/Scale，直接 Render 会把它们烘进快照，
+        // 贴回页面上就变成「旧界面往右下偏」。截图前把自身变换归零，截完再还原。
+        var pageMotion=MotionCore.TryGet(page);
+        var savedY=0d; var savedScale=1d;
+        if(pageMotion is not null) {
+            savedY=pageMotion.Translate.Y; savedScale=pageMotion.Scale.ScaleX;
+            pageMotion.Translate.BeginAnimation(TranslateTransform.YProperty,null); pageMotion.Translate.Y=0;
+            pageMotion.Scale.BeginAnimation(ScaleTransform.ScaleXProperty,null);
+            pageMotion.Scale.BeginAnimation(ScaleTransform.ScaleYProperty,null);
+            pageMotion.Scale.ScaleX=pageMotion.Scale.ScaleY=1;
+            page.UpdateLayout();
+        }
         image.Render(page);
+        if(pageMotion is not null) {
+            pageMotion.Translate.Y=savedY;
+            pageMotion.Scale.ScaleX=pageMotion.Scale.ScaleY=savedScale;
+        }
         image.Freeze();
         snapshot.Source = image;
         snapshot.Opacity = 1;
@@ -30,12 +46,12 @@ public sealed class CategoryTransition(FrameworkElement page, Image snapshot)
         {
             if (_revision != revision) return;
             if (!MotionPreferences.Enabled) { Clear(); return; }
-            PageTransition.Play(page, 24, 340);
+            PageTransition.Play(page, 18, 300);
             snapshot.Opacity = 0;
-            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(210)) { FillBehavior = FillBehavior.Stop };
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300)) { FillBehavior = FillBehavior.Stop };
             fade.Completed += (_, _) => { if (_revision == revision) Clear(); };
             snapshot.BeginAnimation(UIElement.OpacityProperty, fade);
-            motion.Translate.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, -10, TimeSpan.FromMilliseconds(210)) { FillBehavior = FillBehavior.Stop });
+            motion.Translate.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, -8, TimeSpan.FromMilliseconds(300)) { FillBehavior = FillBehavior.Stop });
         }));
     }
 

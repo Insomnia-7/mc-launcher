@@ -952,9 +952,7 @@
         <views:AppearanceView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="97" Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAppearanceOpen}"/>
 
         <!-- 切主题时铺一层旧底色淡出，避免整屏瞬间换色 -->
-        <Border x:Name="ThemeFade" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
-                IsHitTestVisible="False" Opacity="0" Background="Transparent" />
-        <views:NetworkSettingsView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
+                <views:NetworkSettingsView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
                                    Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsNetworkOpen}" />
 
         <views:FirstRunView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"

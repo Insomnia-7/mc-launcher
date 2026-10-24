@@ -121,11 +121,12 @@ internal static partial class UiCheck
             .Select(x=>x.Button.Content?.ToString())
             .ToList();
         Check("窄窗口下下载页底部按钮不被裁掉",footerButtons.Count>0 && clipped.Count==0);
-        if(clipped.Count>0) Console.WriteLine("[clipped] "+string.Join(", ",clipped));        // 切主题时铺的那层旧底色必须真的退场：动画只靠渲染帧推进，
-        // 帧停了它就留在 0.88，整窗看着发暗（离屏截图里一模一样）。
-        var themeFade=(System.Windows.Controls.Border)window.FindName("ThemeFade");
-        Pump(Task.Delay(800));
-        Check("切主题遮罩最终完全退场",themeFade.Opacity<=0.01);
+        if(clipped.Count>0) Console.WriteLine("[clipped] "+string.Join(", ",clipped));        // 旧实现靠整屏铺旧底色淡出来掩盖瞬时换色，浅色切深色时整窗会暗一下；
+        // 现在是画刷自己补间，所以验「动画结束后颜色落在目标值」。
+        Pump(Task.Delay(700));
+        var bgBrush=(SolidColorBrush)System.Windows.Application.Current.Resources["BgBrush"];
+        var bgExpected=(Color)ColorConverter.ConvertFromString(ThemeCatalog.Resolve(vm.SelectedTheme!.Definition)["BgBrush"]);
+        Check("主题背景渐到目标色",bgBrush.Color==bgExpected && !bgBrush.HasAnimatedProperties);
         vm.SelectedTheme=vm.ThemeChoices.First(t=>t.Id=="ocean");
         CheckCaptionMatchesTheme(window,vm,"切主题后标题栏落到主题色");
         Pump(Task.Delay(420));Render(window,820,560,"download-820.png");
