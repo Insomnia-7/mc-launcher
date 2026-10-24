@@ -17,6 +17,7 @@ using Launcher.App.ViewModels;
 using Launcher.Application.Abstractions;
 using Launcher.Application.Install;
 using Launcher.Desktop;
+using Launcher.Desktop.Controls;
 using Launcher.Domain.Java;
 using Launcher.Domain.Launch;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,10 @@ internal static class Program
             Check("新版界面不依赖 WPF 程序集", !typeof(MainWindow).Assembly.GetReferencedAssemblies().Any(a=>a.Name is "PresentationCore" or "PresentationFramework" or "WindowsBase"));
             Check("缺少安全存储时不降级明文令牌", !PlatformUi.CanStoreSecrets(null));
             Check("首页启动按钮连接共用业务命令", Find<Button>("LaunchButton").Command == model.LaunchCommand);
+            Check("主操作接入矢量图标", Find<Button>("LaunchButton").Content is IconLabel { Icon:"ActionPlay" } && Find<Button>("LibraryNav").Content is IconLabel { Icon:"NavVersions" });
+            Check("图标保留素材原色", IconCatalog.Items["Tile.LoaderVanilla"].Parts.Where(p=>p.Fill is not null).Select(p=>Color.Parse(p.Fill!)).Any(c=>c.R!=c.G || c.G!=c.B));
+            Check("全部矢量图标可解码", IconCatalog.Items.Values.SelectMany(icon=>icon.Parts).All(part=>Geometry.Parse(part.Path) is not null));
+            Check("版本类型图标可区分加载器与整合包", new InstanceIconConverter().Convert(new InstanceCard("fabric","fabric-loader-0.16.9-1.21","Fabric","Fabric","1.21",false),typeof(string),null,System.Globalization.CultureInfo.InvariantCulture).ToString()=="Tile.LoaderFabric" && new InstanceIconConverter().Convert(new InstanceCard("pack","1.21","Pack","Pack","1.21",true),typeof(string),null,System.Globalization.CultureInfo.InvariantCulture).ToString()=="Tile.LoaderModpack");
             Capture("home-light");
             Click(Find<Button>("AccountEntry")); Check("账号入口可点击", model.IsAccountsOpen);
             Capture("accounts"); model.CloseAccountsCommand.Execute(null); Pump(50);
@@ -108,6 +113,7 @@ internal static class Program
             Click(Find<ToggleButton>("ThemeToggle"));
             primaryForeground=(ISolidColorBrush)Avalonia.Application.Current.Resources["PrimaryTextBrush"]!;
             Check("夜间主按钮切为黑字", !model.IsLightTheme && primaryForeground.Color==Colors.Black);
+            Check("夜间矢量图标同步主按钮字色", Find<Button>("LaunchButton").GetVisualDescendants().OfType<UiIcon>().Single().Foreground is ISolidColorBrush { Color:var iconColor } && iconColor==Colors.Black);
             Check("其他配色入口已移除", !window.GetVisualDescendants().OfType<Button>().Any(b=>b.Content is string name && name is "导入配色" or "导出配色"));
             model.IsSettingsOpen = true; Pump(40);
             model.MemoryMb = 3072; model.SaveSettingsCommand.Execute(null);
@@ -135,6 +141,11 @@ internal static class Program
             Check("按下具有缩放反馈", feedback.IsPressed && feedback.RenderTransform!.Value.M11<1);
             window.MouseUp(point,MouseButton.Left); Pump(350); model.CloseAccountsCommand.Execute(null); Pump(180);
             Check("松开后恢复正常尺寸", feedback.RenderTransform!.Value.M11>=0.99);
+            Find<Button>("LibraryNav").Focus(NavigationMethod.Tab); feedback.Focus(NavigationMethod.Tab); Pump(80);
+            Check("键盘导航显示焦点框", feedback.IsFocused && feedback.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="FocusRing").IsVisible);
+            feedback.IsEnabled=false; Pump(30); Click(feedback);
+            Check("禁用按钮不可触发账号弹窗", !model.IsAccountsOpen && !feedback.IsEffectivelyEnabled && feedback.Opacity<0.6);
+            feedback.IsEnabled=true;
             model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off"); Check("关闭动画立即生效", !MotionPreferences.Enabled && window.Classes.Contains("reduced-motion"));
             window.Width=900; window.Height=640; Pump(60); Capture("home-compact");
             Check("最小窗口下启动入口仍在窗口内", Find<Button>("LaunchButton").TranslatePoint(new Point(0,0),window) is { X:>=0,Y:>=0 } p && p.X+Find<Button>("LaunchButton").Bounds.Width<=window.ClientSize.Width+1);

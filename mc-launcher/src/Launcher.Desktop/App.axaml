@@ -1,4 +1,9 @@
-<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" x:Class="Launcher.Desktop.App" RequestedThemeVariant="Light">
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.App" RequestedThemeVariant="Light">
+  <Application.Resources>
+    <icons:InstanceIconConverter x:Key="InstanceIcon" />
+    <icons:CategoryIconConverter x:Key="CategoryIcon" />
+    <icons:AccountIconConverter x:Key="AccountIcon" />
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
