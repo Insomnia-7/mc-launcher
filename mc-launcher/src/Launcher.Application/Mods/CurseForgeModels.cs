@@ -44,6 +44,11 @@ public sealed class CfFileResponse
 }
 
 /// <summary>单个 mod 的响应包装。</summary>
+public sealed class CfSingleFileResponse
+{
+    [JsonPropertyName("data")] public CfFile? Data {get;init;}
+}
+
 public sealed class CfModResponse
 {
     [JsonPropertyName("data")]

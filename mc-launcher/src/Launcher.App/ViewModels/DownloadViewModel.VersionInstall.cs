@@ -36,7 +36,7 @@ public sealed partial class DownloadViewModel
     [ObservableProperty] private string _loaderVersionStatus = string.Empty;
 
     public string InstallGameVersion => SelectedVersion?.Id ?? string.Empty;
-    public bool ShowsBrowseControls => !IsVersionConfiguration;
+    public bool ShowsBrowseControls => !IsVersionConfiguration && !IsResourceDetail;
     public string DiscoverHeading => IsVersionConfiguration ? "安装游戏" : "发现资源";
     public bool IsVersionList => IsVersionMode && SelectedVersion is null;
     public bool IsVersionConfiguration => IsVersionMode && SelectedVersion is not null;

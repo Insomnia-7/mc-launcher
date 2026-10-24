@@ -42,10 +42,16 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
         var files = await curseForge.GetFilesAsync(modId, env.GameVersion, category.UsesLoader() ? env.LoaderSlug : null, ct)
             .ConfigureAwait(false);
 
-        var main = (versionId is null ? files.FirstOrDefault(f => f.IsRelease) ?? files.FirstOrDefault() : files.FirstOrDefault(f => f.Id.ToString() == versionId))
+        var main = (versionId is null ? files.FirstOrDefault(f => f.IsRelease) ?? files.FirstOrDefault() : await curseForge.GetFileAsync(modId, int.Parse(versionId), ct).ConfigureAwait(false))
             ?? throw new InvalidOperationException(
                 $"CurseForge 上没有 {modId} 在 {env.Describe()} 下可用的文件。");
 
+        // Existing update callers already obtained a server-filtered list. Only files fetched
+        // outside that page need their own compatibility check (older releases may be paged out).
+        if(versionId is not null && (main.ModId != modId || main.Id.ToString() != versionId
+            || !files.Any(f=>f.Id==main.Id) && (!main.GameVersions.Contains(env.GameVersion)
+                || category.UsesLoader() && (env.LoaderSlug is null || !main.GameVersions.Contains(env.LoaderSlug,StringComparer.OrdinalIgnoreCase)))))
+            throw new InvalidOperationException("所选文件与当前游戏版本或加载器不兼容。");
         var project = await curseForge.GetModAsync(modId, ct).ConfigureAwait(false);
         if (project is { Name.Length: > 0 })
         {
@@ -133,9 +139,9 @@ public sealed class CurseForgeInstallService(IDownloader downloader, ICurseForge
     }
 
     public async Task<CfInstallReport> InstallAsync(string gameRoot, string instanceId, DownloadCategory category,
-        int modId, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default)
+        int modId, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default, string? versionId = null)
     {
-        var plan = await PrepareAsync(gameRoot, instanceId, category, modId, progress, ct).ConfigureAwait(false);
+        var plan = await PrepareAsync(gameRoot, instanceId, category, modId, progress, ct, strict:versionId is not null, versionId:versionId).ConfigureAwait(false);
         var skipped = await ModInstallExecutor.InstallAsync(plan, category, downloader, progress, ct).ConfigureAwait(false);
         return new(plan.Title, plan.RootFile, plan.RootSize, plan.TargetDirectory, Math.Max(0, plan.Files.Count - skipped - 1), skipped);
     }

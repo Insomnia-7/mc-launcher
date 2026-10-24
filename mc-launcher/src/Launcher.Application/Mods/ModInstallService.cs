@@ -63,8 +63,19 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
         var pending = new Queue<(string ProjectId, string? VersionId, int Depth)>();
         foreach (var dependency in version.RequiredDependencies)
         {
-            if (dependency.ProjectId is { Length: > 0 } id) pending.Enqueue((id, dependency.VersionId, 1));
-            else if (strict) throw new InvalidOperationException("必需前置缺少可确认的项目 ID。");
+            await EnqueueDependencyAsync(dependency,1).ConfigureAwait(false);
+        }
+
+        async Task EnqueueDependencyAsync(ModrinthDependency dependency,int depth)
+        {
+            if(dependency.ProjectId is {Length:>0} id) pending.Enqueue((id,dependency.VersionId,depth));
+            else if(dependency.VersionId is {Length:>0} pinned)
+            {
+                var exact=await modrinth.GetVersionAsync(pinned,ct).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException("无法解析前置版本："+pinned);
+                pending.Enqueue((exact.ProjectId,pinned,depth));
+            }
+            else if(strict) throw new InvalidOperationException("必需前置缺少可确认的项目 ID。");
         }
 
         while (pending.Count > 0)
@@ -102,8 +113,7 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
 
                 foreach (var nested in chosen!.RequiredDependencies)
                 {
-                    if (nested.ProjectId is { Length: > 0 } nestedId) pending.Enqueue((nestedId, nested.VersionId, depth + 1));
-                    else if (strict) throw new InvalidOperationException("必需前置缺少可确认的项目 ID。");
+                    await EnqueueDependencyAsync(nested,depth+1).ConfigureAwait(false);
                 }
             }
             catch (HttpRequestException) when (!strict)
@@ -116,9 +126,9 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
     }
 
     public async Task<ModInstallReport> InstallAsync(string gameRoot, string instanceId, DownloadCategory category,
-        string projectIdOrSlug, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default)
+        string projectIdOrSlug, IProgress<ModInstallProgress>? progress = null, CancellationToken ct = default, string? versionId = null)
     {
-        var plan = await PrepareAsync(gameRoot, instanceId, category, projectIdOrSlug, progress, ct).ConfigureAwait(false);
+        var plan = await PrepareAsync(gameRoot, instanceId, category, projectIdOrSlug, progress, ct, strict:versionId is not null, versionId:versionId).ConfigureAwait(false);
         var skipped = await ModInstallExecutor.InstallAsync(plan, category, downloader, progress, ct).ConfigureAwait(false);
         return new(plan.Title, plan.Version, plan.RootFile, plan.RootSize, plan.TargetDirectory, plan.Files.Count - 1, skipped);
     }

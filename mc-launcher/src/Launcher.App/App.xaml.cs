@@ -117,6 +117,8 @@ base.OnStartup(e);
         services.AddSingleton<ILoaderMetaClient>(sp => new LoaderMetaClient(
             sp.GetRequiredService<HttpClient>(),
             sp.GetRequiredService<IUrlRewriter>()));
+        services.AddSingleton<IResourcePresentationClient>(sp => new ResourcePresentationClient(
+            sp.GetRequiredService<HttpClient>(), Path.Combine(AppPaths.CacheDirectory, "resource-presentation")));
         services.AddSingleton<VersionLoader>();
         services.AddSingleton<IMicrosoftAuthService>(_ => new MicrosoftAuthService(
             MicrosoftAuthService.CreateHttpClient($"{BuildInfo.Name}/{BuildInfo.Version}")));

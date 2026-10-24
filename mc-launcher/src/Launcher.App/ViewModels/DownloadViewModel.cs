@@ -47,20 +47,6 @@ public sealed partial class CategoryItem : ObservableObject
 }
 
 /// <summary>搜索结果或版本列表里的一行。</summary>
-public sealed record DownloadItem(
-    string Source,
-    DownloadCategory Category,
-    string Id,
-    string Title,
-    string Author,
-    string MetaText,
-    string Description)
-{
-    public string Badge => Source == DownloadViewModel.CurseForgeSource ? "CF" : "MR";
-
-    public override string ToString() => $"{Title}（{Badge}）";
-}
-
 /// <summary>Minecraft 原版版本条目。</summary>
 public sealed partial class VersionItem(string id, string type, DateTimeOffset releaseTime) : ObservableObject
 {
@@ -147,7 +133,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         Func<string> gameRoot,
         Func<string?> currentInstance,
         ILoaderMetaClient loaderMeta, LoaderInstaller loaderInstaller, IForgeInstaller forgeInstaller,
-        INeoForgeInstaller neoForgeInstaller, IJavaProvisioner javaProvisioner)
+        INeoForgeInstaller neoForgeInstaller, IJavaProvisioner javaProvisioner, IResourcePresentationClient presentation)
     {
         _modrinth = modrinth;
         _curseForge = curseForge;
@@ -159,6 +145,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         _logger = logger;
         _gameRoot = gameRoot;
         _currentInstance = currentInstance;
+        _presentation = presentation;
         _loaderMeta = loaderMeta; _loaderInstaller = loaderInstaller;
         _forgeInstaller = forgeInstaller; _neoForgeInstaller = neoForgeInstaller; _javaProvisioner = javaProvisioner;
         InitializeInstallLoaders();
@@ -183,7 +170,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     public event Action? InstancesChanged;
 
     /// <summary>主界面切到下载页时调用：当前版本可能刚变过，重算一下落盘目录提示。</summary>
-    public void RefreshTarget() => TargetText = BuildTargetText(SelectedCategory?.Category);
+    public void RefreshTarget() { TargetText = BuildTargetText(SelectedCategory?.Category); RefreshResourceCompatibility(); }
 
     /// <summary>
     /// 首次进入下载页时才真正拉版本清单（920 条，几百毫秒 + 一次网络请求）。
@@ -402,6 +389,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         CanCancel = value;
         OnPropertyChanged(nameof(CanEditSearch));
         OnPropertyChanged(nameof(CanConfigureVersion));
+        RefreshResourceCompatibility();
         BackToVersionsCommand.NotifyCanExecuteChanged();
         NotifyPaging();
     }
@@ -482,7 +470,8 @@ public sealed partial class DownloadViewModel : ObservableObject
         await BrowseAsync(ct);
     }
 
-    private bool CanInstall() => !IsBusy && SelectedResult is not null;
+    private bool CanInstall() => !IsBusy && SelectedResult is not null
+        && (!IsResourceDetail || SelectedResourceRelease is {CanInstall:true});
 
     /// <summary>
     /// CurseForge 搜索被拒时的退路：把输入当项目 ID（或链接里的数字 ID）直读。
@@ -520,14 +509,7 @@ public sealed partial class DownloadViewModel : ObservableObject
             Status = "项目类型不匹配，请切换到对应的资源栏目。";
             return;
         }
-        Results.Add(new DownloadItem(
-            CurseForgeSource,
-            category,
-            mod.Id.ToString(),
-            mod.Name,
-            mod.Authors.FirstOrDefault()?.Name ?? "未知作者",
-            $"{mod.DownloadsText} 次下载",
-            mod.Summary ?? string.Empty));
+        Results.Add(CurseForgeItem(mod,category));
 
         Status = $"CurseForge 直读：{mod.Name}（当前 Key 只支持按项目 ID 查询）";
     }
@@ -537,7 +519,10 @@ public sealed partial class DownloadViewModel : ObservableObject
     {
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装资源");
         if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
-        if (SelectedResult is not { } item || SelectedCategory is null) return;
+        if (SelectedResult is not { } item || SelectedCategory is null || !CanInstall()) return;
+        RefreshResourceCompatibility();
+        if(IsResourceDetail && SelectedResourceRelease is not {CanInstall:true}) return;
+        var selectedReleaseId = IsResourceDetail ? SelectedResourceRelease?.Id : null;
 
         var category = item.Category;
 
@@ -547,7 +532,7 @@ public sealed partial class DownloadViewModel : ObservableObject
             return;
         }
 
-        if (category != DownloadCategory.Modpack && _installRequest is { } filters)
+        if (category != DownloadCategory.Modpack && selectedReleaseId is null && _installRequest is { } filters)
         {
             var targetVersion = ResolveGameVersion();
             var targetLoader = ResolveLoader();
@@ -580,7 +565,7 @@ public sealed partial class DownloadViewModel : ObservableObject
 
             if (category == DownloadCategory.Modpack)
             {
-                await InstallModpackAsync(item, cts.Token);
+                await InstallModpackAsync(item, cts.Token, selectedReleaseId);
                 return;
             }
 
@@ -595,17 +580,17 @@ public sealed partial class DownloadViewModel : ObservableObject
                 }
 
                 var cfReport = await _cfInstaller.InstallAsync(
-                    _gameRoot(), instanceId, category, modId, progress, cts.Token);
+                    _gameRoot(), instanceId, category, modId, progress, cts.Token, selectedReleaseId);
 
-                Status = $"「{cfReport.ProjectName}」已装到 {Path.GetFileName(cfReport.TargetDirectory)}" +
+                Status = $"「{item.DisplayTitle}」已装到 {Path.GetFileName(cfReport.TargetDirectory)}" +
                          (cfReport.SkippedFiles > 0 ? $"（跳过 {cfReport.SkippedFiles} 个已存在）" : string.Empty);
                 return;
             }
 
             var report = await _installer.InstallAsync(
-                _gameRoot(), instanceId, category, item.Id, progress, cts.Token);
+                _gameRoot(), instanceId, category, item.Id, progress, cts.Token, selectedReleaseId);
 
-            Status = $"「{report.ProjectTitle} {report.VersionNumber}」已装到 {Path.GetFileName(report.TargetDirectory)}" +
+            Status = $"「{item.DisplayTitle} {report.VersionNumber}」已装到 {Path.GetFileName(report.TargetDirectory)}" +
                      (report.DependencyFiles > 0 ? $"，附带 {report.DependencyFiles} 个依赖" : string.Empty) +
                      (report.SkippedFiles > 0 ? $"，跳过 {report.SkippedFiles} 个已存在" : string.Empty);
         }
@@ -627,7 +612,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         }
     }
 
-    private async Task InstallModpackAsync(DownloadItem item, CancellationToken ct)
+    private async Task InstallModpackAsync(DownloadItem item, CancellationToken ct, string? releaseId = null)
     {
         // 整合包 = 原版 + 加载器 + 包里那一堆 mod，800 MB 是保守下限（通天之路实测 795 MB）
         if (Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(_gameRoot(), ModpackInstallReserveBytes) is { } disk)
@@ -651,11 +636,11 @@ public sealed partial class DownloadViewModel : ObservableObject
                 return;
             }
 
-            report = await _modpackDownloader.InstallCurseForgeAsync(_gameRoot(), cfModId, progress, ct, _installRequest?.GameVersion, _installRequest?.Loader);
+            report = await _modpackDownloader.InstallCurseForgeAsync(_gameRoot(), cfModId, progress, ct, releaseId is null ? _installRequest?.GameVersion : null, releaseId is null ? _installRequest?.Loader : null, releaseId);
         }
         else
         {
-            report = await _modpackDownloader.InstallAsync(_gameRoot(), item.Id, progress, ct, _installRequest?.GameVersion, _installRequest?.Loader);
+            report = await _modpackDownloader.InstallAsync(_gameRoot(), item.Id, progress, ct, releaseId is null ? _installRequest?.GameVersion : null, releaseId is null ? _installRequest?.Loader : null, releaseId);
         }
 
         Status = $"「{report.PackName} {report.PackVersionId}」导入完成 · {report.InstanceId} · 下载 {report.DownloadedFiles} / 跳过 {report.SkippedFiles}";

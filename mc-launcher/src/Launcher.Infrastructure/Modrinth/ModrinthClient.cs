@@ -26,6 +26,11 @@ public sealed class ModrinthClient(HttpClient http) : IModrinthClient
         return client;
     }
 
+    public Task<ModrinthProjectInfo?> GetProjectAsync(string id,CancellationToken ct=default) =>
+        http.GetFromJsonAsync<ModrinthProjectInfo>("project/"+Uri.EscapeDataString(id),Json,ct);
+    public Task<ModrinthVersion?> GetVersionAsync(string id,CancellationToken ct=default) =>
+        http.GetFromJsonAsync<ModrinthVersion>("version/"+Uri.EscapeDataString(id),Json,ct);
+
     public async Task<ModrinthVersion?> GetVersionByHashAsync(string sha1, CancellationToken ct = default)
     {
         using var response = await http.GetAsync($"version_file/{Uri.EscapeDataString(sha1)}?algorithm=sha1", ct).ConfigureAwait(false);

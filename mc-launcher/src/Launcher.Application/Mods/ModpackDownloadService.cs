@@ -19,13 +19,13 @@ public sealed class ModpackDownloadService(
         string gameRoot,
         string projectIdOrSlug,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default, string? gameVersion = null, string? loader = null)
+        CancellationToken ct = default, string? gameVersion = null, string? loader = null, string? versionId = null)
     {
         // Only explicit browser filters apply; an unrelated current instance must not constrain a modpack.
         progress?.Report(new ModpackImportProgress("解析整合包", 0, projectIdOrSlug));
 
         var versions = await modrinth.GetVersionsAsync(projectIdOrSlug, gameVersion, loader, ct).ConfigureAwait(false);
-        var version = versions.FirstOrDefault()
+        var version = (versionId is null ? versions.FirstOrDefault() : versions.FirstOrDefault(v=>v.Id==versionId))
             ?? throw new InvalidOperationException($"Modrinth 上没有 {projectIdOrSlug} 的可用版本");
 
         var file = version.PrimaryFile
@@ -42,7 +42,7 @@ public sealed class ModpackDownloadService(
         Directory.CreateDirectory(cacheDirectory);
 
         var localPath = Path.Combine(cacheDirectory, file.Filename);
-        if (!File.Exists(localPath) || new FileInfo(localPath).Length != file.Size)
+        if (versionId is not null || !File.Exists(localPath) || new FileInfo(localPath).Length != file.Size)
         {
             progress?.Report(new ModpackImportProgress("下载整合包", 0, $"{file.Filename} {file.Size / 1024.0 / 1024.0:F1} MB"));
 
@@ -69,7 +69,7 @@ public sealed class ModpackDownloadService(
         string gameRoot,
         int modId,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default, string? gameVersion = null, string? loader = null)
+        CancellationToken ct = default, string? gameVersion = null, string? loader = null, string? versionId = null)
     {
         if (!curseForge.IsConfigured)
         {
@@ -80,10 +80,13 @@ public sealed class ModpackDownloadService(
         progress?.Report(new ModpackImportProgress("解析整合包", 0, $"CurseForge#{modId}"));
 
         var files = await curseForge.GetFilesAsync(modId, gameVersion, loader, ct).ConfigureAwait(false);
-        var file = files.FirstOrDefault(f => f.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                   ?? files.FirstOrDefault()
+        var file = (versionId is null ? files.FirstOrDefault(f => f.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                   ?? files.FirstOrDefault() : await curseForge.GetFileAsync(modId,int.Parse(versionId),ct).ConfigureAwait(false))
                    ?? throw new InvalidOperationException($"CurseForge 项目 {modId} 没有可下载的文件");
 
+        if(versionId is not null && (file.ModId != modId || gameVersion is not null && !file.GameVersions.Contains(gameVersion)
+            || loader is not null && !file.GameVersions.Contains(loader,StringComparer.OrdinalIgnoreCase)))
+            throw new InvalidOperationException("所选整合包文件与筛选条件不匹配。");
         var url = file.DownloadUrl
                   ?? await curseForge.GetDownloadUrlAsync(modId, file.Id, ct).ConfigureAwait(false)
                   ?? throw new InvalidOperationException(
@@ -93,7 +96,7 @@ public sealed class ModpackDownloadService(
         Directory.CreateDirectory(cacheDirectory);
 
         var localPath = Path.Combine(cacheDirectory, Path.GetFileName(file.FileName));
-        if (!File.Exists(localPath) || new FileInfo(localPath).Length != file.FileLength)
+        if (versionId is not null || !File.Exists(localPath) || new FileInfo(localPath).Length != file.FileLength)
         {
             progress?.Report(new ModpackImportProgress("下载整合包", 0,
                 $"{file.FileName} {file.FileLength / 1024.0 / 1024.0:F1} MB"));

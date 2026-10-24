@@ -85,7 +85,7 @@ public sealed partial class MainViewModel : ObservableObject
         ModUpdateInstaller modUpdateInstaller,
         ISkinService skins,
         ILoaderMetaClient loaderMeta, LoaderInstaller loaderInstaller,
-        IForgeInstaller forgeInstaller, INeoForgeInstaller neoForgeInstaller)
+        IForgeInstaller forgeInstaller, INeoForgeInstaller neoForgeInstaller, IResourcePresentationClient presentation)
     {
         _logger = logger;
         _secretProtector = secretProtector;
@@ -118,7 +118,7 @@ public sealed partial class MainViewModel : ObservableObject
             installer, meta, downloadLogger,
             () => GameRoot,
             () => SelectedInstance?.InstanceId,
-            loaderMeta, loaderInstaller, forgeInstaller, neoForgeInstaller, javaProvisioner);
+            loaderMeta, loaderInstaller, forgeInstaller, neoForgeInstaller, javaProvisioner, presentation);
 
         Download.InstancesChanged += RefreshInstances;
 

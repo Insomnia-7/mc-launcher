@@ -27,6 +27,12 @@ public sealed record ModrinthProject(
     };
 }
 
+public sealed record ModrinthProjectInfo(
+    [property:JsonPropertyName("id")] string Id,
+    [property:JsonPropertyName("slug")] string Slug,
+    [property:JsonPropertyName("title")] string Title,
+    [property:JsonPropertyName("description")] string Description);
+
 public sealed record ModrinthSearchResponse(
     [property: JsonPropertyName("hits")] IReadOnlyList<ModrinthProject> Hits,
     [property: JsonPropertyName("total_hits")] int TotalHits,
@@ -65,6 +71,8 @@ public sealed record ModrinthVersion(
     [property: JsonPropertyName("dependencies")] IReadOnlyList<ModrinthDependency>? Dependencies)
 {
     /// <summary>首选文件：primary=true 的那份，没有就取第一个。</summary>
+    [JsonPropertyName("downloads")] public long Downloads { get; init; }
+    [JsonPropertyName("version_type")] public string? VersionType { get; init; }
     public ModrinthFile? PrimaryFile =>
         Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 

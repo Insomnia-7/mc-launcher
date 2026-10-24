@@ -63,6 +63,8 @@ internal static class LauncherServices
         services.AddSingleton<ILoaderMetaClient>(sp => new LoaderMetaClient(
             sp.GetRequiredService<HttpClient>(),
             sp.GetRequiredService<IUrlRewriter>()));
+        services.AddSingleton<IResourcePresentationClient>(sp => new ResourcePresentationClient(
+            sp.GetRequiredService<HttpClient>(), Path.Combine(AppPaths.CacheDirectory, "resource-presentation")));
         services.AddSingleton<VersionLoader>();
         services.AddSingleton<IMicrosoftAuthService>(_ => new MicrosoftAuthService(
             MicrosoftAuthService.CreateHttpClient($"{BuildInfo.Name}/{BuildInfo.Version}")));
@@ -112,7 +114,7 @@ internal static class LauncherServices
             sp.GetRequiredService<IMicrosoftAuthService>(), sp.GetRequiredService<IJavaProvisioner>(), sp.GetRequiredService<DownloadSourceProvider>(),
             sp.GetRequiredService<IUpdateClient>(), sp.GetService<ISecretProtector>(), sp.GetRequiredService<ModUpdateService>(),
             sp.GetRequiredService<InstanceExportService>(), sp.GetRequiredService<ModUpdateInstaller>(), sp.GetRequiredService<ISkinService>(), sp.GetRequiredService<ILoaderMetaClient>(),
-            sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>()));
+            sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>(), sp.GetRequiredService<IResourcePresentationClient>()));
 
         // Modrinth / CurseForge 各用独立的 HttpClient：它们的 BaseAddress 不同，
         // 不能共用一个注册项，否则后注册的会顶掉前面的。

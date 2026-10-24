@@ -46,8 +46,17 @@ internal static class Program
         var javaPath = Path.Combine(data, OperatingSystem.IsWindows() ? "java.exe" : "java"); File.WriteAllBytes(javaPath, [0]);
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
         var log = new BindingLog(); Logger.Sink = log;
-        var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture();
-        using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); });
+        var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture();
+        using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
+            if(args.Contains("--live-catalog"))
+            {
+                var handler=new HttpClientHandler();
+                if(Environment.GetEnvironmentVariable("MCLAUNCHER_TEST_PROXY") is {Length:>0} proxy) {handler.Proxy=new WebProxy(proxy);handler.UseProxy=true;}
+                var client=new HttpClient(handler){BaseAddress=new Uri("https://api.modrinth.com/v2/"),Timeout=TimeSpan.FromSeconds(20)};
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("MCLauncher-UI-Checks/0.2.0");
+                s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(new Launcher.Infrastructure.Modrinth.ModrinthClient(client));
+                s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(new Launcher.Infrastructure.Meta.ResourcePresentationClient(client,Path.Combine(root,"live-cache")));
+            } });
         var clock = Stopwatch.StartNew();
         var model = services.GetRequiredService<MainViewModel>();
         var window = new MainWindow { DataContext = model, Width = 1180, Height = 800 }; PlatformUi.Window = window;
@@ -88,6 +97,18 @@ internal static class Program
                 Check("可以跳过向导后继续使用", !model.IsSetupOpen && !model.HasInstances);
                 Check("首次启动页面没有绑定错误", log.Errors.Count==0);
                 return 0;
+            }
+            if(args.Contains("--live-catalog"))
+            {
+                void WaitLive(Task task) { PumpUntil(()=>task.IsCompleted,45000); if(!task.IsCompleted) throw new TimeoutException("Live request timed out");task.GetAwaiter().GetResult();Pump(100); }
+                model.IsInstanceSection=false;model.Download.SelectedCategory=model.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.Mod);model.Download.Query="sodium";
+                WaitLive(model.Download.SearchCommand.ExecuteAsync(null));
+                Check("真实平台返回项目元数据",model.Download.Results.Any(i=>i.Slug=="sodium"&&i.DownloadsText.Length>0));
+                var project=model.Download.Results.First(i=>i.Slug=="sodium");PumpUntil(()=>project.IconBytes is {Length:>0},25000);
+                Check("真实项目原色图标下载成功",project.IconBytes is {Length:>0});Capture("live-resource-list");
+                WaitLive(model.Download.OpenResourceCommand.ExecuteAsync(project));
+                Check("真实项目版本可按游戏版本浏览",model.Download.ResourceReleaseGroups.Count>0);Capture("live-resource-versions");
+                Check("真实项目无绑定错误",log.Errors.Count==0);return 0;
             }
             Check("真实版本目录加载", model.Instances.Count == 3 && model.SelectedInstance is not null);
             Check("仅提供日间白和夜间黑", model.ThemeChoices.Count==2 && model.ThemeChoices.Select(t=>t.Name).SequenceEqual(new[]{"日间 · 白","夜间 · 黑"}));
@@ -177,6 +198,8 @@ internal static class Program
             Check("最小窗口下启动入口仍在窗口内", Find<Button>("LaunchButton").TranslatePoint(new Point(0,0),window) is { X:>=0,Y:>=0 } p && p.X+Find<Button>("LaunchButton").Bounds.Width<=window.ClientSize.Width+1);
             VersionInstallChecks.Run(model, window, installFixture, Pump, Check, Capture, Click);
             var metadataChecks=VersionInstallChecks.CheckMetadataAsync(Check); PumpUntil(()=>metadataChecks.IsCompleted,3000); metadataChecks.GetAwaiter().GetResult();
+            ResourceCenterChecks.Run(model,window,resourceFixture,Pump,Check,Capture,Click);
+            var presentationChecks=ResourceCenterChecks.CheckPresentationCacheAsync(root,Check);PumpUntil(()=>presentationChecks.IsCompleted,5000);presentationChecks.GetAwaiter().GetResult();
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

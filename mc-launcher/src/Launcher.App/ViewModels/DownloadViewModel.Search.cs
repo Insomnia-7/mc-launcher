@@ -51,6 +51,7 @@ public sealed partial class DownloadViewModel
 
     private void ResetBrowserState()
     {
+        CloseResourceDetails(); _resourceExtrasCts?.Cancel();
         _browserGeneration++;
         if (_searching) _runningCts?.Cancel();
         _taxonomyKey = null;
@@ -68,6 +69,7 @@ public sealed partial class DownloadViewModel
     }
     private void ClearSearchResults()
     {
+        CloseResourceDetails(); _resourceExtrasCts?.Cancel();
         Results.Clear(); SelectedResult = null; PageNumber = 1; TotalResults = 0;
         _lastRequest = null; _installRequest = null;
     }
@@ -109,7 +111,7 @@ public sealed partial class DownloadViewModel
         if (IsBusy || !IsSearchMode || SelectedCategory is null) return;
         var category = SelectedCategory.Category; var source = SelectedSource; var generation = _browserGeneration;
         var request = paging && _lastRequest is not null ? _lastRequest with { Offset = (PageNumber - 1) * PageSize } :
-            new ResourceSearchRequest(Query.Trim(), category, FilterValue(GameVersionFilter),
+            new ResourceSearchRequest(ResourceChinese.SearchQuery(Query.Trim()), category, FilterValue(GameVersionFilter),
                 category.UsesLoader() ? FilterValue(LoaderFilter) : null, FilterValue(SelectedTag?.Id),
                 SelectedSort?.Value ?? ResourceSort.Popularity, PageSize, (PageNumber - 1) * PageSize);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -131,8 +133,7 @@ public sealed partial class DownloadViewModel
                     cts.Token.ThrowIfCancellationRequested();
                     if (generation != _browserGeneration) return;
                     foreach (var mod in page.Data.Where(m => m.ClassId == category.CurseForgeClassId()))
-                        Results.Add(new(source, category, mod.Id.ToString(), mod.Name, mod.Author,
-                            $"{mod.DownloadsText} 次下载 · {mod.CategoryText} · {VersionsText(mod.LatestFiles.SelectMany(f => f.GameVersions))} · 更新 {DateText(mod.DateModified)}", mod.Summary));
+                        Results.Add(CurseForgeItem(mod,category));
                     TotalResults = page.TotalCount;
                 }
                 catch (CurseForgeSearchUnavailableException)
@@ -142,6 +143,7 @@ public sealed partial class DownloadViewModel
                     cts.Token.ThrowIfCancellationRequested();
                     if (generation != _browserGeneration) { Results.Clear(); return; }
                     TotalResults = Results.Count; _installRequest = request;
+                    _ = EnrichResultsAsync(Results.ToArray());
                     return;
                 }
             }
@@ -151,10 +153,10 @@ public sealed partial class DownloadViewModel
                 cts.Token.ThrowIfCancellationRequested();
                 if (generation != _browserGeneration) return;
                 foreach (var hit in response.Hits.Where(h => MatchesCategory(h, category)))
-                    Results.Add(new(source, category, hit.ProjectId, hit.Title, hit.Author ?? "未知作者",
-                        $"{hit.DownloadsText} 次下载 · {string.Join(' ', hit.Categories.Take(5))} · {VersionsText(hit.Versions)} · 更新 {DateText(hit.DateModified)}", hit.Description));
+                    Results.Add(ModrinthItem(hit,category));
                 TotalResults = response.TotalHits;
             }
+            _ = EnrichResultsAsync(Results.ToArray());
             _lastRequest = request; _installRequest = request;
             Status = Results.Count == 0 ? "没有匹配资源，可调整版本、分类或关键词。" : $"{source} · {ResultHeading} · 当前 {Results.Count} 项";
         }

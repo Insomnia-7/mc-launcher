@@ -4,6 +4,8 @@ namespace Launcher.Application.Mods;
 
 public interface IModrinthClient
 {
+    Task<ModrinthProjectInfo?> GetProjectAsync(string id,CancellationToken ct=default)=>Task.FromResult<ModrinthProjectInfo?>(null);
+    Task<ModrinthVersion?> GetVersionAsync(string id,CancellationToken ct=default)=>Task.FromResult<ModrinthVersion?>(null);
     Task<ModrinthSearchResponse> SearchAsync(ResourceSearchRequest request, CancellationToken ct = default) =>
         SearchAsync(request.Query, request.Category, request.GameVersion, request.Loader, request.Limit, request.Offset, ct);
     Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category, CancellationToken ct = default) =>

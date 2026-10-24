@@ -148,6 +148,18 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
             .ToList();
     }
 
+    public async Task<CfFile?> GetFileAsync(int modId,int fileId,CancellationToken ct=default) =>
+        (await GetAsync<CfSingleFileResponse>($"mods/{modId}/files/{fileId}",ct).ConfigureAwait(false))?.Data;
+
+    public async Task<CfFileResponse> GetFilesPageAsync(int modId,string? gameVersion=null,string? loaderSlug=null,int index=0,CancellationToken ct=default)
+    {
+        var query=new List<string>{"pageSize=50",$"index={Math.Max(0,index)}"};
+        if(!string.IsNullOrWhiteSpace(gameVersion)) query.Add("gameVersion="+Uri.EscapeDataString(gameVersion));
+        var loader=CfModLoaderType.FromSlug(loaderSlug);
+        if(loader!=CfModLoaderType.Any) query.Add($"modLoaderType={loader}");
+        return await GetAsync<CfFileResponse>($"mods/{modId}/files?"+string.Join('&',query),ct).ConfigureAwait(false) ?? new();
+    }
+
     public async Task<string?> GetDownloadUrlAsync(int modId, int fileId, CancellationToken ct = default)
         => (await GetAsync<CfStringResponse>($"mods/{modId}/files/{fileId}/download-url", ct)
             .ConfigureAwait(false))?.Data;
