@@ -56,9 +56,10 @@ internal static class Program
         var passed = 0;
         void Check(string name, bool condition) { if (!condition) throw new InvalidOperationException(name); passed++; Console.WriteLine("PASS " + name); }
         T Find<T>(string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
-        void Capture(string name)
+        void Capture(string name, bool resetPointer=true)
         {
-            window.MouseMove(new Point(0,0)); window.MouseMove(new Point(0,0)); Pump(80); window.UpdateLayout();
+            if(resetPointer) { window.MouseMove(new Point(0,0)); window.MouseMove(new Point(0,0)); }
+            Pump(220); window.UpdateLayout();
             using var bitmap = new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width, (int)window.ClientSize.Height), new Vector(96,96));
             bitmap.Render(window); bitmap.Save(Path.Combine(root, name + ".png"));
         }
@@ -141,6 +142,20 @@ internal static class Program
             Check("按下具有缩放反馈", feedback.IsPressed && feedback.RenderTransform!.Value.M11<1);
             window.MouseUp(point,MouseButton.Left); Pump(350); model.CloseAccountsCommand.Execute(null); Pump(180);
             Check("松开后恢复正常尺寸", feedback.RenderTransform!.Value.M11>=0.99);
+            var launchButton=Find<Button>("LaunchButton");
+            var hoverShadow=launchButton.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="HoverShadow");
+            var ambientShadow=launchButton.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="AmbientShadow");
+            window.MouseMove(new Point(0,0)); Pump(220);
+            var launchPoint=launchButton.TranslatePoint(new Point(launchButton.Bounds.Width/2,launchButton.Bounds.Height/2),window)!.Value;
+            window.MouseMove(launchPoint); Pump(35);
+            Check("阴影随悬停渐入", hoverShadow.Opacity>0 && hoverShadow.Opacity<1);
+            Pump(200); Capture("button-hover",false);
+            Check($"悬停结束后阴影稳定（opacity={hoverShadow.Opacity:F2}, over={launchButton.IsPointerOver}）", hoverShadow.Opacity>=0.99);
+            var launchesBeforePress=launch.Starts;
+            window.MouseDown(launchPoint,MouseButton.Left); Pump(220);
+            Check("按压时阴影收紧且文字保持清晰", ambientShadow.Opacity<=0.2 && hoverShadow.Opacity<0.01 && launchButton.Opacity>0.95);
+            window.MouseMove(new Point(0,0)); window.MouseUp(new Point(0,0),MouseButton.Left); Pump(250);
+            Check("移出后松开不会误启动", launch.Starts==launchesBeforePress && hoverShadow.Opacity<0.01);
             Find<Button>("LibraryNav").Focus(NavigationMethod.Tab); feedback.Focus(NavigationMethod.Tab); Pump(80);
             Check("键盘导航显示焦点框", feedback.IsFocused && feedback.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="FocusRing").IsVisible);
             feedback.IsEnabled=false; Pump(30); Click(feedback);
@@ -148,6 +163,17 @@ internal static class Program
             feedback.IsEnabled=true;
             model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off"); Check("关闭动画立即生效", !MotionPreferences.Enabled && window.Classes.Contains("reduced-motion"));
             window.Width=900; window.Height=640; Pump(60); Capture("home-compact");
+            var libraryScroll=Find<ScrollViewer>("LibraryScroll");
+            var verticalBar=libraryScroll.GetVisualDescendants().OfType<ScrollBar>().First(b=>b.Orientation==Avalonia.Layout.Orientation.Vertical && b.GetVisualAncestors().OfType<ScrollViewer>().First()==libraryScroll);
+            Check("首页滚动条完全隐藏", libraryScroll.VerticalScrollBarVisibility==ScrollBarVisibility.Hidden && !verticalBar.IsVisible);
+            var scrollPoint=libraryScroll.TranslatePoint(new Point(60,60),window)!.Value;
+            window.MouseMove(scrollPoint); window.MouseWheel(scrollPoint,new Vector(0,-3)); Pump(100);
+            Check("隐藏滚动条后仍可用滚轮滚动", libraryScroll.Offset.Y>0);
+            libraryScroll.Offset=default; libraryScroll.Focus(NavigationMethod.Tab);
+            window.KeyPress(Key.PageDown,RawInputModifiers.None,PhysicalKey.PageDown,null); window.KeyRelease(Key.PageDown,RawInputModifiers.None,PhysicalKey.PageDown,null); Pump(60);
+            Check("首页保留键盘翻页", libraryScroll.Offset.Y>0);
+            Check("关闭动画也覆盖阴影", hoverShadow.Transitions?.Count==0);
+            libraryScroll.Offset=default; Capture("home-compact");
             Check("最小窗口下启动入口仍在窗口内", Find<Button>("LaunchButton").TranslatePoint(new Point(0,0),window) is { X:>=0,Y:>=0 } p && p.X+Find<Button>("LaunchButton").Bounds.Width<=window.ClientSize.Width+1);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
@@ -170,8 +196,9 @@ internal static class Program
     private static void Pump(int milliseconds)
     {
         var clock=Stopwatch.StartNew();
+        Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(1);
         do { Dispatcher.UIThread.RunJobs(); Thread.Sleep(5); } while(clock.ElapsedMilliseconds<milliseconds);
-        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(1); Dispatcher.UIThread.RunJobs();
     }
     private static void PumpUntil(Func<bool> condition,int timeout) { var clock=Stopwatch.StartNew(); while(!condition() && clock.ElapsedMilliseconds<timeout) Pump(10); }
 }

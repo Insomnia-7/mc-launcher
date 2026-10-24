@@ -46,6 +46,13 @@
     <Setter Property="RenderTransformOrigin" Value="50%,50%" /><Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22"><TransformOperationsTransition.Easing><local:SoftSpringEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition><DoubleTransition Property="Opacity" Duration="0:0:0.12" /></Transitions></Setter>
     <Setter Property="Template"><ControlTemplate><Grid>
+      <!-- Cross-fade two fixed shadows instead of animating a blur radius. -->
+      <Border Name="AmbientShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 1 4 0 #18000000" Opacity="0.65" IsHitTestVisible="False">
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+      </Border>
+      <Border Name="HoverShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 5 12 0 #28000000" Opacity="0" IsHitTestVisible="False">
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+      </Border>
       <Border Name="FocusRing" Margin="-3" CornerRadius="14" BorderBrush="{DynamicResource TextBrush}" BorderThickness="1.5" IsVisible="False" IsHitTestVisible="False" />
       <Border Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
@@ -57,13 +64,18 @@
   </Style>
   <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.01)" /></Style>
   <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.97)" /><Setter Property="Opacity" Value="0.9" /></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.975)" /><Setter Property="Opacity" Value="0.98" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
   <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
   <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
-  <Style Selector="Button.primary /template/ Border#Surface"><Setter Property="BoxShadow" Value="0 5 14 0 #24000000" /></Style>
-  <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /><Setter Property="BoxShadow" Value="0 7 18 0 #30000000" /></Style>
-  <Style Selector="Button.primary:pressed /template/ Border#Surface"><Setter Property="BoxShadow" Value="0 1 5 0 #20000000" /></Style>
+  <Style Selector="Button.primary /template/ Border#AmbientShadow"><Setter Property="BoxShadow" Value="0 4 12 0 #29000000" /></Style>
+  <Style Selector="Button.primary /template/ Border#HoverShadow"><Setter Property="BoxShadow" Value="0 8 20 0 #35000000" /></Style>
+  <Style Selector="Button:pointerover /template/ Border#HoverShadow"><Setter Property="Opacity" Value="1" /></Style>
+  <Style Selector="Button:pressed /template/ Border#HoverShadow"><Setter Property="Opacity" Value="0" /></Style>
+  <Style Selector="Button:pressed /template/ Border#AmbientShadow"><Setter Property="Opacity" Value="0.18" /></Style>
+  <Style Selector="Button:disabled /template/ Border#HoverShadow"><Setter Property="Opacity" Value="0" /></Style>
+  <Style Selector="Button.quiet /template/ Border#AmbientShadow, Button.quiet /template/ Border#HoverShadow, Button.nav /template/ Border#AmbientShadow, Button.nav /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /></Style>
   <Style Selector="Button:pressed /template/ Border#TopHighlight"><Setter Property="Opacity" Value="0.3" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#FocusRing"><Setter Property="IsVisible" Value="True" /></Style>
   <Style Selector="Button.quiet"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="HorizontalContentAlignment" Value="Left" /></Style>
@@ -78,6 +90,7 @@
   <Style Selector="TextBox"><Setter Property="CornerRadius" Value="10" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" /></Style>
   <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="10" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" /><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
   <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
+  <Style Selector="Window.reduced-motion Button /template/ Border"><Setter Property="Transitions"><Transitions /></Setter></Style>
   <Style Selector="Window.reduced-motion Button"><Setter Property="Transitions"><Transitions /></Setter></Style>
   <Style Selector="ToggleButton.theme-switch">
     <Setter Property="Width" Value="70" /><Setter Property="Height" Value="36" /><Setter Property="Cursor" Value="Hand" />
