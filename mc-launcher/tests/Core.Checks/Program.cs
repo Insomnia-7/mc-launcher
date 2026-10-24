@@ -1816,6 +1816,15 @@ Check("空间不够时说出盘符与缺口",
     && spaceText.Contains("磁盘空间不够") && spaceText.Contains("MB"));
 Check("路径为空时不误报", Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(null, 1024) is null);
 
+// 磁盘满要和网络错误分开：HResult 与文案两条路都要认
+var diskFullError = new IOException("There is not enough space on the disk.", unchecked((int)0x80070070));
+Check("按 HResult 认出磁盘满", Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(diskFullError));
+Check("内层异常里的磁盘满也认", Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(
+    new IOException("下载失败", new IOException("磁盘空间不足。", unchecked((int)0x80070027)))));
+Check("普通网络错误不算磁盘满", !Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(new IOException("连接被重置")));
+Check("磁盘满的说明带续传提示",
+    Launcher.Application.Diagnostics.DiskErrors.DescribeDiskFull("libraries/x.jar").Contains("续传"));
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");

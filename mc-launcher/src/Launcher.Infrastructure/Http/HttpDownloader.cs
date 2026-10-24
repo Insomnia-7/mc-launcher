@@ -222,6 +222,12 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                     await Task.Delay(wait, ct).ConfigureAwait(false);
                 }
             }
+            catch (Exception ex) when (Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(ex))
+            {
+                // 磁盘满重试多少次都一样；把「空间不够」直接交出去，别伪装成网络错误
+                throw new IOException(
+                    Launcher.Application.Diagnostics.DiskErrors.DescribeDiskFull(entry.RelativePath), ex);
+            }
             catch (Exception ex)
             {
                 lastError = ex;
