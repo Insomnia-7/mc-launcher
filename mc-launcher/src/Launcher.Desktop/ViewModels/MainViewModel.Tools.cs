@@ -123,8 +123,9 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>只检索本机已有的 Java（PATH、常见安装目录、启动器数据目录），不下载。</summary>
     [RelayCommand]
-    private async Task ProvisionJavaAsync()
+    private async Task DetectLocalJavaAsync()
     {
         if (!CanRunTool()) return;
 
@@ -133,43 +134,29 @@ public sealed partial class MainViewModel
 
         try
         {
-            var required = 21;
-            if (SelectedInstance is { } instance)
-            {
-                try
-                {
-                    var version = await _versionLoader.LoadAsync(GameRoot, instance.VersionId);
-                    required = version.JavaVersion?.MajorVersion ?? required;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "读取版本 {Version} 的 Java 要求失败，按 {Major} 处理", instance.VersionId, required);
-                }
-            }
+            StatusText = "正在检索本地 Java…";
+            await LoadJavaOptionsAsync();
 
-            if (JavaOptions.Any(option => option.ExecutablePath is not null && option.MajorVersion >= required))
+            var found = JavaOptions
+                .Where(option => option.ExecutablePath is not null)
+                .OrderBy(option => option.MajorVersion)
+                .ToList();
+
+            if (found.Count == 0)
             {
-                StatusText = $"本机已经有 Java {required}+ 了，不需要再下载";
+                StatusText = "没找到本地 Java。";
+                ToolHint = "已查过 PATH、常见安装目录与启动器数据目录；启动游戏时仍会自动补一个。";
                 return;
             }
 
-            StatusText = $"正在准备 Java {required}（首次要下几十 MB）…";
-            var progress = new Progress<JavaProvisionProgress>(p =>
-                StatusText = p.Detail is { Length: > 0 }
-                    ? $"Java {required} · {p.Stage} {p.Percent:0}% · {p.Detail}"
-                    : $"Java {required} · {p.Stage} {p.Percent:0}%");
-
-            var java = await _javaProvisioner.EnsureAsync(required, AppPaths.DataDirectory, progress);
-            await LoadJavaOptionsAsync();
-            StatusText = $"Java {java.MajorVersion} 已就绪：{java.ExecutablePath}";
-        }
-        catch (NotSupportedException ex)
-        {
-            StatusText = ex.Message;
+            var majors = string.Join(" / ", found.Select(option => option.MajorVersion).Distinct());
+            var current = SelectedJava?.Title ?? "自动选择";
+            StatusText = $"找到 {found.Count} 个本地 Java（{majors}），当前：{current}";
+            ToolHint = string.Join("；", found.Select(option => option.ExecutablePath).Distinct().Take(3));
         }
         catch (Exception ex)
         {
-            StatusText = "获取 Java 失败：" + Launcher.Application.Diagnostics.ErrorText.Describe(ex);
+            StatusText = "检索 Java 失败：" + Launcher.Application.Diagnostics.ErrorText.Describe(ex);
         }
         finally
         {

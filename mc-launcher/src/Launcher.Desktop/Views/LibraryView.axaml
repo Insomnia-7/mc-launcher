@@ -27,7 +27,7 @@
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Command="{Binding AutoDetectGameRootCommand}" IsEnabled="{Binding !IsToolBusy}" AutomationProperties.Name="自动找游戏目录" ToolTip.Tip="扫描各盘符下的 .minecraft / mclab / PCL / HMCL 等常见位置，找到就切过去"><icons:IconLabel Icon="ActionSearch" Text="自动找游戏目录" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-          <Button Command="{Binding ProvisionJavaCommand}" IsEnabled="{Binding !IsToolBusy}" AutomationProperties.Name="自动装 Java" ToolTip.Tip="按当前版本要求的 Java 主版本下载运行时（首次约几十 MB）"><icons:IconLabel Icon="ActionJava" Text="自动装 Java" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          <Button Command="{Binding DetectLocalJavaCommand}" IsEnabled="{Binding !IsToolBusy}" AutomationProperties.Name="检索本地 Java" ToolTip.Tip="扫描 PATH、常见安装目录和启动器数据目录里已有的 Java，只列出不下载"><icons:IconLabel Icon="ActionJava" Text="检索本地 Java" Foreground="{Binding $parent[Button].Foreground}" /></Button>
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding ToolHint}" Classes="muted" FontSize="11" MaxWidth="360" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       </Grid>
