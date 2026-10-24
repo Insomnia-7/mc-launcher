@@ -1806,6 +1806,16 @@ Check("空路径提示没有设置",
     Launcher.Application.Diagnostics.GameRootProbe.Describe("  ")?.Contains("没有设置") == true);
 Directory.Delete(probeRoot, recursive: true);
 
+// 磁盘空间预检
+var tempRoot = Path.GetTempPath();
+Check("能读到临时盘可用空间", Launcher.Application.Diagnostics.DiskSpaceProbe.FreeBytes(tempRoot) is > 0);
+Check("空间够用时不提示",
+    Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(tempRoot, 1) is null);
+Check("空间不够时说出盘符与缺口",
+    Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(tempRoot, long.MaxValue / 4) is { } spaceText
+    && spaceText.Contains("磁盘空间不够") && spaceText.Contains("MB"));
+Check("路径为空时不误报", Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(null, 1024) is null);
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");

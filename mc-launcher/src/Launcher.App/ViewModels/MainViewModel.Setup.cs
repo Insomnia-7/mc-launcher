@@ -14,6 +14,9 @@ namespace Launcher.App.ViewModels;
 public sealed partial class MainViewModel
 {
     private IVersionMetaClient _setupMeta = null!;
+
+    /// <summary>向导一次装原版 + 资源的保守占用估计（实测 26.3 落地 586 MB）。</summary>
+    private const long SetupRequiredBytes = 700L * 1024 * 1024;
     private FirstRunInstaller _setupInstaller = null!;
     public ObservableCollection<ManifestEntry> SetupVersions { get; } = [];
 
@@ -112,6 +115,13 @@ public sealed partial class MainViewModel
         if (operation is null) { SetupError = StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         SetupError = string.Empty;
         if (HasGameRootProblem || !RefreshGameRootHealth()) { SetupError = GameRootProblem; return; }
+        // 一个原版版本落地 500–600 MB，留点余量再开始下
+        if (Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(GameRoot, SetupRequiredBytes) is { } diskProblem)
+        {
+            SetupError = diskProblem;
+            StatusText = diskProblem;
+            return;
+        }
         if (SetupVersion is not { } version) { SetupError = "请先选择一个正式版。"; return; }
         if (!int.TryParse(SetupMemoryText, out var memory) || memory is < InstanceSettings.MinMemoryMb or > InstanceSettings.MaxMemoryMb)
         { SetupError = "内存请输入 512–65536 之间的整数，单位 MB。"; return; }
