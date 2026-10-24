@@ -1825,6 +1825,22 @@ Check("普通网络错误不算磁盘满", !Launcher.Application.Diagnostics.Dis
 Check("磁盘满的说明带续传提示",
     Launcher.Application.Diagnostics.DiskErrors.DescribeDiskFull("libraries/x.jar").Contains("续传"));
 
+// 网络失败分类：让用户知道该去「网络设置」
+var dnsError = new System.Net.Http.HttpRequestException("x", new System.Net.Sockets.SocketException((int)System.Net.Sockets.SocketError.HostNotFound));
+Check("DNS 失败能被认出来", Launcher.Application.Diagnostics.NetworkErrors.Classify(dnsError) == Launcher.Application.Diagnostics.NetworkFailure.Dns);
+Check("证书失败能被认出来", Launcher.Application.Diagnostics.NetworkErrors.Classify(
+    new System.Net.Http.HttpRequestException("x", new System.Security.Authentication.AuthenticationException("cert")))
+    == Launcher.Application.Diagnostics.NetworkFailure.Tls);
+Check("连接被拒绝能被认出来", Launcher.Application.Diagnostics.NetworkErrors.Classify(
+    new System.Net.Http.HttpRequestException("x", new System.Net.Sockets.SocketException((int)System.Net.Sockets.SocketError.ConnectionRefused)))
+    == Launcher.Application.Diagnostics.NetworkFailure.ConnectionRefused);
+Check("网络建议指向网络设置",
+    Launcher.Application.Diagnostics.NetworkErrors.Describe(dnsError)?.Contains("网络设置") == true);
+Check("错误文案会补上网络建议",
+    Launcher.Application.Diagnostics.ErrorText.Describe(dnsError).Contains("域名解析失败"));
+Check("非网络错误不硬塞建议",
+    !Launcher.Application.Diagnostics.ErrorText.Describe(new IOException("sha1 不匹配")).Contains("网络设置"));
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");
