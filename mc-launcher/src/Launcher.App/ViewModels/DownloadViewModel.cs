@@ -110,6 +110,12 @@ public sealed partial class DownloadViewModel : ObservableObject
     public const string ModrinthSource = "Modrinth";
     public const string CurseForgeSource = "CurseForge";
 
+    /// <summary>装一个原版版本的保守占用（26.3 实测 586 MB）。</summary>
+    private const long VersionInstallReserveBytes = 700L * 1024 * 1024;
+
+    /// <summary>装一个整合包的保守占用（通天之路 1.3.5 实测 795 MB，还要算原版）。</summary>
+    private const long ModpackInstallReserveBytes = 800L * 1024 * 1024;
+
     private readonly IModrinthClient _modrinth;
     private readonly ICurseForgeClient _curseForge;
     private readonly ModInstallService _installer;
@@ -578,6 +584,12 @@ public sealed partial class DownloadViewModel : ObservableObject
 
     private async Task InstallModpackAsync(DownloadItem item, CancellationToken ct)
     {
+        // 整合包 = 原版 + 加载器 + 包里那一堆 mod，800 MB 是保守下限（通天之路实测 795 MB）
+        if (Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(_gameRoot(), ModpackInstallReserveBytes) is { } disk)
+        {
+            Status = disk;
+            return;
+        }
         var progress = new Progress<ModpackImportProgress>(p =>
         {
             ProgressPercent = p.Percent;
@@ -620,6 +632,12 @@ public sealed partial class DownloadViewModel : ObservableObject
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装游戏版本");
         if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
         if (SelectedVersion is not { } version) return;
+        // 一个原版版本落地 500–600 MB，留余量；空间不够就别开始下
+        if (Launcher.Application.Diagnostics.DiskSpaceProbe.Describe(_gameRoot(), VersionInstallReserveBytes) is { } disk)
+        {
+            Status = disk;
+            return;
+        }
 
         IsBusy = true;
         ProgressPercent = 0;
