@@ -545,6 +545,7 @@ public sealed partial class DownloadViewModel : ObservableObject
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
 
         try
         {
@@ -666,6 +667,7 @@ public sealed partial class DownloadViewModel : ObservableObject
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
 
         try
         {

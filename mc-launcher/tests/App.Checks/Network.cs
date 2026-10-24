@@ -44,6 +44,11 @@ internal static partial class UiCheck
             Check("恢复正常后入口收回",
                 entry.Visibility == System.Windows.Visibility.Collapsed);
 
+            // 上一次的网络提示不能带到下一次操作里
+            vm.ShowsNetworkFix = true;
+            Pump(vm.ImportModpackFileAsync(Path.Combine(Path.GetTempPath(), "no-such-pack.mrpack")));
+            Check("开始新操作时清掉上一次的网络提示", !vm.ShowsNetworkFix);
+
             window.Close();
             vm.CloseNetworkCommand.Execute(null);
             vm.ProxyAddress = "discarded edit";

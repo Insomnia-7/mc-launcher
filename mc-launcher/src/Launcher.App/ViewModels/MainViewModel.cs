@@ -711,6 +711,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
         IsBusy = true;
         try
         {
@@ -763,6 +764,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         using var cts = new CancellationTokenSource();
         _runningCts = cts;
+            ShowsNetworkFix = false;
         IsBusy = true;
         try
         {
@@ -1169,6 +1171,7 @@ public sealed partial class MainViewModel : ObservableObject
         // 取消源在真正开始干活时才建：放命令入口会被并行命令相互覆盖
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
 
         try
         {
@@ -1228,6 +1231,7 @@ public sealed partial class MainViewModel : ObservableObject
         // 启动链路上的每一步（续期、读版本、找 Java、下载 Java、体检）都吃同一个 token
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
 
         try
         {
@@ -1564,6 +1568,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>按路径导入整合包：菜单、对话框、拖拽三个入口最后都落到这里。</summary>
     public async Task ImportModpackFileAsync(string path)
     {
+        // 新一轮操作开始就先撤掉上一次的网络提示，哪怕这次连参数检查都没过
+        ShowsNetworkFix = false;
+
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "导入整合包");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (IsBusy)
@@ -1595,6 +1602,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken.None);
         _runningCts = cts;
+            ShowsNetworkFix = false;
 
         try
         {

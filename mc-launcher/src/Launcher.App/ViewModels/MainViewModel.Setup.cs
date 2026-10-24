@@ -135,6 +135,7 @@ public sealed partial class MainViewModel
         ProgressPercent = 0;
         using var cts = new CancellationTokenSource();
         _runningCts = cts;
+            ShowsNetworkFix = false;
         _setupClock.Restart();
         try
         {
