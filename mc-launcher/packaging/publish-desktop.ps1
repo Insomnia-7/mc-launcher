@@ -4,6 +4,7 @@ param(
     [string] $Dotnet = 'dotnet',
     [string] $OutputDirectory = '',
     [string[]] $RestoreSources = @(),
+    [switch] $Lean,
     [switch] $Compress
 )
 $ErrorActionPreference = 'Stop'
@@ -13,8 +14,9 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 }
 $project = Join-Path $appRoot 'src\Launcher.Desktop\Launcher.Desktop.csproj'
 $staging = Join-Path $appRoot ('scratch\publish-desktop-' + [Guid]::NewGuid().ToString('N'))
+$profile = if ($Lean) { 'WindowsLean' } else { 'WindowsSingleFile' }
 $publishArguments = @('publish', $project, '-c', 'Release', '-r', 'win-x64',
-    '--self-contained', 'true', '-p:PublishProfile=WindowsSingleFile',
+    '--self-contained', 'true', "-p:PublishProfile=$profile",
     '-p:DebugType=none', '-p:DebugSymbols=false',
     '-p:CopyOutputSymbolsToPublishDirectory=false', '-p:CopyDebugSymbolFilesFromPackages=false', '-o', $staging)
 if ($Compress) { $publishArguments += '-p:EnableCompressionInSingleFile=true' }

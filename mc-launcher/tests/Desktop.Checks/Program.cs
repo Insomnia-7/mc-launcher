@@ -6,6 +6,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
 using Avalonia.Logging;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -31,7 +33,9 @@ internal static class Program
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", data);
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", game);
         Directory.CreateDirectory(data);
-        File.WriteAllText(Path.Combine(data, "appearance.json"), """{"themeId":"glacier","motionMode":"off"}""");
+        File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--legacy-theme")
+            ? """{"themeId":"custom","customTheme":{"schema":1,"name":"旧彩色主题","colors":{"BgBrush":"#FF0000"}},"wallpaperOpacity":0.35,"motionMode":"off"}"""
+            : """{"themeId":"glacier","motionMode":"off"}""");
         foreach (var id in args.Contains("--empty") ? [] : new[] { "1.21", "1.21.4", "26.3" })
         {
             var directory = Path.Combine(game, "versions", id); Directory.CreateDirectory(directory);
@@ -64,6 +68,15 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--legacy-theme"))
+            {
+                Check("旧彩色主题迁移为夜间黑", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);
+                var saved=Launcher.Application.Settings.AppearanceStore.Read(data);
+                Check("迁移保存黑白选项并清除旧配色", saved.ThemeId=="aurora" && saved.CustomTheme is null);
+                Check("迁移保留其他外观偏好", saved.MotionMode=="off" && saved.WallpaperOpacity==0.35);
+                Check("旧主题迁移后无绑定错误", log.Errors.Count==0);
+                return 0;
+            }
             if(args.Contains("--empty"))
             {
                 Check("首次启动显示安装向导", model.IsSetupOpen && model.Instances.Count==0);
@@ -75,6 +88,8 @@ internal static class Program
                 return 0;
             }
             Check("真实版本目录加载", model.Instances.Count == 3 && model.SelectedInstance is not null);
+            Check("仅提供日间白和夜间黑", model.ThemeChoices.Count==2 && model.ThemeChoices.Select(t=>t.Name).SequenceEqual(new[]{"日间 · 白","夜间 · 黑"}));
+            Check("全部主题色均为灰阶", model.ThemeChoices.SelectMany(t=>t.Definition.Colors.Values).Select(Color.Parse).All(c=>c.R==c.G && c.G==c.B));
             Check("首页构造不联网", http.Requests == 0);
             Check("新版界面不依赖 WPF 程序集", !typeof(MainWindow).Assembly.GetReferencedAssemblies().Any(a=>a.Name is "PresentationCore" or "PresentationFramework" or "WindowsBase"));
             Check("缺少安全存储时不降级明文令牌", !PlatformUi.CanStoreSecrets(null));
@@ -86,7 +101,14 @@ internal static class Program
             model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); Pump(50);
             Check("主题切换与保存", !model.IsLightTheme && File.ReadAllText(Path.Combine(data,"appearance.json")).Contains("aurora"));
             Capture("appearance"); model.CloseAppearanceCommand.Execute(null); Pump(50); Capture("home-dark");
-            model.IsLightTheme = true; Pump(50);
+            Click(Find<ToggleButton>("ThemeToggle"));
+            Check("昼夜按钮可切回白天并保存", model.IsLightTheme && Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="glacier");
+            var primaryForeground=(ISolidColorBrush)Avalonia.Application.Current!.Resources["PrimaryTextBrush"]!;
+            Check("日间主按钮使用白字", primaryForeground.Color==Colors.White);
+            Click(Find<ToggleButton>("ThemeToggle"));
+            primaryForeground=(ISolidColorBrush)Avalonia.Application.Current.Resources["PrimaryTextBrush"]!;
+            Check("夜间主按钮切为黑字", !model.IsLightTheme && primaryForeground.Color==Colors.Black);
+            Check("其他配色入口已移除", !window.GetVisualDescendants().OfType<Button>().Any(b=>b.Content is string name && name is "导入配色" or "导出配色"));
             model.IsSettingsOpen = true; Pump(40);
             model.MemoryMb = 3072; model.SaveSettingsCommand.Execute(null);
             Check("版本设置写入真实实例", InstanceSettings.Load(game,model.SelectedInstance!.InstanceId).MemoryMb == 3072);

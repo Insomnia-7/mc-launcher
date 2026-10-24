@@ -1,5 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop" xmlns:views="using:Launcher.Desktop.Views"
-        x:Class="Launcher.Desktop.MainWindow" Title="MC Launcher" Width="1180" Height="800" MinWidth="900" MinHeight="640" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
+        xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.MainWindow" Title="MC Launcher" Width="1180" Height="800" MinWidth="900" MinHeight="640" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
     <KeyBinding Gesture="Ctrl+2" Command="{Binding ShowDownloadsCommand}" />
@@ -16,7 +16,7 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="23">
           <Grid ColumnDefinitions="42,*" Margin="8,0,0,0">
-            <Border Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{DynamicResource AccentFillBrush}" CornerRadius="10"><TextBlock Text="M" Foreground="White" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <Border Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{DynamicResource AccentFillBrush}" CornerRadius="10"><TextBlock Text="M" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
             <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="MC Launcher" FontSize="15" FontWeight="SemiBold" /><TextBlock Text="MAKE ROOM FOR PLAY" Classes="eyebrow" FontSize="8" LetterSpacing="0.8" /></StackPanel>
           </Grid>
           <StackPanel Spacing="5">
@@ -32,7 +32,7 @@
           <Button Classes="quiet" Content="⚙   网络设置" Command="{Binding OpenNetworkCommand}" />
         </StackPanel>
         <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Margin="0,12,0,0" AutomationProperties.Name="游戏版本列表">
-          <ListBox.ItemTemplate><DataTemplate>
+          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:InstanceCard">
             <Grid ColumnDefinitions="38,*">
               <Border Width="28" Height="30" HorizontalAlignment="Left" CornerRadius="8" Background="{DynamicResource SelectedBrush}" VerticalAlignment="Center"><Path Data="M0,5 10,0 20,5 20,16 10,21 0,16 Z M0,5 10,10 20,5 M10,10 10,21" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Width="18" Height="20" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
               <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding DisplayName}" FontWeight="Medium" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" /></StackPanel>

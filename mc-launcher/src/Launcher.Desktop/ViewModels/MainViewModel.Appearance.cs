@@ -51,7 +51,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<ThemeChoice> ThemeChoices { get; }=[];
     [ObservableProperty] private ThemeChoice? _selectedTheme;
     [ObservableProperty] private bool _isAppearanceOpen;
-    [ObservableProperty] private string _appearanceHint="主题即时生效；壁纸只从本机导入。";
+    [ObservableProperty] private string _appearanceHint="日间白、夜间黑，点击右上角按钮即可切换。";
     [ObservableProperty] private BitmapSource? _wallpaperImage;
     [ObservableProperty] private double _wallpaperOpacity=0.55;
     [ObservableProperty]
@@ -66,14 +66,16 @@ public sealed partial class MainViewModel
         InitializeDesktopShell();
         _appearanceSettings=_appearance.Read();
         if(!File.Exists(AppearanceStore.SettingsPath(AppPaths.DataDirectory))) _appearanceSettings=_appearanceSettings with { ThemeId="glacier" };
-        foreach(var theme in ThemeCatalog.BuiltIns) ThemeChoices.Add(new(theme.Id,theme.Definition));
-        if(_appearanceSettings.CustomTheme is { } custom) ThemeChoices.Add(new("custom",custom));
+        var migrated=_appearanceSettings.ThemeId is not (DesktopThemes.LightId or DesktopThemes.DarkId) || _appearanceSettings.CustomTheme is not null;
+        _appearanceSettings=_appearanceSettings with { ThemeId=_appearanceSettings.ThemeId==DesktopThemes.LightId ? DesktopThemes.LightId : DesktopThemes.DarkId, CustomTheme=null };
+        foreach(var theme in DesktopThemes.Choices) ThemeChoices.Add(new(theme.Id,theme.Definition));
         SelectedTheme=ThemeChoices.Single(t=>t.Id==_appearanceSettings.ThemeId);
         WallpaperOpacity=_appearanceSettings.WallpaperOpacity;
         SelectedMotion=MotionChoices.Single(m=>m.Id==_appearanceSettings.MotionMode);
         MotionPreferences.Mode=_appearanceSettings.MotionMode;
-        _appearance.Apply(_appearanceSettings.Theme);
+        _appearance.Apply(SelectedTheme!.Definition);
         _readingAppearance=false;
+        if(migrated) TrySaveAppearance();
         OnPropertyChanged(nameof(IsLightTheme));
     }
     public async Task LoadAppearanceWallpaperAsync()
@@ -115,45 +117,12 @@ public sealed partial class MainViewModel
     [RelayCommand] private void OpenAppearance() { IsAppearanceOpen=true; }
     [RelayCommand] private void CloseAppearance() { if(IsWallpaperBusy) return; if(TrySaveAppearance()) IsAppearanceOpen=false; }
     [RelayCommand] private void SaveAppearance() => TrySaveAppearance();
-    /// <summary>把当前主题的配色再同步一次到窗口标题栏（首帧、SourceInitialized、切主题时都要）。</summary>
-    public void RefreshWindowChrome()
-    {
-        try { // Avalonia supplies native window decorations on each platform.
-            _ = _appearanceSettings.Theme; }
-        catch (Exception ex) { Serilog.Log.Debug(ex, "同步标题栏配色失败"); }
-    }
-
     public void FlushAppearance() { if(_appearanceSaveTimer?.IsEnabled is true) TrySaveAppearance(); }
     private bool TrySaveAppearance()
     {
         _appearanceSaveTimer?.Stop();
         try { AppearanceStore.Write(AppPaths.DataDirectory,_appearanceSettings); AppearanceHint="外观已保存，下次打开会恢复。"; return true; }
         catch(Exception) { AppearanceHint="外观保存失败，请检查数据目录权限或磁盘空间；当前预览仍可使用。"; return false; }
-    }
-    public void ImportAppearanceTheme(string path)
-    {
-        var theme=AppearanceStore.Import(path);
-        var next=_appearanceSettings with { ThemeId="custom",CustomTheme=theme };
-        AppearanceStore.Write(AppPaths.DataDirectory,next);
-        _readingAppearance=true;
-        var previous=ThemeChoices.FirstOrDefault(t=>t.Id=="custom"); if(previous is not null) ThemeChoices.Remove(previous);
-        var choice=new ThemeChoice("custom",theme); ThemeChoices.Add(choice); SelectedTheme=choice;
-        _appearanceSettings=next; _appearance.Apply(theme); _readingAppearance=false;
-        AppearanceHint="自定义主题已导入并保存。";
-    }
-    [RelayCommand] private async Task ImportThemeAsync()
-    {
-        var path=await PlatformUi.PickFileAsync("导入主题", "主题文件 (*.json)|*.json");
-        if(path is null) return;
-        try { ImportAppearanceTheme(path); }
-        catch(Exception) { AppearanceHint="主题导入失败，请选择有效的 JSON 主题；当前主题已保留。"; }
-    }
-    [RelayCommand] private async Task ExportThemeAsync()
-    {
-        var path=await PlatformUi.SaveFileAsync("导出主题", "主题文件 (*.json)|*.json", "my-launcher-theme.json");
-        if(path is null || SelectedTheme is null) return;
-        try { AppearanceStore.Export(path,new ThemeDefinition(1,SelectedTheme.Name,ThemeCatalog.Resolve(SelectedTheme.Definition))); AppearanceHint="主题已导出（不包含壁纸路径、账号或个人设置）。"; }
-        catch(Exception) { AppearanceHint="导出失败，请检查所选位置是否可写。"; }
     }
     public async Task ImportAppearanceWallpaperAsync(string path)
     {

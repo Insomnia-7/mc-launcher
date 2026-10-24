@@ -7,9 +7,9 @@ Minecraft Java 版 Windows 桌面启动器，使用 C#、.NET 10 和 WPF。
 
 新增 C# / Avalonia 桌面入口，复用现有启动、安装、账号与资源业务。Windows 运行 `run-desktop.cmd`；Linux / macOS 可用 `sh run-desktop.sh`。旧 WPF 版仍可用原入口运行。
 
-新版整合首页布局，提供按钮回弹、页面过渡和昼夜主题开关。跨平台构建入口为 `MinecraftLauncher.Desktop.slnx`；当前已在 Windows 开发机完成构建和离线交互验证，Linux / macOS 尚待实机验收。非 Windows 预览版需要手动安装 Java，系统密钥环接入前暂不开放微软登录持久化。详细范围与运行方法见 [Avalonia 桌面说明](docs/avalonia-desktop.md)。
+新版整合首页布局，仅保留日间白 / 夜间黑两套主题，提供按钮回弹、页面过渡和昼夜主题开关。跨平台构建入口为 `MinecraftLauncher.Desktop.slnx`；当前已在 Windows 开发机完成构建和离线交互验证，Linux / macOS 尚待实机验收。非 Windows 预览版需要手动安装 Java，系统密钥环接入前暂不开放微软登录持久化。详细范围与运行方法见 [Avalonia 桌面说明](docs/avalonia-desktop.md)。
 
-Windows x64 可用 `pwsh -File packaging/publish-desktop.ps1` 生成自带 .NET 运行环境的单文件 `dist/desktop-win-x64/MCLauncher.exe`，用户下载后双击即可打开启动器。游戏与 Java 按原有流程准备。
+Windows x64 可用 `pwsh -File packaging/publish-desktop.ps1 -Lean -Compress` 生成自带 .NET 运行环境的单文件 `dist/desktop-win-x64/MCLauncher.exe`，用户下载后双击即可打开启动器。游戏与 Java 按原有流程准备。
 
 ## 功能
 

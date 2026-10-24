@@ -1,21 +1,22 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop">
   <Styles.Resources>
-    <SolidColorBrush x:Key="BgBrush" Color="#EEF0F5" />
-    <SolidColorBrush x:Key="PanelBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="BgBrush" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#F9F9F9" />
     <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="FieldBrush" Color="#F3F5F9" />
-    <SolidColorBrush x:Key="HoverBrush" Color="#E5EAF4" />
-    <SolidColorBrush x:Key="LineBrush" Color="#223E506E" />
-    <SolidColorBrush x:Key="TextBrush" Color="#252B37" />
-    <SolidColorBrush x:Key="MutedBrush" Color="#656F80" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#4669AB" />
-    <SolidColorBrush x:Key="AccentFillBrush" Color="#4669AB" />
-    <SolidColorBrush x:Key="SelectedBrush" Color="#184669AB" />
-    <SolidColorBrush x:Key="OverlayBrush" Color="#99080D18" />
-    <SolidColorBrush x:Key="DangerBrush" Color="#E36D76" />
-    <SolidColorBrush x:Key="SuccessBrush" Color="#4CAF95" />
+    <SolidColorBrush x:Key="FieldBrush" Color="#EBEBEB" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#E0E0E0" />
+    <SolidColorBrush x:Key="LineBrush" Color="#24000000" />
+    <SolidColorBrush x:Key="TextBrush" Color="#191919" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#626262" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#191919" />
+    <SolidColorBrush x:Key="AccentFillBrush" Color="#202020" />
+    <SolidColorBrush x:Key="SelectedBrush" Color="#12000000" />
+    <SolidColorBrush x:Key="OverlayBrush" Color="#990D0D0D" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#191919" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#191919" />
     <SolidColorBrush x:Key="GlassEdgeBrush" Color="#30FFFFFF" />
-    <SolidColorBrush x:Key="WallpaperTintBrush" Color="#45EEF0F5" />
+    <SolidColorBrush x:Key="WallpaperTintBrush" Color="#45FFFFFF" />
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="White" />
     <SolidColorBrush x:Key="BackdropGlowBrush" Color="Transparent" />
   </Styles.Resources>
   <Style Selector="Window">
@@ -28,7 +29,7 @@
   <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="FontSize" Value="12" /></Style>
   <Style Selector="TextBlock.eyebrow"><Setter Property="FontSize" Value="10" /><Setter Property="LetterSpacing" Value="2" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
   <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="22" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
-  <Style Selector="TextBlock.optional"><Setter Property="IsVisible" Value="{Binding Text, RelativeSource={RelativeSource Self}, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" /></Style>
+  <Style Selector="TextBlock.optional"><Setter Property="IsVisible" Value="{CompiledBinding Text, RelativeSource={RelativeSource Self}, DataType={x:Type TextBlock}, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" /></Style>
   <Style Selector="Border.card"><Setter Property="CornerRadius" Value="20" /><Setter Property="Padding" Value="22" /><Setter Property="Background" Value="{DynamicResource CardBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /></Style>
   <Style Selector="Border.modal-surface"><Setter Property="CornerRadius" Value="24" /><Setter Property="Padding" Value="28" /><Setter Property="Background" Value="{DynamicResource PanelBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BoxShadow" Value="0 20 80 0 #40000000" /><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="28" /></Style>
   <Style Selector="Grid.modal"><Setter Property="Background" Value="{DynamicResource OverlayBrush}" /><Setter Property="IsVisible" Value="False" /><Setter Property="ZIndex" Value="20" /></Style>
@@ -44,7 +45,7 @@
   <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.97)" /><Setter Property="Opacity" Value="0.9" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
   <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
-  <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource AccentFillBrush}" /><Setter Property="Foreground" Value="White" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
+  <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource AccentFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
   <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource AccentFillBrush}" /><Setter Property="Opacity" Value="0.88" /></Style>
   <Style Selector="Button.quiet"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="HorizontalContentAlignment" Value="Left" /></Style>
   <Style Selector="Button.nav"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Left" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
@@ -60,15 +61,15 @@
   <Style Selector="ToggleButton.theme-switch">
     <Setter Property="Width" Value="70" /><Setter Property="Height" Value="36" /><Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template"><ControlTemplate>
-      <Border CornerRadius="18" Background="#172844" BorderBrush="#50FFFFFF" BorderThickness="1" ClipToBounds="True">
+      <Border CornerRadius="18" Background="#262626" BorderBrush="#50FFFFFF" BorderThickness="1" ClipToBounds="True">
         <Grid>
-          <Border Name="DaySky" Background="#9CD8EF" Opacity="0"><Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.26" /></Transitions></Border.Transitions></Border>
+          <Border Name="DaySky" Background="#CDCDCD" Opacity="0"><Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.26" /></Transitions></Border.Transitions></Border>
           <Ellipse Classes="star star1" Width="3" Height="3" Fill="White" Margin="13,8,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
           <Ellipse Classes="star star2" Width="2" Height="2" Fill="White" Margin="24,21,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
           <Ellipse Classes="star star3" Width="2" Height="2" Fill="White" Margin="32,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
-          <Border Name="Thumb" Width="26" Height="26" CornerRadius="13" Background="#FAFCFF" HorizontalAlignment="Left" Margin="4" RenderTransform="translate(32px,0px)" BoxShadow="0 1 6 0 #50000000">
+          <Border Name="Thumb" Width="26" Height="26" CornerRadius="13" Background="#FCFCFC" HorizontalAlignment="Left" Margin="4" RenderTransform="translate(32px,0px)" BoxShadow="0 1 6 0 #50000000">
             <Border.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.38"><TransformOperationsTransition.Easing><local:SoftSpringEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions></Border.Transitions>
-            <Grid><Ellipse Name="Sun" Width="12" Height="12" Fill="#F4BF45" Opacity="0" /><Path Name="Moon" Data="M 15,3 A 10,10 0 1 0 21,17 A 10,10 0 0 1 15,3 Z" Fill="#8796CF" Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid>
+            <Grid><Ellipse Name="Sun" Width="12" Height="12" Fill="#202020" Opacity="0" /><Path Name="Moon" Data="M 15,3 A 10,10 0 1 0 21,17 A 10,10 0 0 1 15,3 Z" Fill="#606060" Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid>
           </Border>
         </Grid>
       </Border>

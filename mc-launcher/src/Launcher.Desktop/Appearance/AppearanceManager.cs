@@ -38,6 +38,7 @@ public sealed class AppearanceManager(string directory, IResourceDictionary reso
         }
         var bg=Color.Parse(colors["BgBrush"]);
         if(Avalonia.Application.Current is { } app) app.RequestedThemeVariant=(bg.R+bg.G+bg.B)>420 ? ThemeVariant.Light : ThemeVariant.Dark;
+        resources["PrimaryTextBrush"]=new SolidColorBrush((bg.R+bg.G+bg.B)>420 ? Colors.White : Colors.Black);
         var text=Color.Parse(colors["TextBrush"]);
         var accent=Color.Parse(colors["AccentBrush"]);
         resources["GlassEdgeBrush"]=new LinearGradientBrush { StartPoint=new RelativePoint(0,0,RelativeUnit.Relative), EndPoint=new RelativePoint(1,1,RelativeUnit.Relative), GradientStops=new GradientStops { new(Color.FromArgb(70,text.R,text.G,text.B),0),new(Color.FromArgb(12,text.R,text.G,text.B),0.6),new(Color.FromArgb(30,text.R,text.G,text.B),1) } };
