@@ -30,6 +30,20 @@ internal static partial class UiCheck
             var window = new MainWindow(vm);
             Render(window, 1000, 640, "network-1000.png");
             Render(window, 820, 560, "network-820.png");
+
+            // 状态条上的「网络设置…」只在认出网络类失败时出现
+            var entry = (System.Windows.Controls.Button)window.FindName("NetworkFixEntry");
+            Check("状态条网络入口默认隐藏",
+                entry is not null && entry.Visibility == System.Windows.Visibility.Collapsed);
+            vm.ShowsNetworkFix = true;
+            window.UpdateLayout();
+            Check("网络失败时状态条露出入口",
+                entry!.Visibility == System.Windows.Visibility.Visible);
+            vm.ShowsNetworkFix = false;
+            window.UpdateLayout();
+            Check("恢复正常后入口收回",
+                entry.Visibility == System.Windows.Visibility.Collapsed);
+
             window.Close();
             vm.CloseNetworkCommand.Execute(null);
             vm.ProxyAddress = "discarded edit";

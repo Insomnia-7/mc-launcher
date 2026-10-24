@@ -933,7 +933,7 @@
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,12,0" VerticalAlignment="Center">
                     <!-- 任何网络类失败都会在状态条露一枚入口，用户不用满页找设置在哪 -->
-                    <Button Content="网络设置…" Command="{Binding OpenNetworkCommand}"
+                    <Button x:Name="NetworkFixEntry" Content="网络设置…" Command="{Binding OpenNetworkCommand}"
                             Style="{StaticResource SecondaryButton}"
                             Height="22" FontSize="12" Padding="12,0" MinWidth="88" Margin="0,0,8,0"
                             Visibility="{Binding ShowsNetworkFix, Converter={StaticResource BoolToVis}}" />
