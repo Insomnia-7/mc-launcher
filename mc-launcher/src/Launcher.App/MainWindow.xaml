@@ -931,14 +931,20 @@
                            FontSize="12" Foreground="{DynamicResource MutedBrush}"
                            FontFamily="{StaticResource UiFontFamily}"
                            TextTrimming="CharacterEllipsis" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,12,0" VerticalAlignment="Center"
-                            Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,12,0" VerticalAlignment="Center">
+                    <!-- 任何网络类失败都会在状态条露一枚入口，用户不用满页找设置在哪 -->
+                    <Button Content="网络设置…" Command="{Binding OpenNetworkCommand}"
+                            Style="{StaticResource SecondaryButton}"
+                            Height="22" FontSize="12" Padding="12,0" MinWidth="88" Margin="0,0,8,0"
+                            Visibility="{Binding ShowsNetworkFix, Converter={StaticResource BoolToVis}}" />
                     <TextBlock Text="{Binding UpdateText}" FontSize="12" VerticalAlignment="Center"
                                Foreground="{DynamicResource AccentBrush}"
-                               FontFamily="{StaticResource UiFontFamily}" Margin="0,0,10,0" />
+                               FontFamily="{StaticResource UiFontFamily}" Margin="0,0,10,0"
+                               Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}" />
                     <Button Content="立即更新" Command="{Binding ApplyUpdateCommand}"
                             Style="{StaticResource SecondaryButton}"
-                            Height="22" FontSize="12" Padding="12,0" MinWidth="72" />
+                            Height="22" FontSize="12" Padding="12,0" MinWidth="72"
+                            Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}" />
                 </StackPanel>
             </Grid>
         </Border>
