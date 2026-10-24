@@ -20,6 +20,8 @@ public sealed partial class DownloadViewModel
     [ObservableProperty] private string _resourceDependencyHint="选择发布版本后显示必需前置。";
     [ObservableProperty] private string _resourceGameVersion="全部";
     [ObservableProperty] private string _resourceLoader="全部";
+    [ObservableProperty] private string _resourceReleaseChannel="正式版";
+    public IReadOnlyList<string> ResourceReleaseChannels {get;}=["正式版","测试版","开发版","全部版本"];
     [ObservableProperty] private bool _hasMoreResourceVersions;
     public ObservableCollection<string> ResourceGameVersions {get;}=["全部"];
     public ObservableCollection<ResourceReleaseGroup> ResourceReleaseGroups {get;}=[];
@@ -29,10 +31,12 @@ public sealed partial class DownloadViewModel
     public byte[]? ResourceDetailIcon=>OpenedResource?.IconBytes;
     public bool IsResourceDetail=>IsSearchMode && OpenedResource is not null;
     public bool IsResourceList=>IsSearchMode && !IsResourceDetail;
-    public bool ShowsDiscoverHeading=>!IsResourceDetail;
+    public bool ShowsDiscoverHeading=>IsVersionMode;
+    public bool ShowsDownloadFooter=>!IsResourceList;
     public bool ShowsResourceLoaderFilter=>OpenedResource?.Category.UsesLoader()==true;
     public bool ShowsResourceDependencies=>IsResourceDetail && OpenedResource?.Category==DownloadCategory.Mod;
-    public string ResourceReleaseSummary=>SelectedResourceRelease is { } release ? $"已选：{release.Name} · {release.LoaderText}" : "请选择发布版本";
+    public string ResourceInstallButtonText=>SelectedResourceRelease is {ReleaseChannel:not "未标注类型"} release?"安装"+release.ReleaseChannel:"安装所选版本";
+    public string ResourceReleaseSummary=>SelectedResourceRelease is { } release ? $"已选：{release.Name} · {release.ReleaseChannel} · {release.LoaderText}" : "请选择发布版本";
 
     private DownloadItem ModrinthItem(ModrinthProject hit,DownloadCategory category)=>new(ModrinthSource,category,hit.ProjectId,hit.Title,hit.Author??"未知作者","",hit.Description)
     {
@@ -99,7 +103,7 @@ public sealed partial class DownloadViewModel
         NotifyResourceHeader();
         OnPropertyChanged(nameof(IsResourceDetail));OnPropertyChanged(nameof(IsResourceList));
         OnPropertyChanged(nameof(ShowsBrowseControls));OnPropertyChanged(nameof(ShowsResourceDependencies));OnPropertyChanged(nameof(ShowsResourceLoaderFilter));
-        OnPropertyChanged(nameof(ShowsDiscoverHeading));InstallCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(ShowsDiscoverHeading));OnPropertyChanged(nameof(ShowsDownloadFooter));InstallCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
@@ -109,6 +113,8 @@ public sealed partial class DownloadViewModel
         CloseResourceDetails();
         SelectedResult=item;OpenedResource=item;
         _settingResourceFilters=true;
+        ResourceReleaseChannel="正式版";
+        Status=string.Empty;
         var preferredGame=FilterValue(GameVersionFilter)??(item.Category==DownloadCategory.Modpack?"全部":ResolveGameVersion()??"全部");
         if(!ResourceGameVersions.Contains(preferredGame)) ResourceGameVersions.Add(preferredGame);
         ResourceGameVersion=preferredGame;
@@ -128,6 +134,7 @@ public sealed partial class DownloadViewModel
     }
     partial void OnResourceGameVersionChanged(string value)=>ResourceFilterChanged();
     partial void OnResourceLoaderChanged(string value)=>ResourceFilterChanged();
+    partial void OnResourceReleaseChannelChanged(string value) { if(!_settingResourceFilters && IsResourceDetail && !IsBusy) RebuildResourceGroups(); }
     private void ResourceFilterChanged()
     {
         if(_settingResourceFilters || !IsResourceDetail || IsBusy) return;
@@ -175,7 +182,7 @@ public sealed partial class DownloadViewModel
     {
         Id=v.Id,Name=v.Name,FileName=v.PrimaryFile?.Filename??"没有可下载文件",GameVersions=v.GameVersions,
         Loaders=v.Loaders.Where(ResourceChinese.IsLoader).ToArray(),Modrinth=v,
-        Metadata=$"{(v.VersionType=="beta"?"测试版":v.VersionType=="alpha"?"开发版":"正式版")} · {ResourceChinese.Date(v.DatePublished)} · {ResourceChinese.Count(v.Downloads)} 次下载 · {(v.PrimaryFile?.Size??0)/1024d/1024d:0.##} MB",
+        Metadata=$"{ResourceChinese.Date(v.DatePublished)} · {ResourceChinese.Count(v.Downloads)} 次下载 · {(v.PrimaryFile?.Size??0)/1024d/1024d:0.##} MB",
         SelectCommand=SelectResourceReleaseCommand,InstallCommand=InstallResourceReleaseCommand,
     };
     private ResourceReleaseItem CfRelease(CfFile f)=>new()
@@ -183,7 +190,7 @@ public sealed partial class DownloadViewModel
         Id=f.Id.ToString(),Name=f.DisplayName,FileName=f.FileName,
         GameVersions=f.GameVersions.Where(v=>v.Length>0 && char.IsDigit(v[0])).ToArray(),
         Loaders=f.GameVersions.Where(ResourceChinese.IsLoader).Select(v=>v.ToLowerInvariant()).Distinct().ToArray(),CurseForge=f,
-        Metadata=$"{(f.ReleaseType==2?"测试版":f.ReleaseType==3?"开发版":"正式版")} · {ResourceChinese.Date(f.FileDate)} · {ResourceChinese.Count(f.DownloadCount)} 次下载 · {f.FileLength/1024d/1024d:0.##} MB",
+        Metadata=$"{ResourceChinese.Date(f.FileDate)} · {ResourceChinese.Count(f.DownloadCount)} 次下载 · {f.FileLength/1024d/1024d:0.##} MB",
         SelectCommand=SelectResourceReleaseCommand,InstallCommand=InstallResourceReleaseCommand,
     };
     private void UpdateResourceGameVersions()
@@ -199,11 +206,12 @@ public sealed partial class DownloadViewModel
     {
         var game=FilterValue(ResourceGameVersion);var loader=FilterValue(ResourceLoader);
         var visible=_resourceReleases.Where(r=>(game is null || r.GameVersions.Contains(game))
-            && (loader is null || r.Loaders.Contains(loader,StringComparer.OrdinalIgnoreCase))).ToArray();
+            && (loader is null || r.Loaders.Contains(loader,StringComparer.OrdinalIgnoreCase))
+            && (ResourceReleaseChannel=="全部版本" || r.ReleaseChannel==ResourceReleaseChannel)).OrderBy(r=>r.ChannelOrder).ToArray();
         ResourceReleaseGroups.Clear();
         foreach(var group in visible.GroupBy(r=>r.Header)) ResourceReleaseGroups.Add(new(group.Key,group.ToArray()){IsExpanded=ResourceReleaseGroups.Count==0});
         SelectedResourceRelease=visible.Contains(SelectedResourceRelease)?SelectedResourceRelease:visible.FirstOrDefault();
-        ResourceVersionsStatus=visible.Length==0?"没有匹配的发布版本，可切换游戏版本或加载器。":$"已显示 {visible.Length} 个发布版本"+(HasMoreResourceVersions?"，下方可加载更多。":"。");
+        ResourceVersionsStatus=visible.Length==0?"没有匹配的"+(ResourceReleaseChannel=="全部版本"?"发布版本":ResourceReleaseChannel)+"，可切换版本类型、游戏版本或加载器。":$"已显示 {visible.Length} 个发布版本"+(HasMoreResourceVersions?"，下方可加载更多。":"。");
         RefreshResourceCompatibility();
     }
     private void RefreshResourceCompatibility()
@@ -211,7 +219,8 @@ public sealed partial class DownloadViewModel
         foreach(var release in _resourceReleases)
         {
             var category=OpenedResource?.Category;var problem="";
-            if(release.Modrinth is {PrimaryFile:null}) problem="没有可下载文件";
+            if(ResourceReleaseChannel!="全部版本" && release.ReleaseChannel!=ResourceReleaseChannel) problem="当前发布类型筛选未包含此版本";
+            else if(release.Modrinth is {PrimaryFile:null}) problem="没有可下载文件";
             else if(category!=DownloadCategory.Modpack)
             {
                 if(_currentInstance() is null) problem="请先在左侧选择目标游戏实例";
@@ -221,7 +230,7 @@ public sealed partial class DownloadViewModel
             release.CanInstall=!IsBusy && problem.Length==0;
             release.CompatibilityHint=problem.Length==0?(category==DownloadCategory.Modpack?"安装为新的独立实例":"安装到当前游戏实例"):problem;
         }
-        InstallCommand.NotifyCanExecuteChanged();OnPropertyChanged(nameof(ResourceReleaseSummary));
+        InstallCommand.NotifyCanExecuteChanged();OnPropertyChanged(nameof(ResourceReleaseSummary));OnPropertyChanged(nameof(ResourceInstallButtonText));
     }
 
     [RelayCommand]
@@ -229,7 +238,7 @@ public sealed partial class DownloadViewModel
     partial void OnSelectedResourceReleaseChanged(ResourceReleaseItem? value)
     {
         foreach(var release in _resourceReleases) release.IsSelected=ReferenceEquals(release,value);
-        OnPropertyChanged(nameof(ResourceReleaseSummary));InstallCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(ResourceReleaseSummary));OnPropertyChanged(nameof(ResourceInstallButtonText));InstallCommand.NotifyCanExecuteChanged();
         _=LoadResourceDependenciesAsync(value);
     }
     [RelayCommand]

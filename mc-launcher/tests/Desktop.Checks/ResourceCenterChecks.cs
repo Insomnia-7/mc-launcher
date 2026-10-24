@@ -17,7 +17,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
 {
     public readonly List<string> Downloaded=[];
     public int Icons,Translations,ExactCfFile;
-    public bool FailVersions,FailTranslations;
+    public bool FailVersions,FailTranslations,MixedReleases;
     public string? LastQuery;
     public TaskCompletionSource<IReadOnlyList<ModrinthVersion>>? PendingVersions;
     public TaskCompletionSource<ModrinthProjectInfo?>? PendingDependency;
@@ -48,6 +48,11 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
         IReadOnlyList<ModrinthVersion> values=id=="dep"?[Version("dep-file","1.0","1.21.4","fabric","dependency.jar") with {ProjectId="dep"}]
             : id=="pack"?[Version("pack-new","new","1.21.4","fabric","pack-new.mrpack") with{ProjectId="pack"},Version("pack-old","old","1.21.4","fabric","pack-old.mrpack") with{ProjectId="pack"}]
             :[Version("new","3.0","1.21.4","neoforge","new.jar"),Version("old","2.0","1.21.4","fabric","old.jar",new(null,"dep-file","required"),new("optional",null,"optional")),Version("ancient","1.0","1.20.1","fabric","ancient.jar")];
+        if(MixedReleases && id=="sodium") values=[
+            Version("channel-alpha","3.0-alpha","1.21.4","fabric","alpha.jar") with{VersionType="alpha"},
+            Version("channel-beta","2.0-beta","1.21.4","fabric","beta.jar") with{VersionType="beta"},
+            Version("channel-release","1.0","1.21.4","fabric","stable.jar") with{VersionType="release"},
+            Version("channel-unknown","4.0","1.21.4","fabric","unknown.jar") with{VersionType=null}];
         return Task.FromResult<IReadOnlyList<ModrinthVersion>>(values.Where(v=>(game is null||v.GameVersions.Contains(game))&&(loader is null||v.Loaders.Contains(loader))).ToArray());
     }
     public Task<ModrinthProjectInfo?> GetProjectAsync(string id,CancellationToken ct=default)
@@ -95,10 +100,15 @@ internal static class ResourceCenterChecks
         check("中文名称保留英文原名，中文检索映射原项目",item.DisplayTitle=="钠"&&item.HasOriginalTitle&&item.Title=="Sodium"&&fixture.LastQuery=="sodium");
         check("中文简介显示来源并保留原文",item.DescriptionText.Contains("中文简介")&&item.TranslationHint.Contains("MCIM")&&item.Description=="fixture original description");
         capture("resources-list",true);
+        var resultsScroll=window.GetVisualDescendants().OfType<ScrollViewer>().Single(c=>c.Name=="ResourceResultsScroll");
+        var searchPanel=window.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ResourceSearchPanel");
+        check("搜索区紧凑并给资源列表保留更大高度",searchPanel.Bounds.Height<=125 && resultsScroll.Bounds.Height>=420 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<220});
+        check("资源列表不再显示中文简介提示行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.TranslationHint));
         click(window.GetVisualDescendants().OfType<Button>().Single(b=>ReferenceEquals(b.DataContext,item)));pump(100);
         check("点击项目进入版本页面，默认匹配当前实例",vm.IsResourceDetail&&!vm.IsResourceList&&vm.ResourceGameVersion=="1.21.4"&&vm.ResourceLoader=="fabric"&&vm.SelectedResourceRelease?.Id=="old");
         check("顶部解析指定版本的必需依赖且排除可选依赖",vm.ResourceDependencyHint.Contains("Fabric API")&&!vm.ResourceDependencyHint.Contains("optional")&&vm.ResourceDependencyHint.Contains("dep-file"));
         capture("resource-versions",true);
+        check("发布版本不显示英文文件名行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==vm.SelectedResourceRelease!.FileName));
         fixture.Downloaded.Clear();Wait(vm.InstallResourceReleaseCommand.ExecuteAsync(vm.SelectedResourceRelease));
         check("模组安装精确使用所选旧版并下载指定前置",vm.Status.Contains("已装到")&&fixture.Downloaded.Contains("old.jar")&&fixture.Downloaded.Contains("dependency.jar")&&!fixture.Downloaded.Contains("new.jar"));
         vm.ResourceLoader="全部";pump(50);vm.ResourceGameVersion="全部";pump(50);
@@ -148,7 +158,19 @@ internal static class ResourceCenterChecks
         check("中文服务失败仍有原文或内置说明且可浏览",vm.Results.Count==1&&vm.Results[0].DescriptionText.Length>0);fixture.FailTranslations=false;
         Wait(vm.OpenResourceCommand.ExecuteAsync(vm.Results[0]));window.Width=900;window.Height=640;pump(50);capture("resource-versions-compact",true);
         check("最小窗口保留顶部依赖提示与安装入口",window.GetVisualDescendants().OfType<TextBlock>().Single(t=>t.Name=="ResourceDependencyNotice").IsEffectivelyVisible&&window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="InstallResourceRelease").IsEffectivelyVisible);
-        window.Width=1180;window.Height=800;vm.BackToResourcesCommand.Execute(null);model.IsInstanceSection=true;pump(60);
+        window.Width=1180;window.Height=800;vm.BackToResourcesCommand.Execute(null);
+        fixture.MixedReleases=true;
+        Wait(vm.OpenResourceCommand.ExecuteAsync(vm.Results.Single()));
+        check("默认仅显示正式版并选中正式发布",vm.ResourceReleaseChannel=="正式版"&&vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).Single().Id=="channel-release"&&vm.SelectedResourceRelease?.ReleaseChannel=="正式版");
+        vm.ResourceReleaseChannel="测试版";pump(40);
+        check("测试版单独筛选且按钮明确下载类型",vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).Single().Id=="channel-beta"&&vm.SelectedResourceRelease?.DownloadText=="下载测试版"&&vm.ResourceInstallButtonText=="安装测试版"&&vm.ResourceReleaseSummary.Contains("测试版"));
+        vm.ResourceReleaseChannel="开发版";pump(40);
+        check("开发版单独筛选且按钮明确下载类型",vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).Single().Id=="channel-alpha"&&vm.SelectedResourceRelease?.DownloadText=="下载开发版"&&vm.ResourceInstallButtonText=="安装开发版");
+        vm.ResourceReleaseChannel="全部版本";pump(40);
+        check("全部版本仍按正式测试开发分别分组",vm.ResourceReleaseGroups.Count==4&&vm.ResourceReleaseGroups[0].Header.StartsWith("正式版")&&vm.ResourceReleaseGroups.Any(g=>g.Header.StartsWith("测试版"))&&vm.ResourceReleaseGroups.Any(g=>g.Header.StartsWith("开发版")));
+        check("未知发布类型不会误标为正式版",vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).Single(r=>r.Id=="channel-unknown").ReleaseChannel=="未标注类型");
+        capture("release-channels",true);
+        fixture.MixedReleases=false;vm.BackToResourcesCommand.Execute(null);model.IsInstanceSection=true;pump(60);
     }
 
     public static async Task CheckPresentationCacheAsync(string path,Action<string,bool> check)

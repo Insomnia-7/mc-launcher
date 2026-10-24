@@ -50,9 +50,16 @@ public sealed partial class ResourceReleaseItem : ObservableObject
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private bool _canInstall;
     [ObservableProperty] private string _compatibilityHint="";
+    public string ReleaseChannel=>Modrinth is { } mr ? mr.VersionType?.ToLowerInvariant() switch
+        { "release"=>"正式版", "beta"=>"测试版", "alpha"=>"开发版", _=>"未标注类型" }
+        : CurseForge?.ReleaseType switch { 1=>"正式版",2=>"测试版",3=>"开发版",_=>"未标注类型" };
+    public int ChannelOrder=>ReleaseChannel switch {"正式版"=>0,"测试版"=>1,"开发版"=>2,_=>3};
+    public bool IsBeta=>ReleaseChannel=="测试版";
+    public bool IsAlpha=>ReleaseChannel=="开发版";
+    public string DownloadText=>ReleaseChannel=="未标注类型"?"下载此版本":"下载"+ReleaseChannel;
     public string LoaderText=>Loaders.Count==0?"不限定加载器":string.Join(" / ",Loaders.Select(ResourceChinese.Loader));
     public string GameText=>string.Join(", ",GameVersions.Take(4))+(GameVersions.Count>4?$" 等 {GameVersions.Count} 个版本":"");
-    public string Header=>$"{LoaderText} · {GameText}";
+    public string Header=>$"{ReleaseChannel} · {LoaderText} · {GameText}";
 }
 
 public sealed partial class ResourceReleaseGroup(string header,IReadOnlyList<ResourceReleaseItem> releases) : ObservableObject

@@ -1,5 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop" xmlns:views="using:Launcher.Desktop.Views"
         xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.MainWindow" Title="MC Launcher" Width="1180" Height="800" MinWidth="900" MinHeight="640" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
+  <Window.Styles>
+    <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,24,32,16" /></Style>
+    <Style Selector="Grid#PageToolbar"><Setter Property="Margin" Value="0,0,0,22" /></Style>
+    <Style Selector="Grid#PageContent.catalog"><Setter Property="Margin" Value="24,8,24,8" /></Style>
+    <Style Selector="Grid#PageContent.catalog > Grid#PageToolbar"><Setter Property="Margin" Value="0,0,0,4" /></Style>
+  </Window.Styles>
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
     <KeyBinding Gesture="Ctrl+2" Command="{Binding ShowDownloadsCommand}" />
@@ -41,8 +47,8 @@
         </ListBox>
       </DockPanel>
     </Border>
-    <Grid Grid.Column="1" Margin="32,24,32,16" RowDefinitions="Auto,*">
-      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDownloadSection}" Grid.Column="1" RowDefinitions="Auto,*">
+      <Grid x:Name="PageToolbar" ColumnDefinitions="*,Auto">
         <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
       </Grid>
       <TransitioningContentControl x:Name="PageHost" Grid.Row="1"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
