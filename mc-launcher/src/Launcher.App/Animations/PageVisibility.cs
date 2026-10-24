@@ -56,6 +56,10 @@ public static class PageVisibility
             content.Scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
             content.Scale.ScaleX = content.Scale.ScaleY = dialog ? .975 : 1;
 
+            // 入场动画也靠渲染帧推进：窗口最小化 / 远程桌面断帧时它会停在 opacity=0，
+            // 那一页就彻底看不见了。到点还没露出来就直接摆到终态。
+            ArmFallback(state, content, token, root, active: true, milliseconds: 900);
+
             // Collapsed pages may not yet have been loaded or arranged. Never skip their animation.
             // Render（7）而不是 Loaded（6）：Loaded 优先级低于 Normal，在持续有 Normal 级工作的进程里
             // （例如自动化检查的忙轮询）会被饿死，弹窗就一直停在 opacity=0 的初态；Render 每帧都会轮到，
@@ -94,6 +98,34 @@ public static class PageVisibility
         root.BeginAnimation(UIElement.OpacityProperty, fade);
         content.Translate.Y = 0;
         content.Translate.BeginAnimation(TranslateTransform.YProperty, Tween(y, dialog ? 10 : -12, 180));
+        // 淡出同理：帧停了页面就停在「可见但透明」，再点回来会以为界面没了。
+        ArmFallback(state, content, token, root, active: false, milliseconds: 400);
+    }
+
+    /// <summary>
+    /// 动画的兜底：到点还没走到终态就直接摆正。
+    /// 渲染帧只在有动画/有变化时才推进，窗口最小化、远程会话断帧、离屏截图都会让它停住，
+    /// 停在中间态的结果是「页面透明但占位」或「页面永远不出现」，比没有动画糟得多。
+    /// </summary>
+    private static void ArmFallback(MotionState state, MotionState content, long token, FrameworkElement root, bool active, int milliseconds)
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(milliseconds) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (state.Token != token) return;      // 已被更新的切换取代，交给那一轮收尾
+            if (!MotionPreferences.Enabled) { Reset(root, content); return; }
+            if (active)
+            {
+                if (GetIsActive(root) && root.Opacity < 0.99) Reset(root, content);
+            }
+            else if (!GetIsActive(root))
+            {
+                root.Visibility = Visibility.Collapsed;
+                Reset(root, content);
+            }
+        };
+        timer.Start();
     }
 
     private static DoubleAnimation Tween(double from, double to, int milliseconds) => new(from, to, TimeSpan.FromMilliseconds(milliseconds))
