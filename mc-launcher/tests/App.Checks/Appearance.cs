@@ -110,6 +110,22 @@ internal static partial class UiCheck
         Pump(Task.Delay(400));
         Check("真实窗口切页完成正确归位",library.Visibility==Visibility.Collapsed && download.Opacity==1 && download.IsHitTestVisible);
 
+        // 窄窗口（820×560）下底部那排按钮必须都留在窗口里，不能被裁掉
+        window.Width=820;window.Height=560;window.UpdateLayout();Pump(Task.Delay(150));
+        var footerButtons=AppearanceDescendants(window).OfType<Button>()
+            .Where(b=>b.IsVisible && b.Content is string text && (text=="安装到版本"||text=="下载并安装"||text=="取消"||text=="网络设置…"))
+            .ToList();
+        var clipped=footerButtons
+            .Select(b=>new{Button=b,Bounds=b.TransformToAncestor(window).TransformBounds(new Rect(b.RenderSize))})
+            .Where(x=>x.Bounds.Right>window.ActualWidth+0.5||x.Bounds.Left<-0.5)
+            .Select(x=>x.Button.Content?.ToString())
+            .ToList();
+        Check("窄窗口下下载页底部按钮不被裁掉",footerButtons.Count>0 && clipped.Count==0);
+        if(clipped.Count>0) Console.WriteLine("[clipped] "+string.Join(", ",clipped));
+        Pump(Task.Delay(420));
+        Render(window,820,560,"download-820.png");
+        window.Width=1000;window.Height=640;window.UpdateLayout();Pump(Task.Delay(120));
+
         vm.Download.SelectedCategory=vm.Download.Categories.First(c=>c.Category==Launcher.Domain.Content.DownloadCategory.ResourcePack);
         Check("切换资源分类保留旧内容快照",snapshot.Source is not null);
         Pump(Task.Delay(75));
