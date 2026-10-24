@@ -121,7 +121,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         StatusText = HasGameRootProblem ? GameRootProblem
             : HasGameRootNotice ? GameRootNotice.Split('\n')[0]
-            : $"就绪 · 游戏目录 {GameRoot}";
+            : "就绪";
         InitializeAppearance();
         InitializeSetup(meta);
         RefreshAccountChoices(selectCurrent: true);

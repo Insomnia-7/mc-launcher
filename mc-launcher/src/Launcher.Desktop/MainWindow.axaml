@@ -43,7 +43,6 @@
     </Border>
     <Grid Grid.Column="1" Margin="32,24,32,16" RowDefinitions="Auto,*">
       <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><TextBlock Text="工作空间" Classes="muted" /><TextBlock Text="/" Classes="muted" /><TextBlock Text="{Binding InstanceCountText}" FontSize="12" /></StackPanel>
         <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
       </Grid>
       <TransitioningContentControl x:Name="PageHost" Grid.Row="1"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
