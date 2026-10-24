@@ -126,6 +126,16 @@ internal static partial class UiCheck
             && !updateVm.HasGameRootProblem
             && updateVm.GameRoot.EndsWith("alt-game", StringComparison.OrdinalIgnoreCase)
             && updateVm.StatusText.Contains("游戏目录已切换"));
+
+        // 目录在运行中被删掉、位置被同名文件占住：下次启动前要重新探测并拦住
+        Directory.Delete(altRoot, recursive: true);
+        File.WriteAllText(altRoot, "x");
+        Check("运行中目录失效会被重新发现",
+            !updateVm.RefreshGameRootHealth() && updateVm.HasGameRootProblem
+            && updateVm.GameRootProblem.Contains("文件"));
+        File.Delete(altRoot);
+        Check("换回可用目录后恢复",
+            updateVm.TryUseGameRoot(Path.Combine(root, "alt-game-2"), out _) && !updateVm.HasGameRootProblem);
         Console.WriteLine($"[ok] {_checks} 项 WPF 流程检查通过");
         window.Close();
         app.Shutdown();

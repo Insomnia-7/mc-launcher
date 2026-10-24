@@ -178,7 +178,21 @@ public sealed partial class MainViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>让用户挑一个能用的游戏目录（空状态卡上的按钮走这里）。</summary>
+    /// <summary>
+    /// 重新探一次当前游戏目录。盘符消失、U 盘拔掉、目录被删这类变化只在运行时才发现，
+    /// 所以在真正要写文件之前（启动/安装）都先问一遍，别等下载到一半才报 IO 错。
+    /// </summary>
+    public bool RefreshGameRootHealth()
+    {
+        var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot);
+        GameRootProblem = problem ?? string.Empty;
+        if (problem is null) return true;
+
+        StatusText = problem;
+        _logger.LogWarning("游戏目录不可用：{GameRoot}", GameRoot);
+        return false;
+    }
+
     [RelayCommand]
     private void ChooseGameRoot()
     {
@@ -1193,6 +1207,7 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task LaunchAsync()
     {
         if (!CanLaunch()) return;
+        if (!RefreshGameRootHealth()) return;
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "准备游戏启动");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (SelectedInstance is not { } instance) return;
