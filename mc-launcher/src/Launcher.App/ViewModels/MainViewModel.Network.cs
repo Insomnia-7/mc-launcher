@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Application.Diagnostics;
 using Launcher.Application.Settings;
 
 namespace Launcher.App.ViewModels;
@@ -11,10 +12,33 @@ public sealed partial class MainViewModel
     [ObservableProperty] private int _proxyModeIndex;
     [ObservableProperty] private string _proxyAddress = "";
     [ObservableProperty] private string _networkHint = "";
+
+    /// <summary>诊断卡片是否显示「网络设置…」——只有认出网络类失败时才出现。</summary>
+    [ObservableProperty] private bool _showsNetworkFix;
+
     public bool IsCustomProxy => ProxyModeIndex == (int)ProxyMode.Custom;
     public string ActiveNetworkText => Launcher.Infrastructure.Http.HttpClientFactory.DescribeProxy();
 
     partial void OnProxyModeIndexChanged(int value) => OnPropertyChanged(nameof(IsCustomProxy));
+
+    /// <summary>
+    /// 失败文案 + （认出网络原因时）当前网络模式，并把「网络设置…」按钮亮出来。
+    /// 用户在「代理连不上」时最想知道的就是自己现在到底走的是直连还是代理。
+    /// </summary>
+    private string DescribeFailure(string prefix, Exception exception)
+    {
+        var text = prefix + ErrorText.Describe(exception);
+        if (NetworkErrors.Classify(exception) == NetworkFailure.None)
+        {
+            ShowsNetworkFix = false;
+            return text;
+        }
+
+        ShowsNetworkFix = true;
+        return text.Contains("当前网络", StringComparison.Ordinal)
+            ? text
+            : text + "\n当前网络：" + ActiveNetworkText;
+    }
 
     [RelayCommand]
     private void OpenNetwork()

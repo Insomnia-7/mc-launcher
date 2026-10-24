@@ -205,6 +205,27 @@ public sealed partial class DownloadViewModel : ObservableObject
     [ObservableProperty]
     private string _query = string.Empty;
 
+    /// <summary>下载页的状态区要不要出现「网络设置…」——只有认出网络类失败时才出现。</summary>
+    [ObservableProperty]
+    private bool _showsNetworkFix;
+
+    /// <summary>失败文案 + （认出网络原因时）当前网络模式，交给状态区显示。</summary>
+    private string DescribeFailure(string prefix, Exception exception)
+    {
+        var text = prefix + ErrorText.Describe(exception);
+        if (NetworkErrors.Classify(exception) == NetworkFailure.None)
+        {
+            ShowsNetworkFix = false;
+            return text;
+        }
+
+        ShowsNetworkFix = true;
+        var network = Launcher.Infrastructure.Http.HttpClientFactory.DescribeProxy();
+        return text.Contains("当前网络", StringComparison.Ordinal)
+            ? text
+            : text + "\n当前网络：" + network;
+    }
+
     [ObservableProperty]
     private string _selectedSource = ModrinthSource;
 
@@ -572,7 +593,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "安装失败");
-            Status = "安装失败：" + ErrorText.Describe(ex);
+            Status = DescribeFailure("安装失败：", ex);
         }
         finally
         {
@@ -666,7 +687,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "安装版本 {Version} 失败", version.Id);
-            Status = "安装失败：" + ErrorText.Describe(ex);
+            Status = DescribeFailure("安装失败：", ex);
         }
         finally
         {
@@ -706,7 +727,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "拉取版本清单失败");
-            Status = "拉取版本清单失败：" + ErrorText.Describe(ex);
+            Status = DescribeFailure("拉取版本清单失败：", ex);
         }
     }
 

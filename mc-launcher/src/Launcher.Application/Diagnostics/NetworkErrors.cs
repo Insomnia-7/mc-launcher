@@ -57,10 +57,16 @@ public static class NetworkErrors
     }
 
     /// <summary>认出来时返回带处置建议的中文；认不出来返回 null（交给上层按原样显示）。</summary>
-    public static string? Describe(Exception? exception)
+    public static string? Describe(Exception? exception) => Describe(exception, null);
+
+    /// <summary>
+    /// 同上，但把「当前网络是什么」也带上——用户看到「代理连不上」时会立刻想知道
+    /// 自己现在到底在用直连还是某个代理。
+    /// </summary>
+    public static string? Describe(Exception? exception, string? currentNetwork)
     {
         var failure = Classify(exception);
-        return failure switch
+        var advice = failure switch
         {
             NetworkFailure.Dns => "域名解析失败：网络可能断了，或者 DNS 被拦截。检查系统网络，或在「网络设置…」里换个下载源再试。",
             NetworkFailure.ConnectionRefused => "连接被拒绝：对方端口没开着。如果你在「网络设置…」里填了代理，先确认代理还在运行，或者直接关掉它。",
@@ -69,6 +75,11 @@ public static class NetworkErrors
             NetworkFailure.Proxy => "代理连不上：填的代理地址已失效。到「网络设置…」里改成直连，或更新代理地址。",
             _ => null,
         };
+
+        if (advice is null) return null;
+        return string.IsNullOrWhiteSpace(currentNetwork)
+            ? advice
+            : advice + $"\n当前网络：{currentNetwork}";
     }
 
     private static bool MentionsProxy(string message) =>

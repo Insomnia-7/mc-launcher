@@ -1191,7 +1191,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "安装失败");
-            StatusText = "安装失败：" + ErrorText.Describe(ex);
+            StatusText = DescribeFailure("安装失败：", ex);
         }
         finally
         {
@@ -1349,7 +1349,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "启动失败");
-            StatusText = "启动失败：" + ErrorText.Describe(ex);
+            StatusText = DescribeFailure("启动失败：", ex);
             // 被 SmartScreen / 杀软拦住时给可操作的步骤，而不是把系统错误码丢给用户
             if (BlockedAppGuidance.TryFor(ex) is { } blocked)
             {
@@ -1631,7 +1631,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "整合包导入失败");
-            StatusText = "整合包导入失败：" + ErrorText.Describe(ex);
+            StatusText = DescribeFailure("整合包导入失败：", ex);
         }
         finally
         {

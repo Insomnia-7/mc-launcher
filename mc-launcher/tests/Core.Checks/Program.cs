@@ -1836,6 +1836,10 @@ Check("连接被拒绝能被认出来", Launcher.Application.Diagnostics.Network
     == Launcher.Application.Diagnostics.NetworkFailure.ConnectionRefused);
 Check("网络建议指向网络设置",
     Launcher.Application.Diagnostics.NetworkErrors.Describe(dnsError)?.Contains("网络设置") == true);
+Check("网络建议会带上当前网络模式",
+    Launcher.Application.Diagnostics.NetworkErrors.Describe(dnsError, "直连（DIRECT）")?.Contains("当前网络：直连") == true);
+Check("没给网络模式时不硬加那一行",
+    Launcher.Application.Diagnostics.NetworkErrors.Describe(dnsError)?.Contains("当前网络") == false);
 Check("错误文案会补上网络建议",
     Launcher.Application.Diagnostics.ErrorText.Describe(dnsError).Contains("域名解析失败"));
 Check("非网络错误不硬塞建议",

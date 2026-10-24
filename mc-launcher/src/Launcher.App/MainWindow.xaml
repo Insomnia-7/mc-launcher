@@ -329,6 +329,11 @@
                                    FontFamily="{StaticResource UiFontFamily}" />
                         <!-- 一键把「诊断 + 版本 + 游戏目录 + 时间」贴进剪贴板，省得用户手抄日志路径 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="网络设置…"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding OpenNetworkCommand}"
+                                    Visibility="{Binding ShowsNetworkFix, Converter={StaticResource BoolToVis}}"
+                                    Height="26" Padding="14,0" FontSize="12" Margin="0,0,8,0" />
                             <Button Content="被拦截了？"
                                     Style="{StaticResource SecondaryButton}"
                                     Command="{Binding ShowBlockedHelpCommand}"
@@ -885,13 +890,21 @@
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
 
-                    <!-- 状态文字右侧的「取消」：只在该页有任务时出现，不挤压右边的安装按钮 -->
-                    <Button Grid.Column="1" Content="取消"
-                            Style="{StaticResource SecondaryButton}"
-                            Height="26" MinWidth="72" Padding="14,0" FontSize="12"
-                            Margin="12,0,12,0" VerticalAlignment="Center"
-                            Command="{Binding Download.CancelCommand}"
-                            Visibility="{Binding Download.CanCancel, Converter={StaticResource BoolToVis}}" />
+                    <!-- 状态文字右侧：「网络设置…」（网络类失败时）与「取消」（有任务时） -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                        <Button Content="网络设置…"
+                                Style="{StaticResource SecondaryButton}"
+                                Height="26" MinWidth="88" Padding="14,0" FontSize="12"
+                                Margin="0,0,8,0" VerticalAlignment="Center"
+                                Command="{Binding OpenNetworkCommand}"
+                                Visibility="{Binding Download.ShowsNetworkFix, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="取消"
+                                Style="{StaticResource SecondaryButton}"
+                                Height="26" MinWidth="72" Padding="14,0" FontSize="12"
+                                Margin="0,0,8,0" VerticalAlignment="Center"
+                                Command="{Binding Download.CancelCommand}"
+                                Visibility="{Binding Download.CanCancel, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
 
                     <Button Grid.Column="2" Content="安装到版本" Height="40" MinWidth="128"
                             Style="{StaticResource SecondaryButton}"

@@ -97,7 +97,7 @@ public sealed partial class MainViewModel
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "安装向导读取版本失败");
-            SetupError = "获取版本失败：" + ErrorText.Describe(ex);
+            SetupError = DescribeFailure("获取版本失败：", ex);
             SetupStatus = "检查网络或下载源后，点击「刷新版本」。";
         }
         finally { IsLoadingSetupVersions = false; }
@@ -168,7 +168,7 @@ public sealed partial class MainViewModel
         catch (Exception ex)
         {
             _logger.LogError(ex, "安装向导失败：{Version}", version.Id);
-            SetupError = "安装失败：" + ErrorText.Describe(ex);
+            SetupError = DescribeFailure("安装失败：", ex);
             CanRetrySetup = true;
         SetupStatus = StatusText = "可点「重试安装」再来一次，或检查网络和下载源后返回主界面。";
         }
