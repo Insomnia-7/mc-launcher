@@ -47,4 +47,8 @@
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- App.Checks 要直接驱动 WindowChrome（内部静态），否则测不到真实的标题栏状态 -->
+    <InternalsVisibleTo Include="App.Checks" />
+  </ItemGroup>
 </Project>

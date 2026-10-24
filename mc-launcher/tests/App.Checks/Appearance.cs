@@ -126,6 +126,8 @@ internal static partial class UiCheck
         var themeFade=(System.Windows.Controls.Border)window.FindName("ThemeFade");
         Pump(Task.Delay(800));
         Check("切主题遮罩最终完全退场",themeFade.Opacity<=0.01);
+        vm.SelectedTheme=vm.ThemeChoices.First(t=>t.Id=="ocean");
+        CheckCaptionMatchesTheme(window,vm,"切主题后标题栏落到主题色");
         Pump(Task.Delay(420));Render(window,820,560,"download-820.png");
         window.Width=1000;window.Height=640;window.UpdateLayout();Pump(Task.Delay(120));
 
