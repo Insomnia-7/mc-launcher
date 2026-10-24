@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Launcher.Domain/Launcher.Domain.csproj" />
+    <Project Path="src/Launcher.Application/Launcher.Application.csproj" />
+    <Project Path="src/Launcher.Infrastructure/Launcher.Infrastructure.csproj" />
+    <Project Path="src/Launcher.Desktop/Launcher.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Architecture.Check/Architecture.Check.csproj" />
+    <Project Path="tests/Core.Checks/Core.Checks.csproj" />
+    <Project Path="tests/Desktop.Checks/Desktop.Checks.csproj" />
+  </Folder>
+</Solution>

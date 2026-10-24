@@ -1,0 +1,56 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop" xmlns:views="using:Launcher.Desktop.Views"
+        x:Class="Launcher.Desktop.MainWindow" Title="MC Launcher" Width="1180" Height="800" MinWidth="900" MinHeight="640" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
+    <KeyBinding Gesture="Ctrl+2" Command="{Binding ShowDownloadsCommand}" />
+    <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenAppearanceCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CloseTopOverlayCommand}" />
+  </Window.KeyBindings>
+  <Grid RowDefinitions="*,Auto" ColumnDefinitions="236,*">
+    <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False">
+      <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}" />
+      <Border Background="{DynamicResource WallpaperTintBrush}" IsVisible="{Binding WallpaperImage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+      <Border Background="{DynamicResource BackdropGlowBrush}" />
+    </Grid>
+    <Border Grid.Row="0" Grid.Column="0" CornerRadius="24" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" Margin="16,16,0,8" Padding="14,20,14,12">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="23">
+          <Grid ColumnDefinitions="42,*" Margin="8,0,0,0">
+            <Border Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{DynamicResource AccentFillBrush}" CornerRadius="10"><TextBlock Text="M" Foreground="White" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="MC Launcher" FontSize="15" FontWeight="SemiBold" /><TextBlock Text="MAKE ROOM FOR PLAY" Classes="eyebrow" FontSize="8" LetterSpacing="0.8" /></StackPanel>
+          </Grid>
+          <StackPanel Spacing="5">
+            <Button x:Name="LibraryNav" Classes="nav" Classes.active="{Binding IsInstanceSection}" Command="{Binding ShowInstancesCommand}" Content="▦   游戏库" AutomationProperties.Name="游戏库" />
+            <Button x:Name="DiscoverNav" Classes="nav" Classes.active="{Binding IsDownloadSection}" Command="{Binding ShowDownloadsCommand}" Content="⌕   发现资源" AutomationProperties.Name="发现资源" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,Auto" Margin="10,0,6,2"><TextBlock Text="我的世界" Classes="eyebrow" LetterSpacing="1" /><TextBlock Grid.Column="1" Text="{Binding Instances.Count}" Classes="muted" /></Grid>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Spacing="3" Margin="0,12,0,0">
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="8,0,8,10" />
+          <Button Classes="quiet" Content="＋   添加游戏版本" Command="{Binding OpenSetupCommand}" />
+          <Button Classes="quiet" Content="◈   外观与主题" Command="{Binding OpenAppearanceCommand}" />
+          <Button Classes="quiet" Content="⚙   网络设置" Command="{Binding OpenNetworkCommand}" />
+        </StackPanel>
+        <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Margin="0,12,0,0" AutomationProperties.Name="游戏版本列表">
+          <ListBox.ItemTemplate><DataTemplate>
+            <Grid ColumnDefinitions="38,*">
+              <Border Width="28" Height="30" HorizontalAlignment="Left" CornerRadius="8" Background="{DynamicResource SelectedBrush}" VerticalAlignment="Center"><Path Data="M0,5 10,0 20,5 20,16 10,21 0,16 Z M0,5 10,10 20,5 M10,10 10,21" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Width="18" Height="20" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+              <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding DisplayName}" FontWeight="Medium" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" /></StackPanel>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+    <Grid Grid.Column="1" Margin="32,24,32,16" RowDefinitions="Auto,*">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"><TextBlock Text="工作空间" Classes="muted" /><TextBlock Text="/" Classes="muted" /><TextBlock Text="{Binding InstanceCountText}" FontSize="12" /></StackPanel>
+        <ToggleButton x:Name="ThemeToggle" Grid.Column="1" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
+      </Grid>
+      <TransitioningContentControl x:Name="PageHost" Grid.Row="1"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
+    </Grid>
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="24,8,24,12">
+      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="JAVA EDITION" Classes="eyebrow" FontSize="8" Margin="20,0,0,0" /></Grid>
+    </Border>
+    <ContentControl x:Name="OverlayHost" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
+  </Grid>
+</Window>

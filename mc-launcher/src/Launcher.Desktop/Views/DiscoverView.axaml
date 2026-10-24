@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" x:Class="Launcher.Desktop.Views.DiscoverView">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <StackPanel Spacing="7" Margin="0,0,0,18"><TextBlock Text="发现资源" FontSize="28" FontWeight="SemiBold" /><TextBlock Text="为你的世界，添一点新可能。" Classes="muted" FontSize="13" /></StackPanel>
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Download.Categories}" Margin="0,0,0,12">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate><DataTemplate><Button Classes="nav" Classes.active="{Binding IsSelected}" Content="{Binding Title}" IsVisible="{Binding IsNormal}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,0,6,6" /></DataTemplate></ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Border Grid.Row="2" Classes="card" Padding="16" Margin="0,0,0,12">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"><TextBox Text="{Binding Download.Query}" PlaceholderText="{Binding Download.SearchHint}" IsVisible="{Binding Download.IsSearchMode}"><TextBox.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding Download.SearchCommand}" /></TextBox.KeyBindings></TextBox><TextBlock Text="Minecraft 游戏版本" IsVisible="{Binding Download.IsVersionMode}" VerticalAlignment="Center" FontWeight="SemiBold" /><Button Grid.Column="1" Classes="primary" Content="搜索" Command="{Binding Download.SearchCommand}" /><Button Grid.Column="2" Content="热门推荐" Command="{Binding Download.PopularCommand}" IsVisible="{Binding Download.IsSearchMode}" /></Grid>
+        <Grid ColumnDefinitions="*,8,*,8,*" IsVisible="{Binding Download.IsSearchMode}" IsEnabled="{Binding Download.CanEditSearch}">
+          <ComboBox ItemsSource="{Binding Download.Sources}" SelectedItem="{Binding Download.SelectedSource}" />
+          <TextBox Grid.Column="2" Text="{Binding Download.GameVersionFilter}" PlaceholderText="游戏版本，例如 1.21.4" />
+          <ComboBox Grid.Column="4" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}" IsVisible="{Binding Download.ShowsLoaderFilter}" />
+        </Grid>
+        <Grid ColumnDefinitions="*,8,*,Auto" IsVisible="{Binding Download.IsSearchMode}" IsEnabled="{Binding Download.CanEditSearch}">
+          <ComboBox ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" />
+          <ComboBox Grid.Column="2" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" />
+          <Button Grid.Column="3" Classes="quiet" Content="重置" Command="{Binding Download.ResetFiltersCommand}" Margin="8,0,0,0" />
+        </Grid>
+        <TextBlock Text="{Binding Download.TargetText}" Classes="muted" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <Grid Grid.Row="3">
+      <ListBox ItemsSource="{Binding Download.Results}" SelectedItem="{Binding Download.SelectedResult}" IsVisible="{Binding Download.IsSearchMode}">
+        <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="42,*" Margin="2,6"><Border CornerRadius="10" Width="32" Height="32" Background="{DynamicResource SelectedBrush}" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="{Binding Badge}" FontSize="10" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="{Binding Title}" FontWeight="Medium" /><TextBlock Text="{Binding Description}" Classes="muted" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" /></StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+      <ScrollViewer IsVisible="{Binding Download.IsVersionMode}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="12">
+        <TextBlock Text="最新版本" Classes="muted" />
+        <ItemsControl ItemsSource="{Binding Download.LatestVersions}"><ItemsControl.ItemTemplate><DataTemplate><Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,3"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Id}" FontWeight="Medium" /><TextBlock Grid.Column="1" Text="{Binding TypeText}" Classes="muted" Margin="20,0,0,0" /></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        <ItemsControl ItemsSource="{Binding Download.VersionGroups}"><ItemsControl.ItemTemplate><DataTemplate><Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded}"><ItemsControl ItemsSource="{Binding Versions}"><ItemsControl.ItemTemplate><DataTemplate><Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Content="{Binding Id}" Margin="0,3" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Expander></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      </StackPanel></ScrollViewer>
+    </Grid>
+    <Border Grid.Row="4" Classes="card" Padding="14" Margin="0,12,0,0"><StackPanel Spacing="10">
+      <TextBlock Text="{Binding Download.Status}" Classes="muted" TextWrapping="Wrap" />
+      <ProgressBar IsVisible="{Binding Download.IsBusy}" Value="{Binding Download.ProgressPercent}" Maximum="100" Height="4" />
+      <Grid ColumnDefinitions="*,Auto"><StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Download.IsSearchMode}"><Button Content="‹" Command="{Binding Download.PreviousPageCommand}" /><TextBlock Text="{Binding Download.PageText}" Classes="muted" VerticalAlignment="Center" /><Button Content="›" Command="{Binding Download.NextPageCommand}" /></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"><Button Content="取消" IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" /><Button Content="安装所选资源" Classes="primary" Command="{Binding Download.InstallCommand}" IsVisible="{Binding Download.IsSearchMode}" /><Button Content="安装所选版本" Classes="primary" Command="{Binding Download.InstallVersionCommand}" IsVisible="{Binding Download.IsVersionMode}" /></StackPanel></Grid>
+    </StackPanel></Border>
+  </Grid>
+</UserControl>

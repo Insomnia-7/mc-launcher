@@ -1,0 +1,6 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" x:Class="Launcher.Desktop.App" RequestedThemeVariant="Light">
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Controls.axaml" />
+  </Application.Styles>
+</Application>

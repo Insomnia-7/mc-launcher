@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>MCLauncher.Desktop</AssemblyName>
+    <RootNamespace>Launcher.Desktop</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <Version>0.1.2</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <ProjectReference Include="../Launcher.Application/Launcher.Application.csproj" />
+    <ProjectReference Include="../Launcher.Infrastructure/Launcher.Infrastructure.csproj" />
+    <Compile Include="../Launcher.App/ViewModels/*.cs" Exclude="../Launcher.App/ViewModels/PlatformUi.cs;../Launcher.App/ViewModels/MainViewModel.Appearance.cs" Link="ViewModels/Shared/%(Filename)%(Extension)" />
+    <Compile Include="../Launcher.App/PlatformPaths.cs" Link="Shared/PlatformPaths.cs" />
+    <InternalsVisibleTo Include="Desktop.Checks" />
+  </ItemGroup>
+</Project>

@@ -3,9 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -138,11 +135,11 @@ public sealed partial class MainViewModel : ObservableObject
     /// 这些都不影响窗口长什么样，但 Java 扫描要几百毫秒，摆在构造函数里会直接拖慢冷启动。
     /// 由 App 在 window.Show() 之后调用（不要挪回构造函数）。
     /// </summary>
-    public void StartBackgroundWork()
+    public void StartBackgroundWork(bool checkUpdates = true)
     {
         if (IsSetupOpen) _ = LoadSetupVersionsAsync();
         _ = LoadJavaOptionsAsync();
-        _ = DelayedUpdateCheckAsync();
+        if (checkUpdates) _ = DelayedUpdateCheckAsync();
         _ = RefreshSkinAsync();
     }
 
@@ -194,16 +191,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ChooseGameRoot()
+    private async Task ChooseGameRootAsync()
     {
-        var dialog = new Microsoft.Win32.OpenFolderDialog
-        {
-            Title = "选择游戏目录（会被用来放 versions / instances / assets / libraries）",
-            InitialDirectory = Directory.Exists(GameRoot) ? GameRoot : AppPaths.DataDirectory,
-        };
-
-        if (dialog.ShowDialog() != true) return;
-        if (TryUseGameRoot(dialog.FolderName, out var error)) return;
+        var folder = await PlatformUi.PickFolderAsync("选择游戏目录", Directory.Exists(GameRoot) ? GameRoot : AppPaths.DataDirectory);
+        if (folder is null) return;
+        if (TryUseGameRoot(folder, out var error)) return;
 
         StatusText = error ?? "这个目录不能用。";
         DiagnosisText = error ?? string.Empty;
@@ -303,7 +295,7 @@ public sealed partial class MainViewModel : ObservableObject
             startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
 
             Process.Start(startInfo);
-            System.Windows.Application.Current.Shutdown();
+            PlatformUi.Shutdown();
         }
         catch (Exception ex)
         {
@@ -452,7 +444,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>把诊断结论连同版本、游戏目录、时间拼成一份可粘贴的报告。剪贴板经常被别的进程占用，失败要能说清原因。</summary>
     [RelayCommand]
-    private void CopyDiagnosis()
+    private async Task CopyDiagnosisAsync()
     {
         var report =
             $"{DiagnosisText}\n\n" +
@@ -462,7 +454,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            System.Windows.Clipboard.SetText(report);
+            await PlatformUi.CopyTextAsync(report);
             StatusText = "诊断信息已复制到剪贴板";
         }
         catch (Exception ex)
@@ -752,15 +744,9 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var dialog = new Microsoft.Win32.SaveFileDialog
-        {
-            Title = "导出为一个 zip（只含这个版本的 mods / 配置 / 存档，不含共享库与资源）",
-            FileName = $"{SanitizeFileName(instance.DisplayName)}-{DateTime.Now:yyyyMMdd}.zip",
-            Filter = "Zip 压缩包 (*.zip)|*.zip|所有文件 (*.*)|*.*",
-            AddExtension = true,
-            DefaultExt = ".zip",
-        };
-        if (dialog.ShowDialog() != true) return;
+        var exportPath = await PlatformUi.SaveFileAsync("导出版本备份", "Zip 压缩包 (*.zip)|*.zip",
+            $"{SanitizeFileName(instance.DisplayName)}-{DateTime.Now:yyyyMMdd}.zip");
+        if (exportPath is null) return;
 
         using var cts = new CancellationTokenSource();
         _runningCts = cts;
@@ -770,7 +756,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var progress = new Progress<string>(text => StatusText = text);
             var report = await _exportService.ExportAsync(
-                GameRoot, instance.InstanceId, dialog.FileName, progress: progress,
+                GameRoot, instance.InstanceId, exportPath, progress: progress,
                 ct: cts.Token).ConfigureAwait(true);
             StatusText = report.ToSummary();
         }
@@ -893,7 +879,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ── 头像 ─────────────────────────────────────────────────────────────
     // 皮肤只用于显示：取不到就用首字母占位，任何失败都不影响登录与启动。
-    [ObservableProperty] private ImageSource? _skinHead;
+    [ObservableProperty] private object? _skinHead;
 
     public bool HasSkinHead => SkinHead is not null;
 
@@ -907,7 +893,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    partial void OnSkinHeadChanged(ImageSource? value) => OnPropertyChanged(nameof(HasSkinHead));
+    partial void OnSkinHeadChanged(object? value) => OnPropertyChanged(nameof(HasSkinHead));
 
     private async Task RefreshSkinAsync()
     {
@@ -932,24 +918,12 @@ public sealed partial class MainViewModel : ObservableObject
         HttpClientFactory.Create("MCLauncher-Skin/1.0", TimeSpan.FromSeconds(20));
 
     /// <summary>皮肤图是 64x64，头部在 (8,8) 的 8x8 方块；后台解码后冻结，避免跨线程访问。</summary>
-    private Task<ImageSource?> LoadHeadAsync(string url) => Task.Run<ImageSource?>(async () =>
+    private Task<object?> LoadHeadAsync(string url) => Task.Run<object?>(async () =>
     {
         try
         {
             var bytes = await SkinHttpClient.GetByteArrayAsync(url).ConfigureAwait(false);
-            using var stream = new MemoryStream(bytes);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = stream;
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            // StreamSource 下不能设 IgnoreImageCache：WPF 会按 Uri 去 ImagingCache 删条目，而 Uri 为 null → ArgumentNullException
-            bitmap.EndInit();
-            bitmap.Freeze();
-            _logger.LogInformation("皮肤图：{W}x{H} {Bytes} B", bitmap.PixelWidth, bitmap.PixelHeight, bytes.Length);
-            if (bitmap.PixelWidth < 16 || bitmap.PixelHeight < 16) return null;
-            var head = new CroppedBitmap(bitmap, new Int32Rect(8, 8, 8, 8));
-            head.Freeze();
-            return head;
+            return PlatformUi.DecodeSkinHead(bytes);
         }
         catch (Exception ex)
         {
@@ -1002,10 +976,12 @@ public sealed partial class MainViewModel : ObservableObject
         NotifyAccountActions();
     }
 
-    [RelayCommand(IncludeCancelCommand = true, CanExecute = nameof(CanManageAccountCommands))]
+    private bool CanLogin() => CanManageAccounts && PlatformUi.CanStoreSecrets(_secretProtector);
+
+    [RelayCommand(IncludeCancelCommand = true, CanExecute = nameof(CanLogin))]
     private async Task LoginAsync(CancellationToken cancellationToken)
     {
-        if (!CanManageAccounts) return;
+        if (!CanLogin()) return;
 
         IsLoggingIn = true;
         LoginCode = string.Empty;
@@ -1018,7 +994,7 @@ public sealed partial class MainViewModel : ObservableObject
             cancellationToken.ThrowIfCancellationRequested();
 
             LoginCode = session.UserCode;
-            CopyToClipboard(session.UserCode);
+            await CopyToClipboardAsync(session.UserCode);
             LoginHint = $"已在浏览器打开 {session.VerificationUri}，代码 {session.UserCode} 已复制到剪贴板，粘贴进去即可";
             OpenInBrowser(session.VerificationUri);
             ReportAccountStatus("等待你在浏览器里完成授权，可点击「取消登录」。");
@@ -1068,11 +1044,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>把设备码放进剪贴板，省得用户手抄。</summary>
-    private void CopyToClipboard(string text)
+    private async Task CopyToClipboardAsync(string text)
     {
         try
         {
-            System.Windows.Clipboard.SetText(text);
+            await PlatformUi.CopyTextAsync(text);
         }
         catch (Exception ex)
         {
@@ -1426,7 +1402,7 @@ public sealed partial class MainViewModel : ObservableObject
         // 崩溃结论都在日志尾部，认出来比让用户自己翻两千行 stack trace 有用
         var diagnosis = StartupDiagnostics.Analyze(logPath);
 
-        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        await PlatformUi.RunOnUiAsync(() =>
         {
             if (diagnosis is null)
             {
@@ -1525,7 +1501,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         }
         catch (Exception)
         {
@@ -1539,30 +1515,16 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanImportModpack))]
     private async Task ImportModpackAsync()
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog
-        {
-            Title = "选择整合包",
-            Filter = "整合包 (*.mrpack;*.zip)|*.mrpack;*.zip|所有文件 (*.*)|*.*",
-            CheckFileExists = true,
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        await ImportModpackFileAsync(dialog.FileName);
+        var path = await PlatformUi.PickFileAsync("选择整合包", "整合包 (*.mrpack;*.zip)|*.mrpack;*.zip|所有文件 (*.*)|*.*");
+        if (path is not null) await ImportModpackFileAsync(path);
     }
 
     /// <summary>导入 MultiMC / Prism 实例文件夹：它不是一个压缩包，而是一整个实例目录（含 mmc-pack.json）。</summary>
     [RelayCommand(CanExecute = nameof(CanImportModpack))]
     private async Task ImportFolderAsync()
     {
-        var dialog = new Microsoft.Win32.OpenFolderDialog
-        {
-            Title = "选择 MultiMC / Prism 实例文件夹（里面要有 mmc-pack.json）",
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        await ImportModpackFileAsync(dialog.FolderName);
+        var path = await PlatformUi.PickFolderAsync("选择 MultiMC / Prism 实例文件夹");
+        if (path is not null) await ImportModpackFileAsync(path);
     }
 
     /// <summary>按路径导入整合包：菜单、对话框、拖拽三个入口最后都落到这里。</summary>

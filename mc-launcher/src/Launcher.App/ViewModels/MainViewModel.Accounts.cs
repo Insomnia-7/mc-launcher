@@ -99,7 +99,13 @@ public sealed partial class MainViewModel
     {
         if (_library is null) return false;
         var next = _library.Copy();
-        try { change(next); next.Save(AppPaths.DataDirectory, _secretProtector); }
+        try
+        {
+            change(next);
+            if(next.Accounts.Count>0 && !PlatformUi.CanStoreSecrets(_secretProtector))
+                throw new InvalidOperationException("此系统尚未接入安全账号存储，暂时不能保存微软登录。可以使用离线身份。");
+            next.Save(AppPaths.DataDirectory, _secretProtector);
+        }
         catch (Exception ex)
         {
             ReportAccountStatus("保存账号失败，当前身份保持不变：" + ErrorText.Describe(ex));
