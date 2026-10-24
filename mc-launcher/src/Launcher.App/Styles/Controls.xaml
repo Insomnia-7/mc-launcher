@@ -240,13 +240,13 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
       <Setter Property="SelectionBrush" Value="{DynamicResource AccentFillBrush}" />
-      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="Padding" Value="0" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="TextBox">
             <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
-              <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+              <ScrollViewer x:Name="PART_ContentHost" Margin="11,0,11,0" VerticalAlignment="Center" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsKeyboardFocused" Value="True">
@@ -283,7 +283,7 @@
                 </ToggleButton.Template>
               </ToggleButton>
               <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,11,0" Data="M 0 0 L 7 0 L 3.5 4 Z" Fill="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
-              <ContentPresenter x:Name="Selection" Margin="10,0,28,0" VerticalAlignment="Center" IsHitTestVisible="False" ClipToBounds="True" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+              <ContentPresenter x:Name="Selection" Margin="11,0,28,0" VerticalAlignment="Center" IsHitTestVisible="False" ClipToBounds="True" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
               <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed" Background="Transparent" BorderThickness="0" Foreground="{TemplateBinding Foreground}" CaretBrush="{DynamicResource TextBrush}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" Margin="10,0,27,0" VerticalContentAlignment="Center" IsReadOnly="{TemplateBinding IsReadOnly}" Text="{Binding Text,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,RelativeSource={RelativeSource TemplatedParent}}">
                 <TextBox.Template>
                   <ControlTemplate TargetType="TextBox">
