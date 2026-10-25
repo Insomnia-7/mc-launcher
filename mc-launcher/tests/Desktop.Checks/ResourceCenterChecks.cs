@@ -19,6 +19,8 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public int Icons,Translations,ExactCfFile;
     public bool FailVersions,FailTranslations,MixedReleases;
     public string? LastQuery;
+    public int CatalogCount, LastLimit, LastOffset;
+    public bool FailPage;
     public TaskCompletionSource<IReadOnlyList<ModrinthVersion>>? PendingVersions;
     public TaskCompletionSource<ModrinthProjectInfo?>? PendingDependency;
     public static readonly byte[] Icon=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNQOpP2HwAEvAJUSd95QAAAAABJRU5ErkJggg==");
@@ -37,9 +39,10 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public static ModrinthVersion Version(string id,string number,string game,string loader,string file,params ModrinthDependency[] deps)=>new(id,"sodium",number,number,[game],[loader],DateTimeOffset.Parse("2026-10-20T00:00:00Z"),[File(file)],deps){Downloads=15000,VersionType="release"};
     public Task<ModrinthSearchResponse> SearchAsync(string q,DownloadCategory category,string? game=null,string? loader=null,int limit=20,int offset=0,CancellationToken ct=default)
     {
-        LastQuery=q;
+        LastQuery=q;LastLimit=limit;LastOffset=offset;
+        if(FailPage) {FailPage=false;throw new HttpRequestException("page failure");}
         var project=new ModrinthProject(category==DownloadCategory.Modpack?"pack":"sodium",category==DownloadCategory.Modpack?"fixture-pack":"sodium",category==DownloadCategory.Modpack?"Fixture Pack":"Sodium","fixture original description","Fixture Author","https://fixture.invalid/icon.png",253000000,10,["fabric","neoforge","optimization"],["1.21.4","1.20.1"]){ProjectType=category.ModrinthProjectType(),AllProjectTypes=[category.ModrinthProjectType()!],DateModified=DateTimeOffset.Parse("2026-10-20T00:00:00Z")};
-        return Task.FromResult(new ModrinthSearchResponse([project],1,offset,limit));
+        return Task.FromResult(CatalogCount>0 ? new ModrinthSearchResponse(Enumerable.Range(offset,Math.Min(limit,Math.Max(0,CatalogCount-offset))).Select(i=>project with{ProjectId="catalog-"+i,Title="Project "+i}).ToArray(),CatalogCount,offset,limit) : new ModrinthSearchResponse([project],1,offset,limit));
     }
     public Task<IReadOnlyList<ModrinthVersion>> GetVersionsAsync(string id,string? game=null,string? loader=null,CancellationToken ct=default)
     {
@@ -102,9 +105,9 @@ internal static class ResourceCenterChecks
         capture("resources-list",true);
         var resultsScroll=window.GetVisualDescendants().OfType<ScrollViewer>().Single(c=>c.Name=="ResourceResultsScroll");
         var searchPanel=window.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ResourceSearchPanel");
-        check("搜索区紧凑并给资源列表保留更大高度",searchPanel.Bounds.Height<=125 && resultsScroll.Bounds.Height>=420 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<220});
+        check("搜索区紧凑并给资源列表保留更大高度",searchPanel.Bounds.Height<=150 && resultsScroll.Bounds.Height>=350 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<250});
         check("资源列表不再显示中文简介提示行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.TranslationHint));
-        check("下载量与更新日期跟在介绍末尾，介绍字号略增",window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.ActivityText) && window.GetVisualDescendants().OfType<TextBlock>().Any(t=>ReferenceEquals(t.DataContext,item)&&t.Text==item.DescriptionText&&t.FontSize==13&&t.MaxLines==2));
+        check("下载量与更新日期跟在介绍末尾，介绍字号略增",window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.ActivityText) && window.GetVisualDescendants().OfType<TextBlock>().Any(t=>ReferenceEquals(t.DataContext,item)&&t.Text==item.DescriptionText&&t.FontSize==14&&t.MaxLines==2));
         foreach(var category in new[]{DownloadCategory.ResourcePack,DownloadCategory.Shader,DownloadCategory.Datapack})
         {
             vm.SelectedCategory=vm.Categories.First(c=>c.Category==category); Wait(vm.SearchCommand.ExecuteAsync(null));

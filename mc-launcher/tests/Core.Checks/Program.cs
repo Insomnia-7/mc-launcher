@@ -1845,6 +1845,47 @@ Check("错误文案会补上网络建议",
 Check("非网络错误不硬塞建议",
     !Launcher.Application.Diagnostics.ErrorText.Describe(new IOException("sha1 不匹配")).Contains("网络设置"));
 
+// Cancellation must preserve existing user files while removing the private staging payload.
+{
+    var root=Path.Combine(Path.GetTempPath(),"fangyu-cancel-"+Guid.NewGuid().ToString("N"));
+    try
+    {
+        var version=Path.Combine(root,"versions","1.20.1");Directory.CreateDirectory(version);
+        File.WriteAllText(Path.Combine(version,"1.20.1.json"),"{\"id\":\"1.20.1\",\"type\":\"release\",\"mainClass\":\"net.minecraft.client.main.Main\"}");
+        var installer=BuildModpackInstaller(new FakeDownloader((_,_)=>null),new ThrowingForgeInstaller(),new ThrowingNeoForgeInstaller());
+        var pack=new ModrinthPack{Name="取消保护",VersionId="1",Dependencies=new Dictionary<string,string>{{"minecraft","1.20.1"}}};
+        var original=await installer.ImportAsync(new FakeModpackSource(pack,(dir,_,_)=>{Directory.CreateDirectory(Path.Combine(dir,"config"));File.WriteAllText(Path.Combine(dir,"config","settings.txt"),"original");return Task.FromResult(1);}),root);
+        var save=Path.Combine(original.InstanceDirectory,"saves","world","level.dat");Directory.CreateDirectory(Path.GetDirectoryName(save)!);File.WriteAllText(save,"save-data");
+        var metadata=Path.Combine(root,"instances",original.InstanceId,"instance.json");var before=File.ReadAllBytes(metadata);
+        using var cts=new CancellationTokenSource();
+        Exception? canceled=null;
+        try {await installer.ImportAsync(new FakeModpackSource(pack,(dir,_,_)=>{Directory.CreateDirectory(Path.Combine(dir,"config"));File.WriteAllText(Path.Combine(dir,"config","settings.txt"),"replacement");File.WriteAllText(Path.Combine(dir,"partial.jar.part"),"incomplete");cts.Cancel();return Task.FromResult(2);}),root,ct:cts.Token);}catch(Exception e){canceled=e;}
+        Check("取消重新导入：报告已清理",canceled is ModpackImportCanceledException{RemainingPaths.Count:0});
+        Check("取消重新导入：原配置和存档不变",File.ReadAllText(Path.Combine(original.InstanceDirectory,"config","settings.txt"))=="original"&&File.ReadAllText(save)=="save-data");
+        Check("取消重新导入：元数据不变",File.ReadAllBytes(metadata).SequenceEqual(before));
+        Check("取消重新导入：未完成文件与暂存目录清除",!File.Exists(Path.Combine(original.InstanceDirectory,"partial.jar.part"))&&!Directory.EnumerateDirectories(Path.Combine(root,".cache","imports")).Any());
+        // A failed commit must restore files already replaced and retain unrelated saves.
+        var config=Path.Combine(original.InstanceDirectory,"config","settings.txt");
+        using(var locked=File.Open(config,FileMode.Open,FileAccess.Read,FileShare.None))
+        {
+            Exception? failure=null;
+            try {await installer.ImportAsync(new FakeModpackSource(pack,(dir,_,_)=>{Directory.CreateDirectory(Path.Combine(dir,"config"));File.WriteAllText(Path.Combine(dir,"new.txt"),"new");File.WriteAllText(Path.Combine(dir,"config","settings.txt"),"replacement");return Task.FromResult(2);}),root);}catch(Exception e){failure=e;}
+            Check("提交遇到文件占用时报告导入失败",failure is ModpackImportFailedException);
+        }
+        Check("提交失败恢复原配置且不遗留新增文件",File.ReadAllText(config)=="original"&&!File.Exists(Path.Combine(original.InstanceDirectory,"new.txt"))&&File.ReadAllText(save)=="save-data");
+        Check("提交失败还原实例元数据",File.ReadAllBytes(metadata).SequenceEqual(before));
+        await installer.ImportAsync(new FakeModpackSource(pack,(dir,_,_)=>{Directory.CreateDirectory(Path.Combine(dir,"config"));File.WriteAllText(Path.Combine(dir,"config","settings.txt"),"updated");return Task.FromResult(1);}),root);
+        Check("正常重新导入更新配置但保留存档",File.ReadAllText(config)=="updated"&&File.ReadAllText(save)=="save-data");
+        using var freshCts=new CancellationTokenSource();
+        var fresh=new ModrinthPack{Name="新包取消",VersionId="1",Dependencies=new Dictionary<string,string>{{"minecraft","1.20.1"}}};
+        var prior=Directory.GetDirectories(Path.Combine(root,"instances")).Length;
+        try {await installer.ImportAsync(new FakeModpackSource(fresh,(dir,_,_)=>{File.WriteAllText(Path.Combine(dir,"partial.part"),"half");freshCts.Cancel();return Task.FromResult(1);}),root,ct:freshCts.Token);}catch(OperationCanceledException){}
+        Check("取消新整合包：没有半成品实例",Directory.GetDirectories(Path.Combine(root,"instances")).Length==prior&&!Directory.EnumerateDirectories(Path.Combine(root,".cache","imports")).Any());
+        Check("取消导入：原版共享版本仍保留",File.Exists(Path.Combine(version,"1.20.1.json")));
+    }
+    finally {if(Directory.Exists(root))Directory.Delete(root,true);}
+}
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");

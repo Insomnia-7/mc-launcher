@@ -67,6 +67,23 @@ internal static class OptimizationChecks
         await downloader.DownloadAsync([entry with { RelativePath = "bad.jar" }], root);
         check("完整但校验失败的断点重新下载", handler.Calls == 2 && File.ReadAllBytes(Path.Combine(root, "bad.jar")).SequenceEqual(body), null);
 
+        // Cancel during the body copy, after the first bytes have reached a .part file.
+        using(var cancel=new CancellationTokenSource())
+        using(var cancelHandler=new Handler((_,_)=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StreamContent(new InterruptedBody(cancel))})))
+        using(var cancelHttp=new HttpClient(cancelHandler))
+        {
+            bool bodyCanceled=false;
+            try {await new HttpDownloader(cancelHttp,new DownloadOptions(MaxConcurrency:1,MaxRetries:1)).DownloadAsync([entry with{RelativePath="cancel.jar"}],root,ct:cancel.Token);}catch(OperationCanceledException){bodyCanceled=true;}
+            check("取消传输删除未完成 part 文件",bodyCanceled&&!File.Exists(Path.Combine(root,"cancel.jar.part"))&&!File.Exists(Path.Combine(root,"cancel.jar")),null);
+            check("取消传输保留已验证共享文件",File.ReadAllBytes(Path.Combine(root,"file.jar")).SequenceEqual(body),null);
+        }
+        using(var brokenHandler=new Handler((_,_)=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StreamContent(new InterruptedBody(null))})))
+        using(var brokenHttp=new HttpClient(brokenHandler))
+        {
+            try {await new HttpDownloader(brokenHttp,new DownloadOptions(MaxConcurrency:1,MaxRetries:1)).DownloadAsync([entry with{RelativePath="network.jar"}],root);}catch(AggregateException){}
+            check("普通网络中断保留断点以便续传",File.Exists(Path.Combine(root,"network.jar.part"))&&new FileInfo(Path.Combine(root,"network.jar.part")).Length>0,null);
+        }
+
         foreach (var mode in new[] { "206", "200", "416", "wrong-range" })
         {
             var ranges = new List<long?>();
@@ -262,4 +279,25 @@ internal static class OptimizationChecks
             finally { Interlocked.Decrement(ref _active); }
         }
     }
+}
+
+internal sealed class InterruptedBody(CancellationTokenSource? cancellation):Stream
+{
+    private bool sent;
+    public override bool CanRead=>true;
+    public override bool CanSeek=>false;
+    public override bool CanWrite=>false;
+    public override long Length=>throw new NotSupportedException();
+    public override long Position{get=>throw new NotSupportedException();set=>throw new NotSupportedException();}
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer,CancellationToken ct=default)
+    {
+        if(!sent) {sent=true;buffer.Span[0]=42;return ValueTask.FromResult(1);}
+        if(cancellation is not null){cancellation.Cancel();ct.ThrowIfCancellationRequested();}
+        throw new IOException("fixture disconnected");
+    }
+    public override int Read(byte[] buffer,int offset,int count)=>ReadAsync(buffer.AsMemory(offset,count)).GetAwaiter().GetResult();
+    public override void Flush(){}
+    public override long Seek(long offset,SeekOrigin origin)=>throw new NotSupportedException();
+    public override void SetLength(long value)=>throw new NotSupportedException();
+    public override void Write(byte[] buffer,int offset,int count)=>throw new NotSupportedException();
 }

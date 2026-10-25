@@ -121,6 +121,7 @@ public sealed partial class MainViewModel : ObservableObject
             loaderMeta, loaderInstaller, forgeInstaller, neoForgeInstaller, javaProvisioner, presentation);
 
         Download.InstancesChanged += RefreshInstances;
+        Download.PropertyChanged+=(_,e)=> {if(e.PropertyName==nameof(DownloadViewModel.IsBusy)) DeleteInstanceCommand.NotifyCanExecuteChanged();};
 
         StatusText = HasGameRootProblem ? GameRootProblem
             : HasGameRootNotice ? GameRootNotice.Split('\n')[0]
@@ -1100,6 +1101,7 @@ public sealed partial class MainViewModel : ObservableObject
         InstallSetupCommand.NotifyCanExecuteChanged();
         InstallCommand.NotifyCanExecuteChanged();
         ImportModpackCommand.NotifyCanExecuteChanged();
+        DeleteInstanceCommand.NotifyCanExecuteChanged();
         LaunchCommand.NotifyCanExecuteChanged();
         CanCancel = value;
         NotifyAccountActions();
@@ -1440,7 +1442,8 @@ public sealed partial class MainViewModel : ObservableObject
         OpenInExplorer(path);
     }
 
-    [RelayCommand(CanExecute = nameof(CanOpenFolder))]
+    private bool CanDeleteInstance()=>SelectedInstance is not null&&!IsBusy&&!Download.IsBusy;
+    [RelayCommand(CanExecute = nameof(CanDeleteInstance))]
     private void DeleteInstance()
     {
         if (SelectedInstance is not { } instance) return;
@@ -1457,6 +1460,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath)
     {
+        if(!CanDeleteInstance()) {StatusText="当前任务结束后再删除版本。";return;}
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "删除实例");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         try
@@ -1580,6 +1584,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             var progress = new Progress<ModpackImportProgress>(p =>
             {
+                if(cts.IsCancellationRequested||!ReferenceEquals(_runningCts,cts)) return;
                 ProgressPercent = p.Percent;
                 StatusText = string.IsNullOrEmpty(p.Detail) ? p.Stage : $"{p.Stage} · {p.Detail}";
             });
@@ -1599,7 +1604,8 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex) when (IsCancellation(ex))
         {
             _logger.LogInformation(ex, "整合包导入已取消");
-            StatusText = "已取消";
+            StatusText=ex is ModpackImportCanceledException canceled?canceled.Message:ex.Message.Contains("临时文件无法清理")?ex.Message:"已取消";
+            RefreshInstances();
         }
         catch (Exception ex)
         {

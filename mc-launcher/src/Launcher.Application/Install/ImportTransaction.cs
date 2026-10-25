@@ -24,6 +24,8 @@ public sealed class ImportTransaction
     private readonly HashSet<string>? _versionsBefore;
     private readonly HashSet<string>? _instancesBefore;
     private readonly List<string> _removed = [];
+    private readonly List<string> _remaining = [];
+    public IReadOnlyList<string> RemainingPaths=>_remaining;
 
     private ImportTransaction(string gameRoot, HashSet<string>? versionsBefore, HashSet<string>? instancesBefore)
     {
@@ -84,7 +86,8 @@ public sealed class ImportTransaction
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // 独占句柄 / 权限不足：跳过这一项，别让回滚失败盖掉原始异常
+                _remaining.Add(child);
+                // Keep the original failure, but expose paths that still need cleanup.
             }
         }
     }

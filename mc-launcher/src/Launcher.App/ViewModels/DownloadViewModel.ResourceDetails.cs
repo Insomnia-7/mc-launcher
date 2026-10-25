@@ -53,16 +53,18 @@ public sealed partial class DownloadViewModel
         VersionsText=VersionsText(mod.LatestFiles.SelectMany(f=>f.GameVersions).Where(v=>!ResourceChinese.IsLoader(v))),OpenCommand=OpenResourceCommand,
     };
 
-    private async Task EnrichResultsAsync(DownloadItem[] items)
+    private async Task EnrichResultsAsync(DownloadItem[] items,bool append=false)
     {
-        _resourceExtrasCts?.Cancel();
-        using var cts=new CancellationTokenSource(TimeSpan.FromSeconds(20)); _resourceExtrasCts=cts;
+        if(!append) _resourceExtrasCts?.Cancel();
+        var generation=_browserGeneration;
+        using var cts=new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        if(!append) _resourceExtrasCts=cts;
         try
         {
             async Task LoadIcon(DownloadItem item)
             {
                 if(item.IconUrl is not {Length:>0} url) return;
-                try { var bytes=await _presentation.GetIconAsync(url,cts.Token); if(!cts.IsCancellationRequested) item.IconBytes=bytes; }
+                try { var bytes=await _presentation.GetIconAsync(url,cts.Token); if(!cts.IsCancellationRequested&&generation==_browserGeneration) item.IconBytes=bytes; }
                 catch(Exception ex) when(ex is not OutOfMemoryException) { }
             }
             async Task Translate()
@@ -73,7 +75,7 @@ public sealed partial class DownloadViewModel
                     var translations=await _presentation.GetTranslationsAsync(items[0].Source,items.Select(i=>i.Id).ToArray(),cts.Token);
                     foreach(var translated in translations)
                     {
-                        if(cts.IsCancellationRequested) return;
+                        if(cts.IsCancellationRequested||generation!=_browserGeneration) return;
                         var item=items.FirstOrDefault(i=>i.Id==translated.ProjectId);
                         // Do not apply stale translations to changed upstream descriptions.
                         if(item is not null && item.Description==translated.Original) item.TranslatedDescription=translated.Translated;

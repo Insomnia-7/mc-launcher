@@ -67,47 +67,59 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
 
         using var gate = new SemaphoreSlim(_options.MaxConcurrency);
 
-        await Parallel.ForEachAsync(
-            entries,
-            new ParallelOptions { MaxDegreeOfParallelism = _options.MaxConcurrency, CancellationToken = ct },
-            async (entry, token) =>
-            {
-                await gate.WaitAsync(token).ConfigureAwait(false);
-                try
+        var cleanupFailures=new ConcurrentBag<string>();
+        try
+        {
+            await Parallel.ForEachAsync(
+                entries,
+                new ParallelOptions { MaxDegreeOfParallelism = _options.MaxConcurrency, CancellationToken = ct },
+                async (entry, token) =>
                 {
-                    if (Path.IsPathRooted(entry.RelativePath)) throw new InvalidDataException("下载目标必须是相对路径。");
-                    var target = LongPath.Normalize(LongPath.Combine(Path.GetFullPath(rootDirectory), entry.RelativePath));
-
-                    if (await IsUpToDateAsync(target, entry, token).ConfigureAwait(false))
+                    await gate.WaitAsync(token).ConfigureAwait(false);
+                    try
                     {
-                        Interlocked.Increment(ref counters.Skipped);
-                        var afterSkip = Interlocked.Add(ref counters.CompletedBytes, Math.Max(0, entry.Size));
-                        var completed = Interlocked.Increment(ref counters.CompletedFiles);
-                        progress?.Report(new DownloadProgress(afterSkip, totalBytes, completed, totalFiles, entry.RelativePath));
-                        return;
+                        if (Path.IsPathRooted(entry.RelativePath)) throw new InvalidDataException("下载目标必须是相对路径。");
+                        var target = LongPath.Normalize(LongPath.Combine(Path.GetFullPath(rootDirectory), entry.RelativePath));
+
+                        if (await IsUpToDateAsync(target, entry, token).ConfigureAwait(false))
+                        {
+                            Interlocked.Increment(ref counters.Skipped);
+                            var afterSkip = Interlocked.Add(ref counters.CompletedBytes, Math.Max(0, entry.Size));
+                            var completed = Interlocked.Increment(ref counters.CompletedFiles);
+                            progress?.Report(new DownloadProgress(afterSkip, totalBytes, completed, totalFiles, entry.RelativePath));
+                            return;
+                        }
+
+                        var written = await DownloadWithRetryAsync(entry, target, token).ConfigureAwait(false);
+
+                        Interlocked.Increment(ref counters.Downloaded);
+                        Interlocked.Add(ref counters.DownloadedBytes, written);
+                        var after = Interlocked.Add(ref counters.CompletedBytes, written);
+                        var completedFiles = Interlocked.Increment(ref counters.CompletedFiles);
+                        progress?.Report(new DownloadProgress(after, totalBytes, completedFiles, totalFiles, entry.RelativePath));
                     }
-
-                    var written = await DownloadWithRetryAsync(entry, target, token).ConfigureAwait(false);
-
-                    Interlocked.Increment(ref counters.Downloaded);
-                    Interlocked.Add(ref counters.DownloadedBytes, written);
-                    var after = Interlocked.Add(ref counters.CompletedBytes, written);
-                    var completedFiles = Interlocked.Increment(ref counters.CompletedFiles);
-                    progress?.Report(new DownloadProgress(after, totalBytes, completedFiles, totalFiles, entry.RelativePath));
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    errors.Add((entry, ex));
-                }
-                finally
-                {
-                    gate.Release();
-                }
-            }).ConfigureAwait(false);
+                    catch (OperationCanceledException ex)
+                    {
+                        if(ex.Data["CleanupPath"] is string path) cleanupFailures.Add(path);
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add((entry, ex));
+                    }
+                    finally
+                    {
+                        gate.Release();
+                    }
+                }).ConfigureAwait(false);
+        }
+        catch(OperationCanceledException) when(!cleanupFailures.IsEmpty)
+        {
+            var paths=string.Join("；",cleanupFailures.Distinct());
+            var canceled=new OperationCanceledException("已取消下载，但临时文件无法清理："+paths,ct);
+            canceled.Data["CleanupPath"]=paths;
+            throw canceled;
+        }
 
         stopwatch.Stop();
 
@@ -151,99 +163,114 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         var url = entry.Url;
         var switchedToFallback = false;
 
-        for (var attempt = 1; attempt <= _options.MaxRetries; attempt++)
+        try
         {
-            try
+            for (var attempt = 1; attempt <= _options.MaxRetries; attempt++)
             {
-                long written = 0;
-
-                if (File.Exists(partPath))
+                try
                 {
-                    var existing = new FileInfo(partPath).Length;
-                    if (entry.Size > 0 && existing > entry.Size) File.Delete(partPath);   // .part 比目标还大，说明脏了
-                    else if (entry.Size > 0 && existing == entry.Size)
+                    long written = 0;
+
+                    if (File.Exists(partPath))
                     {
-                        if (await IsUpToDateAsync(partPath, entry, ct).ConfigureAwait(false))
+                        var existing = new FileInfo(partPath).Length;
+                        if (entry.Size > 0 && existing > entry.Size) File.Delete(partPath);   // .part 比目标还大，说明脏了
+                        else if (entry.Size > 0 && existing == entry.Size)
                         {
-                            File.Move(partPath, target, overwrite: true);
-                            return existing;
+                            if (await IsUpToDateAsync(partPath, entry, ct).ConfigureAwait(false))
+                            {
+                                File.Move(partPath, target, overwrite: true);
+                                return existing;
+                            }
+                            File.Delete(partPath);
                         }
-                        File.Delete(partPath);
+                        else written = existing;
                     }
-                    else written = existing;
-                }
 
-                // 上一次尝试失败且这条有备用地址（镜像改写前记下的官方 URL）→ 换回官方再试。
-                // 只切一次，之后固定用官方：镜像 404 / 超时 / 限流都算，官方源不该被镜像连累。
-                if (lastError is not null && !switchedToFallback && entry.FallbackUrl is { Length: > 0 })
-                {
-                    url = entry.FallbackUrl;
-                    switchedToFallback = true;
-                }
-
-                written = await FetchIntoAsync(url, partPath, written, ct).ConfigureAwait(false);
-
-                var actualSize = new FileInfo(partPath).Length;
-                if (entry.Size > 0 && actualSize != entry.Size)
-                    throw new IOException($"大小不符：期望 {entry.Size}，实际 {actualSize}");
-
-                if (!string.IsNullOrWhiteSpace(entry.Sha1))
-                {
-                    var sha1 = await ComputeSha1Async(partPath, ct).ConfigureAwait(false);
-                    if (!string.Equals(sha1, entry.Sha1, StringComparison.OrdinalIgnoreCase))
+                    // 上一次尝试失败且这条有备用地址（镜像改写前记下的官方 URL）→ 换回官方再试。
+                    // 只切一次，之后固定用官方：镜像 404 / 超时 / 限流都算，官方源不该被镜像连累。
+                    if (lastError is not null && !switchedToFallback && entry.FallbackUrl is { Length: > 0 })
                     {
-                        File.Delete(partPath);
-                        throw new InvalidDataException($"sha1 不符：期望 {entry.Sha1}，实际 {sha1}");
+                        url = entry.FallbackUrl;
+                        switchedToFallback = true;
+                    }
+
+                    written = await FetchIntoAsync(url, partPath, written, ct).ConfigureAwait(false);
+
+                    var actualSize = new FileInfo(partPath).Length;
+                    if (entry.Size > 0 && actualSize != entry.Size)
+                        throw new IOException($"大小不符：期望 {entry.Size}，实际 {actualSize}");
+
+                    if (!string.IsNullOrWhiteSpace(entry.Sha1))
+                    {
+                        var sha1 = await ComputeSha1Async(partPath, ct).ConfigureAwait(false);
+                        if (!string.Equals(sha1, entry.Sha1, StringComparison.OrdinalIgnoreCase))
+                        {
+                            File.Delete(partPath);
+                            throw new InvalidDataException($"sha1 不符：期望 {entry.Sha1}，实际 {sha1}");
+                        }
+                    }
+
+                    File.Move(partPath, target, overwrite: true);
+                    return written;
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    // 单文件超时（FetchInto 内部的 linked CTS 触发），不是用户取消 → 允许重试
+                    lastError = new TimeoutException(
+                        $"单文件超过 {_options.EffectivePerFileTimeout.TotalSeconds:F0}s 未完成：{entry.Url}");
+                    if (attempt < _options.MaxRetries)
+                        await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (DownloadThrottledException ex)
+                {
+                    lastError = ex;
+                    if (attempt < _options.MaxRetries)
+                    {
+                        // 限流要按服务器窗口等，别用 300ms 硬撞（BMCLAPI 按出口 IP 计速率，撞一次窗口更久）
+                        var wait = Clamp(ex.RetryAfter, TimeSpan.FromMilliseconds(250), TimeSpan.FromSeconds(10));
+                        await Task.Delay(wait, ct).ConfigureAwait(false);
                     }
                 }
-
-                File.Move(partPath, target, overwrite: true);
-                return written;
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-            {
-                // 单文件超时（FetchInto 内部的 linked CTS 触发），不是用户取消 → 允许重试
-                lastError = new TimeoutException(
-                    $"单文件超过 {_options.EffectivePerFileTimeout.TotalSeconds:F0}s 未完成：{entry.Url}");
-                if (attempt < _options.MaxRetries)
-                    await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), ct).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (DownloadThrottledException ex)
-            {
-                lastError = ex;
-                if (attempt < _options.MaxRetries)
+                catch (Exception ex) when (Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(ex))
                 {
-                    // 限流要按服务器窗口等，别用 300ms 硬撞（BMCLAPI 按出口 IP 计速率，撞一次窗口更久）
-                    var wait = Clamp(ex.RetryAfter, TimeSpan.FromMilliseconds(250), TimeSpan.FromSeconds(10));
-                    await Task.Delay(wait, ct).ConfigureAwait(false);
+                    // 磁盘满重试多少次都一样；把「空间不够」直接交出去，别伪装成网络错误
+                    throw new IOException(
+                        Launcher.Application.Diagnostics.DiskErrors.DescribeDiskFull(entry.RelativePath), ex);
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    if (attempt < _options.MaxRetries)
+                        await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), ct).ConfigureAwait(false);
                 }
             }
-            catch (Exception ex) when (Launcher.Application.Diagnostics.DiskErrors.IsDiskFull(ex))
+
+            var hint = lastError switch
             {
-                // 磁盘满重试多少次都一样；把「空间不够」直接交出去，别伪装成网络错误
-                throw new IOException(
-                    Launcher.Application.Diagnostics.DiskErrors.DescribeDiskFull(entry.RelativePath), ex);
-            }
-            catch (Exception ex)
-            {
-                lastError = ex;
-                if (attempt < _options.MaxRetries)
-                    await Task.Delay(TimeSpan.FromMilliseconds(300 * attempt), ct).ConfigureAwait(false);
-            }
+                DownloadStalledException => "（源太慢，可以换镜像 / 稍后重试 / 检查代理）",
+                DownloadThrottledException => "（源在限流，稍后重试或换源）",
+                _ => string.Empty,
+            };
+
+            throw new IOException($"下载失败（{_options.MaxRetries} 次尝试）{hint}：{url}", lastError);
         }
-
-        var hint = lastError switch
+        finally
         {
-            DownloadStalledException => "（源太慢，可以换镜像 / 稍后重试 / 检查代理）",
-            DownloadThrottledException => "（源在限流，稍后重试或换源）",
-            _ => string.Empty,
-        };
-
-        throw new IOException($"下载失败（{_options.MaxRetries} 次尝试）{hint}：{url}", lastError);
+            // Explicit cancellation discards only this unfinished transfer; ordinary network errors retain resume data.
+            if(ct.IsCancellationRequested)
+                try {File.Delete(partPath);}
+                catch(Exception ex) when(ex is IOException or UnauthorizedAccessException)
+                {
+                    var cancellation=new OperationCanceledException("已取消下载，但临时文件无法清理："+partPath,ex,ct);
+                    cancellation.Data["CleanupPath"]=partPath;
+                    throw cancellation;
+                }
+        }
     }
 
     private async Task<long> FetchIntoAsync(string url, string partPath, long alreadyHave, CancellationToken ct)

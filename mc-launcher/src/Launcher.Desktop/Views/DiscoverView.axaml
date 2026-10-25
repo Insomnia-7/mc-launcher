@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.Views.DiscoverView">
   <UserControl.Styles>
-    <Style Selector="Button.compact"><Setter Property="MinHeight" Value="32" /><Setter Property="Padding" Value="10,5" /><Setter Property="FontSize" Value="12" /></Style>
-    <Style Selector="TextBox.compact"><Setter Property="MinHeight" Value="32" /><Setter Property="Padding" Value="10,5" /><Setter Property="FontSize" Value="12" /></Style>
-    <Style Selector="ComboBox.compact"><Setter Property="MinHeight" Value="32" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="Button.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="Padding" Value="12,6" /><Setter Property="FontSize" Value="13" /></Style>
+    <Style Selector="Button.compact.category-tab"><Setter Property="FontSize" Value="14" /><Setter Property="MinHeight" Value="40" /><Setter Property="Padding" Value="12,7" /></Style>
+    <Style Selector="TextBox.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="Padding" Value="10,5" /><Setter Property="FontSize" Value="13" /></Style>
+    <Style Selector="ComboBox.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="FontSize" Value="13" /></Style>
     <Style Selector="Border.release-tag"><Setter Property="CornerRadius" Value="5" /><Setter Property="Padding" Value="6,2" /><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /></Style>
     <Style Selector="Border.release-tag.beta"><Setter Property="BorderBrush" Value="{DynamicResource TextBrush}" /></Style>
     <Style Selector="Border.release-tag.alpha"><Setter Property="BorderThickness" Value="2" /></Style>
@@ -11,7 +12,7 @@
     <StackPanel Spacing="7" Margin="0,0,0,18" IsVisible="{Binding Download.ShowsDiscoverHeading}"><TextBlock Text="{Binding Download.DiscoverHeading}" FontSize="28" FontWeight="SemiBold" /><TextBlock Text="选择游戏版本，或为现有世界添加资源。" Classes="muted" FontSize="13" /></StackPanel>
     <ItemsControl Grid.Row="1" IsVisible="{Binding Download.ShowsBrowseControls}" ItemsSource="{Binding Download.Categories}" Margin="0,0,0,6" IsEnabled="{Binding Download.CanConfigureVersion}">
       <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:CategoryItem"><Button Classes="nav compact" Classes.active="{Binding IsSelected}" IsVisible="{Binding IsNormal}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,0,6,6" AutomationProperties.Name="{Binding Title}"><icons:IconLabel Icon="{Binding Category, Converter={StaticResource CategoryIcon}}" Text="{Binding Title}" IconSize="20" Foreground="{Binding $parent[Button].Foreground}" /></Button></DataTemplate></ItemsControl.ItemTemplate>
+      <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:CategoryItem"><Button Classes="nav compact category-tab" Classes.active="{Binding IsSelected}" IsVisible="{Binding IsNormal}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,0,6,6" AutomationProperties.Name="{Binding Title}"><icons:IconLabel Icon="{Binding Category, Converter={StaticResource CategoryIcon}}" Text="{Binding Title}" IconSize="28" Foreground="{Binding $parent[Button].Foreground}" /></Button></DataTemplate></ItemsControl.ItemTemplate>
     </ItemsControl>
     <Border x:Name="ResourceSearchPanel" Grid.Row="2" IsVisible="{Binding Download.ShowsBrowseControls}" Classes="card" Padding="12" Margin="0,0,0,8">
       <StackPanel Spacing="6">
@@ -29,15 +30,15 @@
     </Border>
     <Grid Grid.Row="3">
       <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding Download.Results}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:DownloadItem">
+        <ItemsControl x:Name="ResourceResults" ItemsSource="{Binding Download.Results}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:DownloadItem">
           <Button Classes="nav" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
-            <Grid ColumnDefinitions="52,*" ColumnSpacing="12">
-              <Border Width="52" Height="52" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="42" Height="42" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
+            <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
+              <Border Width="60" Height="60" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
               <StackPanel Grid.Column="1" Spacing="3">
-                <WrapPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="15" FontWeight="SemiBold" Margin="0,0,10,0" /><TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" Margin="0,0,12,0" VerticalAlignment="Center" /><TextBlock Text="{Binding LoadersText}" IsVisible="{Binding ShowsLoaders}" Classes="muted" FontSize="11" VerticalAlignment="Center" /></WrapPanel>
+                <WrapPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,0,10,0" /><TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" Margin="0,0,12,0" VerticalAlignment="Center" /><TextBlock Text="{Binding LoadersText}" IsVisible="{Binding ShowsLoaders}" Classes="muted" FontSize="12" VerticalAlignment="Center" /></WrapPanel>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                  <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="13" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
-                  <TextBlock Grid.Column="1" Text="{Binding ActivityText}" Classes="muted" FontSize="11" VerticalAlignment="Bottom" />
+                  <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="14" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
+                  <TextBlock Grid.Column="1" Text="{Binding ActivityText}" Classes="muted" FontSize="12" VerticalAlignment="Bottom" />
                 </Grid>
               </StackPanel>
             </Grid>
@@ -93,7 +94,7 @@
           <Border Classes="card" Padding="18">
             <Grid ColumnDefinitions="Auto,48,*" ColumnSpacing="14">
               <Button x:Name="BackToVersions" Classes="quiet" Command="{Binding Download.BackToVersionsCommand}" Content="‹ 返回" VerticalAlignment="Center" />
-              <icons:UiIcon Grid.Column="1" Kind="Tile.LoaderVanilla" Width="42" Height="42" VerticalAlignment="Center" />
+              <icons:UiIcon Grid.Column="1" Kind="Tile.LoaderVanilla" Width="48" Height="48" VerticalAlignment="Center" />
               <StackPanel Grid.Column="2" Spacing="5"><TextBlock Text="{Binding Download.InstallGameVersion}" FontSize="24" FontWeight="SemiBold" /><TextBlock Text="选择 Mod 加载器" Classes="muted" /></StackPanel>
             </Grid>
           </Border>
@@ -124,9 +125,14 @@
         </StackPanel>
       </ScrollViewer>
     </Grid>
-    <Grid Grid.Row="4" IsVisible="{Binding Download.IsResourceList}" ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,6,0,0">
-      <TextBlock Text="{Binding Download.Status}" Classes="muted" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"><Button Classes="compact" IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" Content="取消" /><Button Classes="compact" Content="‹" Command="{Binding Download.PreviousPageCommand}" /><TextBlock Text="{Binding Download.PageText}" Classes="muted" FontSize="11" VerticalAlignment="Center" /><Button Classes="compact" Content="›" Command="{Binding Download.NextPageCommand}" /></StackPanel>
+    <Grid Grid.Row="4" IsVisible="{Binding Download.IsResourceList}" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,6,0,0">
+      <TextBlock Text="{Binding Download.Status}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock Text="每次加载" VerticalAlignment="Center" Classes="muted" /><ComboBox x:Name="ResourcePageSize" Classes="compact" Width="72" ItemsSource="{Binding Download.PageSizes}" SelectedItem="{Binding Download.PageSize}" IsEnabled="{Binding Download.CanEditSearch}" AutomationProperties.Name="每次加载数量" /></StackPanel>
+        <CheckBox x:Name="InfiniteScrollChoice" Grid.Column="1" Content="连续滚动" IsChecked="{Binding Download.IsInfiniteScroll}" IsEnabled="{Binding Download.CanEditSearch}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding Download.PageText}" Classes="muted" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6"><Button Classes="compact" IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" Content="取消" /><Button x:Name="LoadMoreResourcesButton" Classes="compact" IsVisible="{Binding Download.IsInfiniteScroll}" Command="{Binding Download.LoadMoreResourcesCommand}" Content="{Binding Download.MoreResourcesText}" /><Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="‹" Command="{Binding Download.PreviousPageCommand}" /><Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="›" Command="{Binding Download.NextPageCommand}" /></StackPanel>
+      </Grid>
     </Grid>
     <Border Grid.Row="4" IsVisible="{Binding Download.ShowsDownloadFooter}" Classes="card" Padding="12" Margin="0,8,0,0"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
       <StackPanel Spacing="5" VerticalAlignment="Center">

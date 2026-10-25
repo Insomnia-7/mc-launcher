@@ -597,7 +597,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         catch (Exception ex) when (IsCancellation(ex))
         {
             _logger.LogInformation(ex, "安装已取消");
-            Status = "已取消";
+            Status=ex is ModpackImportCanceledException canceled?canceled.Message:ex.Message.Contains("临时文件无法清理")?ex.Message:"已取消";
         }
         catch (Exception ex)
         {
@@ -622,6 +622,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         }
         var progress = new Progress<ModpackImportProgress>(p =>
         {
+            if(ct.IsCancellationRequested) return;
             ProgressPercent = p.Percent;
             Status = string.IsNullOrEmpty(p.Detail) ? p.Stage : $"{p.Stage} · {p.Detail}";
         });

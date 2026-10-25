@@ -77,9 +77,11 @@ public sealed class ModpackInstaller(
 
         // 下载失败时填这里的清单，最后随异常 / 报告一起交出去
         var missing = new List<MissingModpackFile>();
+        ModpackImportStaging? staging=null;
 
         try
         {
+            ct.ThrowIfCancellationRequested();
             // ① 原版：已经装过就跳过（资产是全游戏共享的，不要重下 400 MB）
             var vanillaJson = Path.Combine(gameRoot, "versions", minecraft, minecraft + ".json");
             if (!File.Exists(vanillaJson))
@@ -106,8 +108,9 @@ public sealed class ModpackInstaller(
             var targetInstanceId = registry.AllocateInstanceId(
                 loaderVersionId, pack.Name, pack.VersionId, pack.SourceLabel);
 
-            var instanceDirectory = Path.Combine(gameRoot, "instances", targetInstanceId, ".minecraft");
-            LongPath.EnsureDirectory(instanceDirectory);
+            var instanceDirectory=Path.Combine(gameRoot,"instances",targetInstanceId,".minecraft");
+            staging=new ModpackImportStaging(gameRoot,targetInstanceId);
+            var stagedDirectory=staging.GameDirectory;
 
             // CurseForge 的 manifest 只给 projectID/fileID，要走 ResolveFilesAsync 换直链；
             // Modrinth 的默认实现直接返回 index 里的清单，等于什么都没变。
@@ -118,6 +121,7 @@ public sealed class ModpackInstaller(
                 .Select(f => new DownloadEntry(f.PrimaryUrl!, f.Path, f.FileSize, f.Sha1, DownloadKind.ModpackFile))
                 .ToList();
 
+            await staging.ReuseExistingAsync(entries,ct).ConfigureAwait(false);
             DownloadSummary? summary = null;
             if (entries.Count > 0)
             {
@@ -128,29 +132,30 @@ public sealed class ModpackInstaller(
                 try
                 {
                     summary = await downloader
-                        .DownloadAsync(entries, instanceDirectory, Wrap(progress, stage), ct)
+                        .DownloadAsync(entries, stagedDirectory, Wrap(progress, stage), ct)
                         .ConfigureAwait(false);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     // 下载器只回一句「N 个文件失败」，不回是哪些。落盘后自己核一遍才知道缺什么。
-                    missing.AddRange(FindMissing(entries, instanceDirectory));
+                    missing.AddRange(FindMissing(entries, stagedDirectory));
                     throw;
                 }
 
                 // 下载器说处理过不等于文件真在（磁盘满、写一半被杀、假实现）——成功路径也核一遍，
                 // 部分成功同样要给用户一份可读的待补全清单。
-                missing.AddRange(FindMissing(entries, instanceDirectory));
+                missing.AddRange(FindMissing(entries, stagedDirectory));
             }
 
             // ④ overrides：整包内嵌的配置、资源、地图等
             progress?.Report(ModpackImportProgress.Of("解压 overrides", 0));
-            var overrideFiles = await source.ExtractOverridesAsync(instanceDirectory, progress, ct).ConfigureAwait(false);
+            var overrideFiles = await source.ExtractOverridesAsync(stagedDirectory, progress, ct).ConfigureAwait(false);
 
             // 导入清单的实际文件保留来源；overrides 改写了内容时，不绑定不匹配的来源。
             var sourceLabel = pack.SourceLabel.ToLowerInvariant();
-            foreach (var group in files.Where(f => f.ClientRequired && sourceLabel is "modrinth" or "curseforge").GroupBy(f => Path.GetDirectoryName(LongPath.Combine(instanceDirectory, f.Path))!))
+            foreach (var group in files.Where(f => f.ClientRequired && sourceLabel is "modrinth" or "curseforge").GroupBy(f => Path.GetDirectoryName(LongPath.Combine(stagedDirectory, f.Path))!))
             {
+                staging.CopyOriginIndex(group.Key);
                 await ModSourceStore.RecordAsync(group.Key, group.Select(f => new PlannedModFile(
                     new DownloadEntry(f.PrimaryUrl ?? "", Path.GetFileName(f.Path), f.FileSize, f.Sha1, DownloadKind.ModpackFile),
                     new ModOrigin(sourceLabel, f.SourceProjectId, f.SourceFileId, null, f.Sha1 ?? "", f.FileSize))), ct).ConfigureAwait(false);
@@ -165,11 +170,14 @@ public sealed class ModpackInstaller(
                 minecraft,
                 DateTimeOffset.Now.ToString("o"),
                 loaderVersionId);
-            metadata.Write(gameRoot, targetInstanceId);
+            ct.ThrowIfCancellationRequested();
+            metadata.Write(staging.Root,targetInstanceId);
+            await Task.Run(()=>staging.Apply(ct),ct).ConfigureAwait(false);
 
             // 索引与 instance.json 同源：instance.json 是事实，index.json 只是"有哪些实例"的索引，
             // 丢了/写坏了下次 LoadOrMigrate 会按磁盘重建，界面不用再扫 versions/ 目录。
             registry.Register(targetInstanceId, loaderVersionId, metadata);
+            staging.Complete();
 
             if (missing.Count > 0)
             {
@@ -194,11 +202,15 @@ public sealed class ModpackInstaller(
                 missing,
                 loaderVersionId);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException canceled)
         {
             // 用户按了取消：同样是「半成品状态」，回滚掉，然后把取消原样抛回去（界面按取消处理）
+            staging?.Rollback();
+            staging?.Cleanup();
             transaction.Rollback();
-            throw;
+            var transferPaths=canceled.Data["CleanupPath"] is string path?new[]{path}:Array.Empty<string>();
+            var remaining=(staging?.CleanupFailures??[]).Concat(transaction.RemainingPaths).Concat(transferPaths).Distinct().ToArray();
+            throw new ModpackImportCanceledException(remaining,ct);
         }
         catch (Exception ex)
         {
@@ -208,9 +220,11 @@ public sealed class ModpackInstaller(
                     "待补全", 0, MissingModpackFile.Summarize(missing, 3)));
             }
 
+            staging?.Rollback();
             var removed = transaction.Rollback();
             throw ModpackImportFailedException.From(pack.Name, ex, missing, removed);
         }
+        finally {staging?.Dispose();}
     }
 
     /// <summary>

@@ -225,6 +225,7 @@ internal static class Program
             VersionInstallChecks.Run(model, window, installFixture, Pump, Check, Capture, Click);
             var metadataChecks=VersionInstallChecks.CheckMetadataAsync(Check); PumpUntil(()=>metadataChecks.IsCompleted,3000); metadataChecks.GetAwaiter().GetResult();
             ResourceCenterChecks.Run(model,window,resourceFixture,Pump,Check,Capture,Click);
+            CatalogScrollChecks.Run(model,window,resourceFixture,Pump,Check,Capture);
             var presentationChecks=ResourceCenterChecks.CheckPresentationCacheAsync(root,Check);PumpUntil(()=>presentationChecks.IsCompleted,5000);presentationChecks.GetAwaiter().GetResult();
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
