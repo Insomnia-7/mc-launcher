@@ -68,6 +68,32 @@ static async Task<int> RunAsync(string[] args)
         return await RunNetDiagCommandAsync(args);
     }
 
+    // lan 只监听局域网广播（默认 5 秒），同样不需要游戏目录
+    if (args.Length >= 1 && args[0].Equals("lan", StringComparison.OrdinalIgnoreCase))
+    {
+        var seconds = 5;
+        if (args.Length >= 2 && int.TryParse(args[1], out var parsedSeconds) && parsedSeconds > 0)
+            seconds = Math.Min(parsedSeconds, 120);
+
+        Console.WriteLine($"[lan] 监听 UDP 4445 {seconds} 秒，等「对局域网开放」的广播…");
+        try
+        {
+            var worlds = await new Launcher.Infrastructure.Multiplayer.LanWorldDiscovery()
+                .DiscoverAsync(TimeSpan.FromSeconds(seconds));
+            if (worlds.Count == 0)
+                Console.WriteLine("[lan] 没收到广播。确认游戏里点过「对局域网开放」，且防火墙没有拦 4445/UDP。");
+            else
+                foreach (var world in worlds)
+                    Console.WriteLine($"[lan] {world.CleanMotd} · {world.Endpoint}");
+            return 0;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine("[lan] " + ex.Message);
+            return 1;
+        }
+    }
+
     // --source X / --source=X / --mirror 可以写在任何位置（`mcl --source bmclapi install ...` 也认），先摘出来
     (args, var sourceOverride) = ExtractSource(args);
 
@@ -93,6 +119,7 @@ static async Task<int> RunAsync(string[] args)
               mcl update  stage <清单|URL> <启动器目录>      暂存到 <数据目录>/update/<版本>
               mcl update  apply <暂存目录> <启动器目录> [exe]  交给 mclupd 应用并重启
               mcl netdiag [URL...]              逐通道探测 URL（直连 / 系统代理），默认探镜像与官方清单
+              mcl lan    [秒数]                 监听 LAN 广播，列出「对局域网开放」的世界
             通用开关: --verbose 打印 [http] 路由诊断；--concurrency N 覆盖下载并发（默认 16）
             """);
         return 2;

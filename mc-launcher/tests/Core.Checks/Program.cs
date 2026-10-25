@@ -23,6 +23,7 @@ using Launcher.Domain.Java;
 using Launcher.Domain.Launch;
 using Launcher.Domain.Loaders;
 using Launcher.Domain.Modpacks;
+using Launcher.Application.Multiplayer;
 using Launcher.Domain.Versions;
 using Launcher.Infrastructure.Http;
 using Launcher.Infrastructure.Java;
@@ -1886,6 +1887,20 @@ Check("非网络错误不硬塞建议",
     finally {if(Directory.Exists(root))Directory.Delete(root,true);}
 }
 
+// 局域网广播解析（Minecraft「对局域网开放」的 UDP payload）
+{
+    var seen = DateTimeOffset.Parse("2026-10-25T12:00:00+08:00");
+    var parsed = LanWorld.TryParse("[MOTD]§a小明的世界 §7- 1.21.4[/MOTD][AD]25566[/AD]", "192.168.1.7", seen);
+    Check("LAN 广播：解析出 MOTD 与端口", parsed is { Port: 25566, Host: "192.168.1.7" });
+    Check("LAN 广播：去掉 § 格式码", parsed?.CleanMotd == "小明的世界 - 1.21.4");
+    Check("LAN 广播：Endpoint 用 主机:端口", parsed?.Endpoint == "192.168.1.7:25566");
+    Check("LAN 广播：缺 AD 段判为无效", LanWorld.TryParse("[MOTD]只有标题[/MOTD]", "127.0.0.1", seen) is null);
+    Check("LAN 广播：端口不是数字判为无效", LanWorld.TryParse("[MOTD]x[/MOTD][AD]abc[/AD]", "127.0.0.1", seen) is null);
+    Check("LAN 广播：端口越界判为无效", LanWorld.TryParse("[MOTD]x[/MOTD][AD]70000[/AD]", "127.0.0.1", seen) is null);
+    Check("LAN 广播：空载荷判为无效", LanWorld.TryParse("", "127.0.0.1", seen) is null);
+    Check("LAN 广播：没有主机的包判为无效", LanWorld.TryParse("[MOTD]x[/MOTD][AD]25565[/AD]", null, seen) is null);
+}
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");
@@ -2360,3 +2375,4 @@ sealed class PrefixRewriter : IUrlRewriter
             ? "https://mirror.test/" + url["https://official.test/".Length..]
             : url;
 }
+
