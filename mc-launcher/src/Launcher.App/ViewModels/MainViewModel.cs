@@ -294,7 +294,7 @@ public sealed partial class MainViewModel : ObservableObject
             startInfo.ArgumentList.Add("--target");
             startInfo.ArgumentList.Add(target);
             startInfo.ArgumentList.Add("--restart");
-            startInfo.ArgumentList.Add("MCLauncher.exe");
+            startInfo.ArgumentList.Add(manifest.EntryOrDefault(Path.GetFileName(Environment.ProcessPath) ?? "方隅.exe"));
             startInfo.ArgumentList.Add("--wait-pid");
             startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
 

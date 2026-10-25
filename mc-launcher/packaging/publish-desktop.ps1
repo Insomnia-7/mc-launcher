@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
 param(
     [string] $Dotnet = 'dotnet',
@@ -28,7 +28,7 @@ if ($files.Count -ne 1 -or $files[0].Name -ne 'MCLauncher.Desktop.exe') {
     throw "Expected exactly one EXE. Inspect publish output: $staging"
 }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$destination = Join-Path $OutputDirectory 'MCLauncher.exe'
+$destination = Join-Path $OutputDirectory '方隅.exe'
 Copy-Item -LiteralPath $files[0].FullName -Destination $destination -Force
 $artifact = Get-Item -LiteralPath $destination
 [pscustomobject]@{

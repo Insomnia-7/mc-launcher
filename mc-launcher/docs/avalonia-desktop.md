@@ -25,7 +25,7 @@ dotnet run --project tests/Desktop.Checks -c Release -- /path/to/isolated-test-o
 pwsh -NoProfile -File packaging/publish-desktop.ps1 -Lean -Compress
 ```
 
-生成 `dist/desktop-win-x64/MCLauncher.exe`，用户只需获取这一个文件，双击运行。它包含 .NET 10 运行环境和原生绘图库，无需预装 .NET，也不依赖源码目录。当前产物面向 Windows x64，Linux / macOS 需要分别发布对应平台的安装包。
+生成 `dist/desktop-win-x64/方隅.exe`，用户只需获取这一个文件，双击运行。它包含 .NET 10 运行环境和原生绘图库，无需预装 .NET，也不依赖源码目录。当前产物面向 Windows x64，Linux / macOS 需要分别发布对应平台的安装包。
 
 脚本支持 `-Dotnet` 指定 SDK 路径、`-OutputDirectory` 指定交付目录、`-RestoreSources` 指定 NuGet 源。`-Lean` 启用保守依赖裁剪，`-Compress` 压缩单文件中的程序集；不传这两个开关可发布完整、未压缩的基线包。调试符号不进入分发目录。
 
@@ -140,3 +140,12 @@ pwsh -NoProfile -File packaging/publish-desktop.ps1 -Lean -Compress
 - 回归覆盖连续追加、批量数量、失败重试、列表虚拟化、分页、删除确认与取消、重新导入取消、文件占用回滚、存档保留及下载取消/断点区别。本轮未安装新第三方依赖。
 
 最终精简包通过 674 项核心、146 项界面、4 项空库、4 项主题迁移检查。Windows 单文件首次解包、重复启动、空库启动均通过；本机响应窗口样本 2.499–2.688 秒（非系统冷启动基准）。EXE 23002988 字节，SHA256 `73CB153E712AF305F29DF3163164BD06CA80FA028F491CE478B81D3653274B3A`。本轮未重复真实游戏安装、正版登录和 Linux/macOS 验收。
+
+
+## 方隅品牌资源（0.2.0-preview.8）
+
+- 采用用户选定的「草方本源」立体图标，保留原始透明通道。资源母版位于 `assets/branding/fangyu-source.png`；界面使用 256px PNG，Windows 使用包含 16 / 20 / 24 / 32 / 40 / 48 / 64 / 128 / 256px 的 ICO。
+- EXE 内嵌 Windows 应用图标，并将文件描述、产品名称设为「方隅」。窗口系统图标、标题栏和侧栏同步使用新图标；侧栏不再附加深色圆角底块。
+- Windows 发布文件名为 `方隅.exe`；内部程序集名称与现有数据目录保持兼容。更新器重启入口优先读取更新清单中的 Entry，缺省使用当前程序文件名。
+
+最终精简程序集通过 146 项界面、4 项空库及 4 项主题迁移检查；原生 Windows 检查确认 EXE 内嵌图标可提取、产品名称及文件描述为「方隅」、窗口标题及任务栏图标生效。中文名称单文件首次解包、缓存启动与空库启动均成功。EXE 23557642 字节（22.5 MiB），SHA256 `0A053CBA9631AE2C0545F2814B9A513AD3347DAED8082D38B67EC014E82172E4`。

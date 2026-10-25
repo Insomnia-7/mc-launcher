@@ -5,9 +5,14 @@
     <AssemblyName>MCLauncher.Desktop</AssemblyName>
     <RootNamespace>Launcher.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>0.2.0-preview.7</Version>
+    <Version>0.2.0-preview.8</Version>
+    <AssemblyTitle>方隅</AssemblyTitle>
+    <Product>方隅</Product>
+    <Description>方隅 · Minecraft Java 版启动器</Description>
+    <ApplicationIcon>Assets/Brand/fangyu.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <AvaloniaResource Include="Assets/Brand/**" />
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
