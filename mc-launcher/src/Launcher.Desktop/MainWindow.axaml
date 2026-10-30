@@ -51,6 +51,8 @@
         <StackPanel DockPanel.Dock="Bottom" Spacing="3" Margin="0,12,0,0">
           <Border Height="1" Background="{DynamicResource LineBrush}" Margin="8,0,8,10" />
           <Button Classes="quiet" Command="{Binding OpenSetupCommand}"  AutomationProperties.Name="添加游戏版本"><icons:IconLabel Icon="ActionPlus" Text="添加游戏版本" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          <Button x:Name="WardrobeEntry" Classes="quiet" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色衣柜"><icons:IconLabel Icon="ActionLogin" Text="角色衣柜" /></Button>
+          <Button x:Name="TaskCenterEntry" Classes="quiet" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="任务与体检"><icons:IconLabel Icon="ActionCloudDownload" Text="任务与体检" /></Button>
           <Button x:Name="SettingsEntry" Classes="quiet" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" Foreground="{Binding $parent[Button].Foreground}" /></Button>
         </StackPanel>
         <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Margin="0,12,0,0" AutomationProperties.Name="游戏版本列表">

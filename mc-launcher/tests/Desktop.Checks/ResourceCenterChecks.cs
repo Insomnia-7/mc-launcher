@@ -22,6 +22,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public int CatalogCount, LastLimit, LastOffset;
     public bool FailPage;
     public TaskCompletionSource<IReadOnlyList<ModrinthVersion>>? PendingVersions;
+    public TaskCompletionSource<DownloadSummary>? PendingDownload;
     public TaskCompletionSource<ModrinthProjectInfo?>? PendingDependency;
     public static readonly byte[] Icon=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNQOpP2HwAEvAJUSd95QAAAAABJRU5ErkJggg==");
     public bool IsConfigured=>true;
@@ -69,6 +70,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public Task<byte[]?> GetIconAsync(string url,CancellationToken ct=default) {Icons++;return Task.FromResult<byte[]?>(Icon);}
     public Task<DownloadSummary> DownloadAsync(IReadOnlyList<DownloadEntry> entries,string root,IProgress<DownloadProgress>? progress=null,CancellationToken ct=default)
     {
+        if(PendingDownload is {} pending)return pending.Task.WaitAsync(ct);
         foreach(var entry in entries)
         {
             ct.ThrowIfCancellationRequested();Downloaded.Add(entry.RelativePath);

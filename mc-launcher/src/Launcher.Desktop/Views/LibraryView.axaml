@@ -21,6 +21,7 @@
         </Grid>
       </Border>
       <WrapPanel>
+        <Button x:Name="InstanceHistoryEntry" Command="{Binding OpenInstanceHistoryCommand}" Margin="0,0,8,8" AutomationProperties.Name="实例历史与预设"><icons:IconLabel Icon="ActionExport" Text="历史与预设" /></Button>
         <Button Command="{Binding ImportModpackCommand}" Margin="0,0,8,8" AutomationProperties.Name="导入整合包"><icons:IconLabel Icon="ActionImport" Text="导入整合包" Foreground="{Binding $parent[Button].Foreground}" /></Button>
         <Button Command="{Binding ImportFolderCommand}" Margin="0,0,8,8" AutomationProperties.Name="导入文件夹"><icons:IconLabel Icon="ActionFolder" Text="导入文件夹" Foreground="{Binding $parent[Button].Foreground}" /></Button>
         <Button Command="{Binding ExportInstanceCommand}" Margin="0,0,8,8" AutomationProperties.Name="导出备份"><icons:IconLabel Icon="ActionExport" Text="导出备份" Foreground="{Binding $parent[Button].Foreground}" /></Button>

@@ -37,7 +37,7 @@ public sealed class ModUpdateInstaller(ModInstallService modrinth, CurseForgeIns
         var files = pending.ToArray();
         if (candidate.FileName.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))
             files[0] = files[0] with { Entry = files[0].Entry with { RelativePath = files[0].Entry.RelativePath + ".disabled" } };
-        var stage = Path.Combine(gameRoot, "instances", instanceId, ".launcher-staging", Guid.NewGuid().ToString("N"));
+        var stage = Launcher.Application.Operations.DurableExecution.Current is {} operation?Path.Combine(operation.Directory,"mod-update"):Path.Combine(gameRoot, "instances", instanceId, ".launcher-staging", Guid.NewGuid().ToString("N"));
         var backup = Path.Combine(gameRoot, "instances", instanceId, ".launcher-backup", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(stage);
         try
@@ -61,7 +61,7 @@ public sealed class ModUpdateInstaller(ModInstallService modrinth, CurseForgeIns
         }
         finally
         {
-            try { Directory.Delete(stage, true); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            if(Launcher.Application.Operations.DurableExecution.Current?.Pausing!=true)try { Directory.Delete(stage, true); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
     }
     private sealed class ProgressAdapter(IProgress<ModInstallProgress>? progress) : IProgress<DownloadProgress>

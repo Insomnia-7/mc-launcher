@@ -401,6 +401,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     [RelayCommand]
     private void Cancel()
     {
+        if(CancelPersistentTask?.Invoke()==true){Status="正在取消并清理…";return;}
         if (_runningCts is not { } cts || cts.IsCancellationRequested) return;
 
         try
@@ -517,6 +518,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstall))]
     private async Task InstallAsync()
     {
+        if(QueueTask is not null)try{if(await QueueSelectedResourceAsync())return;}catch(Exception ex){Status=DescribeFailure("安装准备失败：",ex);return;}
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装资源");
         if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
         if (SelectedResult is not { } item || SelectedCategory is null || !CanInstall()) return;
@@ -666,6 +668,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanInstallVersion))]
     private async Task InstallVersionAsync()
     {
+        if(QueueTask is not null)try{if(await QueueSelectedVersionAsync())return;}catch(Exception ex){Status=DescribeFailure("安装准备失败：",ex);return;}
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(_gameRoot(), "安装游戏版本");
         if (operation is null) { Status = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(_gameRoot()); return; }
         if (SelectedVersion is not { } version || !CanInstallVersion()) return;

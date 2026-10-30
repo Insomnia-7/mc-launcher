@@ -159,6 +159,7 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
 
         var partPath = target + ".part";
+        Launcher.Application.Operations.DurableExecution.TrackPartial(partPath);
         Exception? lastError = null;
         var url = entry.Url;
         var switchedToFallback = false;
@@ -262,7 +263,7 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         finally
         {
             // Explicit cancellation discards only this unfinished transfer; ordinary network errors retain resume data.
-            if(ct.IsCancellationRequested)
+            if(ct.IsCancellationRequested && Launcher.Application.Operations.DurableExecution.Current?.Pausing!=true)
                 try {File.Delete(partPath);}
                 catch(Exception ex) when(ex is IOException or UnauthorizedAccessException)
                 {

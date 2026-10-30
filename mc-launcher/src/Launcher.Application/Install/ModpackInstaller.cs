@@ -206,7 +206,7 @@ public sealed class ModpackInstaller(
         {
             // 用户按了取消：同样是「半成品状态」，回滚掉，然后把取消原样抛回去（界面按取消处理）
             staging?.Rollback();
-            staging?.Cleanup();
+            if(Launcher.Application.Operations.DurableExecution.Current?.Pausing!=true)staging?.Cleanup();
             transaction.Rollback();
             var transferPaths=canceled.Data["CleanupPath"] is string path?new[]{path}:Array.Empty<string>();
             var remaining=(staging?.CleanupFailures??[]).Concat(transaction.RemainingPaths).Concat(transferPaths).Distinct().ToArray();

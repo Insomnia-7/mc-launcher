@@ -1901,6 +1901,8 @@ Check("非网络错误不硬塞建议",
     Check("LAN 广播：没有主机的包判为无效", LanWorld.TryParse("[MOTD]x[/MOTD][AD]25565[/AD]", null, seen) is null);
 }
 
+await ExperienceChecks.RunAsync(Check);
+
 if (failures.Count == 0)
 {
     Console.WriteLine($"[ok] 全部 {passes} 项检查通过");

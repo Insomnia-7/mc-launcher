@@ -22,7 +22,7 @@ internal sealed class ModpackImportStaging : IDisposable
         _target=LongPath.Combine(Path.Combine(root,"instances"),instanceId);
         if(!Path.GetFullPath(_target).StartsWith(Path.Combine(root,"instances")+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("实例导入路径越界");
-        Root=Path.Combine(root,".cache","imports",Guid.NewGuid().ToString("N"));
+        Root=Launcher.Application.Operations.DurableExecution.Current is {} operation ? Path.Combine(operation.Directory,"import") : Path.Combine(root,".cache","imports",Guid.NewGuid().ToString("N"));
         InstanceRoot=Path.Combine(Root,"instances",instanceId);
         LongPath.EnsureDirectory(GameDirectory);
     }
@@ -128,7 +128,7 @@ internal sealed class ModpackImportStaging : IDisposable
         try {LongPath.DeleteDirectory(Root);}
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException) {CleanupFailures.Add(Root);}
     }
-    public void Dispose() {if(!_complete) Rollback();Cleanup();}
+    public void Dispose() {if(!_complete) Rollback();if(Launcher.Application.Operations.DurableExecution.Current?.Pausing!=true)Cleanup();}
 }
 
 public sealed class ModpackImportCanceledException(IReadOnlyList<string> remainingPaths,CancellationToken ct)

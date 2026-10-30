@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:motion="using:Launcher.Desktop" xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.Views.DialogLayers" IsHitTestVisible="{Binding HasOverlay}">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:motion="using:Launcher.Desktop" xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:views="using:Launcher.Desktop.Views" x:Class="Launcher.Desktop.Views.DialogLayers" IsHitTestVisible="{Binding HasOverlay}">
   <Grid>
     <Grid Classes="modal" motion:Motion.IsOpen="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620"><ScrollViewer><StackPanel Spacing="15">
@@ -19,6 +19,7 @@
         <StackPanel Spacing="7"><TextBlock Text="离线用户名" Classes="muted" /><TextBox Text="{Binding OfflineName, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanManageAccounts}" /></StackPanel>
         <TextBlock Text="{Binding AccountHint}" Classes="muted" TextWrapping="Wrap" /><TextBlock Text="{Binding LoginCode}" IsVisible="{Binding IsLoggingIn}" FontSize="24" Foreground="{DynamicResource AccentBrush}" /><TextBlock Text="{Binding LoginHint}" IsVisible="{Binding IsLoggingIn}" Classes="muted" TextWrapping="Wrap" />
         <WrapPanel><Button Classes="primary" Command="{Binding UseAccountCommand}" Margin="0,0,8,8"  AutomationProperties.Name="使用此身份"><icons:IconLabel Icon="ActionCheck" Text="使用此身份" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Command="{Binding LoginCommand}" Margin="0,0,8,8"  AutomationProperties.Name="添加微软账号"><icons:IconLabel Icon="ActionLogin" Text="添加微软账号" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Classes="danger" Command="{Binding RemoveAccountCommand}" Margin="0,0,8,8"  AutomationProperties.Name="移除账号"><icons:IconLabel Icon="ActionDelete" Text="移除账号" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Command="{Binding LoginCancelCommand}" IsVisible="{Binding IsLoggingIn}" Margin="0,0,8,8"  AutomationProperties.Name="取消登录"><icons:IconLabel Icon="ActionClose" Text="取消登录" Foreground="{Binding $parent[Button].Foreground}" /></Button></WrapPanel>
+        <Button Command="{Binding OpenWardrobeCommand}" Content="角色衣柜 · 皮肤与披风" HorizontalAlignment="Left" />
         <Button Command="{Binding CloseAccountsCommand}" HorizontalAlignment="Right"  AutomationProperties.Name="完成"><icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}" /></Button>
       </StackPanel></ScrollViewer></Border>
     </Grid>
@@ -44,6 +45,7 @@
         </Grid>
       </Border>
     </Grid>
+    <views:ExperienceView />
     <Grid Classes="modal" ZIndex="50" motion:Motion.IsOpen="{Binding IsConfirmOpen}">
       <Border Classes="modal-surface" Width="540"><StackPanel Spacing="16">
         <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap" /><TextBlock Text="{Binding ConfirmMessage}" TextWrapping="Wrap" /><TextBlock Text="{Binding ConfirmDetail}" Classes="muted" IsVisible="{Binding HasConfirmDetail}" TextWrapping="Wrap" />

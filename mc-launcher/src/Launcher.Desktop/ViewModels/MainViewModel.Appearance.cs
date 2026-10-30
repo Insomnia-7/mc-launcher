@@ -154,6 +154,7 @@ public sealed partial class MainViewModel
     [RelayCommand] private void CloseTopOverlay()
     {
         if(IsConfirmOpen) ConfirmCancelCommand.Execute(null);
+        else if(IsExperienceOpen) CloseExperienceCommand.Execute(null);
         else if(IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
         else if(IsNetworkOpen) CloseNetworkCommand.Execute(null);
         else if(IsAccountsOpen) CloseAccountsCommand.Execute(null);

@@ -67,7 +67,7 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
         string instanceId,
         DownloadCategory category = DownloadCategory.Mod,
         IProgress<ModInstallProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, string? channel = null)
     {
         var subdirectory = category.InstanceSubdirectory() ?? "mods";
         var directory = Path.Combine(gameRoot, "instances", instanceId, ".minecraft", subdirectory);
@@ -100,7 +100,7 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
             await gate.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                results[index] = await ResolveAsync(mod, environment, category, origins.GetValueOrDefault(mod.FileName), ct).ConfigureAwait(false);
+                results[index] = await ResolveAsync(mod, environment, category, origins.GetValueOrDefault(mod.FileName), ct, channel).ConfigureAwait(false);
             }
             finally
             {
@@ -116,7 +116,7 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
     }
 
     private async Task<ModUpdateCandidate> ResolveAsync(InstalledMod mod, InstanceEnvironment environment,
-        DownloadCategory category, ModOrigin? recorded, CancellationToken ct)
+        DownloadCategory category, ModOrigin? recorded, CancellationToken ct, string? channel)
     {
         try
         {
@@ -134,14 +134,15 @@ public sealed partial class ModUpdateService(IModrinthClient modrinth, ICurseFor
             if (origin.Source == ModUpdateCandidate.SourceModrinth)
             {
                 var versions = await modrinth.GetVersionsAsync(origin.ProjectId!, environment.GameVersion, loader, ct).ConfigureAwait(false);
-                if (versions.FirstOrDefault() is not { } latest || latest.PrimaryFile is not { } file) return Unresolved(mod);
+                if (versions.FirstOrDefault(v=>channel is null||v.VersionType==channel) is not { } latest || latest.PrimaryFile is not { } file) return Unresolved(mod);
                 return new(displayId, mod.FileName, current, latest.VersionNumber, IsNewer(latest.VersionNumber, current), file.Url, file.Size, origin.Source)
                 { ProjectId = origin.ProjectId, VersionId = latest.Id, CurrentSha1 = hash };
             }
             if (origin.Source == ModUpdateCandidate.SourceCurseForge && curseForge.IsConfigured && int.TryParse(origin.ProjectId, out var projectId))
             {
                 var files = await curseForge.GetFilesAsync(projectId, environment.GameVersion, loader, ct).ConfigureAwait(false);
-                var latest = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.DownloadUrl)) ?? files.FirstOrDefault();
+                var compatible=files.Where(f=>channel is null||f.ReleaseType==(channel=="release"?1:channel=="beta"?2:3)).ToArray();
+                var latest = compatible.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.DownloadUrl)) ?? compatible.FirstOrDefault();
                 if (latest is null) return Unresolved(mod);
                 var url = latest.DownloadUrl ?? await curseForge.GetDownloadUrlAsync(projectId, latest.Id, ct).ConfigureAwait(false);
                 var version = VersionToken(string.IsNullOrWhiteSpace(latest.DisplayName) ? latest.FileName : latest.DisplayName);

@@ -105,7 +105,8 @@ internal static class LauncherServices
             sp.GetRequiredService<IForgeInstaller>(),
             sp.GetRequiredService<INeoForgeInstaller>(),
             sp.GetRequiredService<IDownloader>()));
-        services.AddSingleton(sp => new MainViewModel(
+        services.AddSingleton<IPlayerAppearanceClient>(sp=>new MinecraftAppearanceClient(sp.GetRequiredService<HttpClient>()));
+        services.AddSingleton(sp => {var model=new MainViewModel(
             sp.GetRequiredService<ILogger<MainViewModel>>(), sp.GetRequiredService<ILogger<DownloadViewModel>>(),
             sp.GetRequiredService<GameInstaller>(), sp.GetRequiredService<ModpackInstaller>(), sp.GetRequiredService<IModpackSourceFactory>(),
             sp.GetRequiredService<IJavaLocator>(), sp.GetRequiredService<IProcessLauncher>(), sp.GetRequiredService<IModrinthClient>(),
@@ -114,7 +115,8 @@ internal static class LauncherServices
             sp.GetRequiredService<IMicrosoftAuthService>(), sp.GetRequiredService<IJavaProvisioner>(), sp.GetRequiredService<DownloadSourceProvider>(),
             sp.GetRequiredService<IUpdateClient>(), sp.GetService<ISecretProtector>(), sp.GetRequiredService<ModUpdateService>(),
             sp.GetRequiredService<InstanceExportService>(), sp.GetRequiredService<ModUpdateInstaller>(), sp.GetRequiredService<ISkinService>(), sp.GetRequiredService<ILoaderMetaClient>(),
-            sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>(), sp.GetRequiredService<IResourcePresentationClient>()));
+            sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>(), sp.GetRequiredService<IResourcePresentationClient>());
+            model.InitializeExperience(sp.GetRequiredService<IPlayerAppearanceClient>());return model;});
 
         // Modrinth / CurseForge 各用独立的 HttpClient：它们的 BaseAddress 不同，
         // 不能共用一个注册项，否则后注册的会顶掉前面的。

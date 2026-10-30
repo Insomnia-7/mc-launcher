@@ -17,6 +17,7 @@ public sealed partial class MainWindow : Window
     private DiscoverView? _discover;
     private DialogLayers? _dialogs;
     private MainViewModel? _model;
+    private bool _closingAfterPause;
     public MainWindow()
     {
         InitializeComponent();
@@ -48,6 +49,7 @@ public sealed partial class MainWindow : Window
         };
         MotionPreferences.Changed += UpdateMotion;
         UpdateMotion();
+        Closing += async (_,e)=>{if(!_closingAfterPause&&_model?.HasActivePersistentTask==true){e.Cancel=true;await _model.PauseTasksForShutdownAsync();_closingAfterPause=true;Close();}};
         Closed += (_, _) => { if (_model is not null) _model.PropertyChanged -= ModelChanged; MotionPreferences.Changed -= UpdateMotion; };
         InstanceList.DoubleTapped += (_, _) => { if (_model?.LaunchCommand.CanExecute(null) == true) _model.LaunchCommand.Execute(null); };
         AddHandler(DragDrop.DragOverEvent, OnDragOver);

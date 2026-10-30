@@ -56,14 +56,14 @@
       <Border Name="FocusRing" Margin="-3" CornerRadius="14" BorderBrush="{DynamicResource TextBrush}" BorderThickness="1.5" IsVisible="False" IsHitTestVisible="False" />
       <Border Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
-          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
         </Grid>
       </Border>
     </Grid></ControlTemplate></Setter>
   </Style>
-  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.01)" /></Style>
+  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.005)" /></Style>
   <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.975)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.98)" /><Setter Property="Opacity" Value="0.98" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
   <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
   <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>

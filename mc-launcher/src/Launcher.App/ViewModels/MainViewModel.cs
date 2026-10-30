@@ -657,10 +657,10 @@ public sealed partial class MainViewModel : ObservableObject
             var progress = new Progress<ModInstallProgress>(p =>
                 StatusText = $"{p.Stage} {p.Percent:N0}%{(p.Detail is null ? string.Empty : " · " + p.Detail)}");
             var report = await _modUpdates.CheckAsync(GameRoot, instance.InstanceId, progress: progress,
-                ct: _runningCts?.Token ?? CancellationToken.None).ConfigureAwait(true);
+                ct: _runningCts?.Token ?? CancellationToken.None, channel:ModUpdateReleaseChannel).ConfigureAwait(true);
 
             ModUpdates.Clear();
-            foreach (var candidate in report.Updates)
+            foreach (var candidate in report.Updates.Where(c=>IsModUpdateAllowed?.Invoke(c)??true))
             {
                 ModUpdates.Add(new ModUpdateRow(
                     candidate.ModId,
@@ -694,13 +694,14 @@ public sealed partial class MainViewModel : ObservableObject
             "更新模组",
             $"把「{row.Title}」从 {row.Candidate.CurrentVersion ?? "当前版本"} 换到 {row.Candidate.LatestVersion ?? "最新版"}？",
             $"会先准备并校验新版与缺失前置，再替换 {row.FileName}。下载失败不会删除旧文件。\n"
-            + "如果这个模组是整合包自带的，更新后可能和整合包其他模组对不上版本，出问题可以重新导入整合包复原。",
+            + "如果这个模组是整合包自带的，更新后可能和整合包其他模组对不上版本，更新前会保存实例快照，出问题可在「历史与预设」中恢复。",
             "更新",
             () => _ = ApplyModUpdateAsync(instance, row));
     }
 
     private async Task ApplyModUpdateAsync(InstanceCard instance, ModUpdateRow row)
     {
+        if(PersistentModUpdate is not null){await PersistentModUpdate(instance.InstanceId,row.Candidate);return;}
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "更新模组");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (IsBusy) { StatusText = "还有别的任务在跑，等它结束"; return; }
@@ -713,6 +714,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var progress = new Progress<ModInstallProgress>(p =>
                 StatusText = $"{p.Stage} {p.Percent:N0}%{(p.Detail is null ? string.Empty : " · " + p.Detail)}");
+            if(BeforeModUpdate is not null)await BeforeModUpdate(instance.InstanceId,row.Title,cts.Token);
             var report = await _modUpdateInstaller.UpdateAsync(
                 GameRoot, instance.InstanceId, row.Candidate, progress, cts.Token).ConfigureAwait(true);
 
@@ -1114,6 +1116,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Cancel()
     {
+        if(CancelPersistentTask?.Invoke()==true){StatusText="正在取消并清理…";return;}
         if (_runningCts is not { } cts || cts.IsCancellationRequested) return;
 
         try
@@ -1260,6 +1263,7 @@ public sealed partial class MainViewModel : ObservableObject
                 ProgressPercent = 0;
             }
 
+            if(PrepareAppearance is not null)await PrepareAppearance(instance.InstanceId,account is not null,cts.Token);
             var jarVersionId = version.LauncherParentId ?? version.Id;
             var context = new LaunchContext(
                 PlayerName: account?.Name ?? (_library?.OfflineIdentity.Name ?? "Developer"),
@@ -1396,7 +1400,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 if (process.HasExited) break;
-                if ((DateTime.UtcNow - startedAt).TotalSeconds > 120) return;
+                if ((DateTime.UtcNow - startedAt).TotalSeconds > 120) {while(!process.HasExited)await Task.Delay(TimeSpan.FromSeconds(5));return;}
             }
         }
         catch (Exception)
@@ -1537,6 +1541,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>按路径导入整合包：菜单、对话框、拖拽三个入口最后都落到这里。</summary>
     public async Task ImportModpackFileAsync(string path)
     {
+        if(PersistentImport is not null){await PersistentImport(path);return;}
         // 新一轮操作开始就先撤掉上一次的网络提示，哪怕这次连参数检查都没过
         ShowsNetworkFix = false;
 

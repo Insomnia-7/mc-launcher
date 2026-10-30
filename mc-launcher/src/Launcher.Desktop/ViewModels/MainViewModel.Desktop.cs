@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
     public string JavaText => SelectedJava is { ExecutablePath: not null } java ? java.Title : "自动选择";
     public string LaunchTitle => IsBusy ? "正在准备…" : "启动游戏";
     public string WorldCaption => HasInstances ? "你的世界，随时出发。" : "从一个新世界开始。";
-    public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsAppearanceOpen || IsNetworkOpen || IsConfirmOpen;
+    public bool HasOverlay => IsExperienceOpen || IsSetupOpen || IsAccountsOpen || IsAppearanceOpen || IsNetworkOpen || IsConfirmOpen;
     public bool IsPreferencesOpen => IsAppearanceOpen || IsNetworkOpen;
     partial void OnIsNetworkOpenChanged(bool value)
     {

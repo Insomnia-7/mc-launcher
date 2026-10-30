@@ -43,7 +43,7 @@ public sealed class WorldPageTransition : IPageTransition
         {
             var tasks = new List<Task>();
             if (from is Control old) tasks.Add(Motion.Animate(old, 1, 0, 0, forward ? -8 : 8, 150, cancellationToken));
-            if (to is Control next) tasks.Add(Motion.Animate(next, 0, 1, forward ? 12 : -12, 0, 230, cancellationToken));
+            if (to is Control next) tasks.Add(Motion.Animate(next, 0, 1, forward ? 12 : -12, 0, 200, cancellationToken));
             await Task.WhenAll(tasks);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -80,7 +80,7 @@ public sealed class Motion : AvaloniaObject
         try
         {
             var fade=Animate(control, open ? 0 : control.Opacity, open ? 1 : 0, 0, 0, open ? 180 : 120, cancellation.Token);
-            if(surface is not null) await Task.WhenAll(fade,Animate(surface,1,1,open ? 14 : 0,open ? 0 : 8,open ? 230 : 120,cancellation.Token));
+            if(surface is not null) await Task.WhenAll(fade,Animate(surface,1,1,open ? 14 : 0,open ? 0 : 8,open ? 200 : 120,cancellation.Token));
             else await fade;
             if (state.Cancellation == cancellation) { control.IsVisible = open; control.Opacity = 1; if(surface is not null) surface.RenderTransform=TransformOperations.Identity; }
         }
