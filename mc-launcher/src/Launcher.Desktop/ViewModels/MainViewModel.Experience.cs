@@ -83,6 +83,7 @@ public sealed partial class MainViewModel
     private InstanceSnapshots CurrentSnapshots=>new(AppPaths.DataDirectory,GameRoot,SelectedInstance?.InstanceId??throw new InvalidOperationException("请先选择游戏版本。"));
     public void InitializeExperience(IPlayerAppearanceClient appearance)
     {
+        InitializeMaintenance();
         _appearanceClient=appearance;_tasks=new(AppPaths.DataDirectory);_tasks.Execute=ExecuteDurableTaskAsync;
         _tasks.Changed+=()=>{_ = PlatformUi.RunOnUiAsync(RefreshTaskRows);};
         Download.QueueTask=QueueExperienceTaskAsync;
@@ -177,6 +178,7 @@ public sealed partial class MainViewModel
     }
     private void ReloadExperienceLists()
     {
+        if(IsDetailOpen && DetailTab == 2) _ = RefreshWorldsAsync();
         try
         {
             Snapshots.Clear();if(SelectedInstance is not null)foreach(var snapshot in CurrentSnapshots.List())Snapshots.Add(snapshot);
@@ -388,7 +390,21 @@ public sealed partial class MainViewModel
         {
             var activeTask=_tasks.ActiveId;
             IProgress<TaskProgress> uiProgress=new Progress<TaskProgress>(p=>{if(ct.IsCancellationRequested||_tasks.ActiveId!=activeTask||!_tasks.List().Any(t=>t.Id==activeTask&&t.State==DurableTaskState.Running))return;ProgressPercent=p.Percent;Download.ProgressPercent=p.Percent;StatusText=Download.Status=p.Detail;progress.Report(p);});
-            if(request.Kind is "mod-batch" or "clone" or "trial-update")
+            if(request.Kind is "world-backup" or "world-restore")
+            {
+                var worlds = new WorldCatalog(AppPaths.DataDirectory, request.GameRoot, request.InstanceId ?? throw new InvalidOperationException("缺少实例。"));
+                uiProgress.Report(new(0, request.Kind == "world-backup" ? "正在压缩世界文件…" : "正在校验备份并恢复世界…"));
+                if(request.Kind == "world-backup") await Task.Run(() => worlds.BackupAsync(request.Arguments["folder"], request.Arguments["name"], ct), ct);
+                else await Task.Run(() => worlds.RestoreAsync(request.Arguments["backup"], ct), ct);
+                uiProgress.Report(new(100, "世界操作已完成"));
+            }
+            else if(request.Kind == "repair")
+            {
+                var version = await _versionLoader.LoadAsync(request.GameRoot, request.Arguments["version"], ct);
+                var repairProgress = new Progress<DownloadProgress>(p => uiProgress.Report(new(p.Percent, "修复游戏文件 · " + p.CurrentFile)));
+                await Task.Run(() => _installer.RepairAsync(version, request.GameRoot, repairProgress, ct), ct);
+            }
+            else if(request.Kind is "mod-batch" or "clone" or "trial-update")
             {
                 await ExecuteWorkbenchTaskAsync(request,uiProgress,ct);
             }

@@ -1,6 +1,38 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceHistoryView">
   <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
     <StackPanel Spacing="18">
+      <StackPanel Spacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4"><TextBlock Text="我的存档" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="{Binding WorldHint}" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+          <Button Grid.Column="1" x:Name="RefreshWorldsButton" Command="{Binding RefreshWorldsCommand}" Content="刷新" VerticalAlignment="Top"/>
+        </Grid>
+        <ListBox x:Name="WorldList" ItemsSource="{Binding Worlds}" SelectedItem="{Binding SelectedWorld}" MaxHeight="280" IsEnabled="{Binding CanEditExperience}">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:WorldRow">
+            <Grid ColumnDefinitions="64,*" ColumnSpacing="14" Margin="3,7">
+              <Border Width="64" Height="64" CornerRadius="10" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+                <Grid><icons:UiIcon Kind="Tile.LoaderVanilla" Width="38" Height="38" IsVisible="{Binding !HasIcon}"/><Image Source="{Binding Icon}" IsVisible="{Binding HasIcon}" Stretch="UniformToFill"/></Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Notice}" Classes="muted" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+        <WrapPanel IsEnabled="{Binding CanEditExperience}">
+          <Button x:Name="BackupWorldButton" Command="{Binding BackupWorldCommand}" Content="备份此世界" Margin="0,0,8,6"/>
+          <Button Command="{Binding OpenWorldFolderCommand}" Content="打开世界目录" Classes="quiet" Margin="0,0,8,6"/>
+        </WrapPanel>
+        <TextBlock Text="所选世界的备份" FontWeight="SemiBold"/>
+        <ComboBox x:Name="WorldBackupList" ItemsSource="{Binding WorldBackups}" SelectedItem="{Binding SelectedWorldBackup}" IsEnabled="{Binding CanEditExperience}">
+          <ComboBox.ItemTemplate><DataTemplate x:DataType="experience:WorldBackup"><StackPanel Spacing="3"><TextBlock Text="{Binding Name}"/><TextBlock Text="{Binding Summary}" Classes="muted"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+        <WrapPanel IsEnabled="{Binding CanEditExperience}">
+          <Button x:Name="RestoreWorldButton" Command="{Binding RestoreWorldCommand}" Content="恢复此世界…" Margin="0,0,8,0"/>
+          <Button Command="{Binding DeleteWorldBackupCommand}" Content="删除这份备份…" Classes="quiet"/>
+        </WrapPanel>
+      </StackPanel>
       <Grid ColumnDefinitions="*,*" ColumnSpacing="18" IsEnabled="{Binding CanEditExperience}">
         <StackPanel Spacing="10">
           <TextBlock Text="实例快照" FontSize="18" FontWeight="SemiBold"/>

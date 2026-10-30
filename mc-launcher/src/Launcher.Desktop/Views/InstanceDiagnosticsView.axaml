@@ -1,7 +1,23 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceDiagnosticsView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:install="using:Launcher.Application.Install" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceDiagnosticsView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
     <StackPanel Spacing="16">
       <TextBlock Text="只检查当前游戏，诊断包会隐藏账号凭据与个人路径。" Classes="muted" TextWrapping="Wrap"/>
+      <Border Classes="card" Padding="18">
+        <StackPanel Spacing="12">
+          <TextBlock Text="游戏文件修复" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding RepairHint}" TextWrapping="Wrap"/>
+          <TextBlock Text="不改动模组、配置或世界。没有官方校验值的现有文件无法判断是否损坏；加载器生成的文件可能需要重装加载器。" Classes="muted" TextWrapping="Wrap"/>
+          <WrapPanel IsEnabled="{Binding CanEditExperience}">
+            <Button x:Name="InspectGameFilesButton" Command="{Binding InspectGameFilesCommand}" Content="检查游戏文件" Margin="0,0,8,0"/>
+            <Button x:Name="RepairGameFilesButton" Command="{Binding RepairGameFilesCommand}" Classes="primary" IsVisible="{Binding HasRepairFiles}"><TextBlock Text="修复缺失或损坏文件" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+          </WrapPanel>
+          <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Hidden" IsVisible="{Binding HasRepairFiles}">
+            <ItemsControl ItemsSource="{Binding RepairFiles}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="install:RepairFile">
+              <StackPanel Spacing="3" Margin="0,0,0,10"><TextBlock Text="{Binding Path}" TextWrapping="Wrap"/><TextBlock Text="{Binding Summary}" Classes="muted"/></StackPanel>
+            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
       <Border Classes="card" IsVisible="{Binding HasDiagnosis}">
         <StackPanel Spacing="10">
           <TextBlock Text="最近一次启动提示" FontSize="16" FontWeight="SemiBold" />

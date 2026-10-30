@@ -27,7 +27,7 @@ public sealed record InstallReport(
 /// 安装编排：版本 JSON → 文件清单（含 assets）→ 并发下载 → 落盘 version JSON。
 /// 不做解压、不做校验缓存（交给下载器），也不碰 UI。
 /// </summary>
-public sealed class GameInstaller(
+public sealed partial class GameInstaller(
     IDownloader downloader,
     IVersionMetaClient meta,
     IUrlRewriter? urlRewriter = null,

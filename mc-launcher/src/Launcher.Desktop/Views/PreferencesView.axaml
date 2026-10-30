@@ -11,16 +11,17 @@
         </Button>
       </Grid>
       <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="4">
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
-          <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceOpen}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+          <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
             <icons:IconLabel Icon="ActionSettings" Text="外观"/>
           </Button>
-          <Button x:Name="NetworkSettingsTab" Grid.Column="1" Classes="nav" Classes.active="{Binding IsNetworkOpen}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="网络">
+          <Button x:Name="NetworkSettingsTab" Grid.Column="1" Classes="nav" Classes.active="{Binding IsNetworkSettings}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="网络">
             <icons:IconLabel Icon="ActionGlobe" Text="网络"/>
           </Button>
+          <Button x:Name="StorageSettingsTab" Grid.Column="2" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Center"/>
         </Grid>
       </Border>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <StackPanel Spacing="16">
           <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" MaxHeight="230">
             <ListBox.ItemsPanel>
@@ -61,7 +62,7 @@
           </Button>
         </StackPanel>
       </ScrollViewer>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsNetworkOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsNetworkSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <StackPanel Spacing="16">
           <TextBlock Text="游戏存储" FontSize="18" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap"/>
@@ -79,6 +80,20 @@
               <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}"/>
             </Button>
           </Grid>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Text="存储管理" FontSize="20" FontWeight="SemiBold"/><Button x:Name="ScanStorageButton" Grid.Column="1" Command="{Binding ScanStorageCommand}" Content="重新扫描" IsEnabled="{Binding CanManageStorage}"/></Grid>
+          <TextBlock Text="{Binding StorageHint}" TextWrapping="Wrap"/>
+          <ItemsControl ItemsSource="{Binding StorageAreas}" IsEnabled="{Binding CanManageStorage}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="experience:StorageArea">
+            <Border Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,10">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}"/><TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+                <Button Grid.Column="1" Content="清理…" VerticalAlignment="Center" IsVisible="{Binding CanClean}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CleanStorageCommand}" CommandParameter="{Binding}"/>
+              </Grid>
+            </Border>
+          </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
         </StackPanel>
       </ScrollViewer>
     </Grid>

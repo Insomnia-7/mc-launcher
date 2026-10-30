@@ -43,6 +43,7 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void OpenNetwork()
     {
+        BeforeNetworkSettings?.Invoke();
         NetworkHint = "保存后请重启启动器；本次运行和正在进行的下载继续使用当前设置。";
         try
         {

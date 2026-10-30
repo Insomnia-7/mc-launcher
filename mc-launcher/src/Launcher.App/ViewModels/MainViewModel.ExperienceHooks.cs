@@ -5,6 +5,7 @@ namespace Launcher.App.ViewModels;
 public sealed partial class MainViewModel
 {
     public Action? BeforeMainNavigation {get;set;}
+    public Action? BeforeNetworkSettings {get;set;}
     public Action<string>? GameStarted {get;set;}
     public Action? RunningGamesChanged {get;set;}
     public Func<ModUpdateRow,Task>? PreviewModUpdate {get;set;}

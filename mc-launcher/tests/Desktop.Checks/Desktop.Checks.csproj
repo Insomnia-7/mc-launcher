@@ -2,6 +2,7 @@
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup>
     <Compile Include="../TestFixtures/WorkbenchFixture.cs" Link="Fixtures/WorkbenchFixture.cs" />
+    <Compile Include="../TestFixtures/MaintenanceFixture.cs" Link="Fixtures/MaintenanceFixture.cs" />
     <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
     <ProjectReference Include="../../src/Launcher.Desktop/Launcher.Desktop.csproj" />
   </ItemGroup>

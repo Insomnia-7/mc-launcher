@@ -183,6 +183,7 @@ public sealed partial class MainViewModel
     partial void OnLibraryCompactChanged(bool value){if(!_updatingLibrary)SaveLibraryPreferences();}
     partial void OnDetailTabChanged(int value)
     {
+        if(value == 2 && _experienceInitialized) _ = RefreshWorldsAsync();
         foreach(var property in new[]{nameof(IsOverviewTab),nameof(IsModsDetailTab),nameof(IsBackupsDetailTab),nameof(IsSettingsDetailTab),nameof(IsDiagnosticsDetailTab)})OnPropertyChanged(property);
     }
     [RelayCommand] private void SetLibraryLayout(string? layout)=>LibraryCompact=layout=="list";
