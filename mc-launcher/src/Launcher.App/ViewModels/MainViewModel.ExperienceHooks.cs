@@ -4,6 +4,9 @@ namespace Launcher.App.ViewModels;
 
 public sealed partial class MainViewModel
 {
+    public Action? BeforeMainNavigation {get;set;}
+    public Action<string>? GameStarted {get;set;}
+    public Action? RunningGamesChanged {get;set;}
     public Func<string,Task>? PersistentImport {get;set;}
     public Func<string,ModUpdateCandidate,Task>? PersistentModUpdate {get;set;}
     public Func<string,int,bool,Task>? PersistentSetup {get;set;}

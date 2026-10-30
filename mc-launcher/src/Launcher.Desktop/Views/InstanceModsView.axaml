@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceModsView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+    <Border Classes="card" Margin="0">
+      <StackPanel Spacing="12">
+        <TextBlock Text="模组与资源" FontSize="20" FontWeight="SemiBold"/>
+        <WrapPanel>
+          <Button Command="{Binding ShowDownloadsCommand}" Classes="primary" Margin="0,0,8,8">
+            <TextBlock Text="添加资源" Foreground="{Binding $parent[Button].Foreground}"/>
+          </Button>
+          <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="mods" Content="模组目录" Margin="0,0,8,8"/>
+          <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks" Content="资源包目录" Margin="0,0,8,8"/>
+          <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="shaderpacks" Content="光影目录" Margin="0,0,0,8"/>
+        </WrapPanel>
+        <WrapPanel>
+          <Button Command="{Binding RefreshModsCommand}" Margin="0,0,8,0" AutomationProperties.Name="刷新模组">
+            <icons:IconLabel Icon="ActionRefresh" Text="刷新模组" Foreground="{Binding $parent[Button].Foreground}"/>
+          </Button>
+        </WrapPanel>
+        <TextBlock Text="{Binding ModSummary}" Classes="muted"/>
+        <TextBlock Text="{Binding ModWarnings}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasModWarnings}" TextWrapping="Wrap"/>
+        <ItemsControl ItemsSource="{Binding InstalledMods}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:MainViewModel+ModRow">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,6">
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}"/>
+                  <TextBlock Text="{Binding Meta}" Classes="muted"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="muted"/>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel Spacing="10">
+          <TextBlock Text="模组更新策略" FontSize="18" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding UpdateChannel}"/>
+            <Button Grid.Column="1" Command="{Binding CheckModUpdatesCommand}" Content="检查兼容更新" IsEnabled="{Binding CanEditExperience}"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding ModUpdates}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MainViewModel+ModUpdateRow">
+                <Border Classes="card" Padding="10" Margin="0,0,0,6">
+                  <StackPanel Spacing="7">
+                    <TextBlock Text="{Binding Title}"/>
+                    <TextBlock Text="{Binding VersionText}" Classes="muted"/>
+                    <WrapPanel>
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UpdateModCommand}" CommandParameter="{Binding}" Content="更新前备份并安装…" Margin="0,0,5,5"/>
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SkipModUpdateCommand}" CommandParameter="{Binding}" Content="跳过此版" Margin="0,0,5,5"/>
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).LockModUpdateCommand}" CommandParameter="{Binding}" Content="锁定当前版本" Margin="0,0,0,5"/>
+                    </WrapPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ItemsControl ItemsSource="{Binding LockedModFiles}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                  <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                  <Button Grid.Column="1" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UnlockModUpdateCommand}" CommandParameter="{Binding}" Content="解除版本锁定"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </ScrollViewer>
+</UserControl>

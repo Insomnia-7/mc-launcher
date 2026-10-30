@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceHistoryView">
+  <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+    <StackPanel Spacing="18">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="18" IsEnabled="{Binding CanEditExperience}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="实例快照" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="模组与配置可单独回退，默认保留当前存档。" Classes="muted" TextWrapping="Wrap"/>
+          <TextBox Text="{Binding SnapshotName}"/>
+          <CheckBox Content="同时备份存档" IsChecked="{Binding IncludeWorlds}"/>
+          <Button x:Name="CreateSnapshotButton" Command="{Binding CreateSnapshotCommand}" Content="为当前实例创建快照"/>
+          <ListBox ItemsSource="{Binding Snapshots}" SelectedItem="{Binding SelectedSnapshot}" MaxHeight="145">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="experience:InstanceSnapshot">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding Summary}" FontSize="12" Classes="muted" TextWrapping="Wrap"/>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <ComboBox ItemsSource="{Binding RestoreScopes}" SelectedIndex="{Binding RestoreScope}"/>
+          <WrapPanel>
+            <Button x:Name="RestoreSnapshotButton" Command="{Binding RestoreSnapshotCommand}" Content="恢复选中快照…" Margin="0,0,6,6"/>
+            <Button Command="{Binding DeleteSnapshotCommand}" Content="删除快照…" Classes="quiet" Margin="0,0,0,6"/>
+          </WrapPanel>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="10">
+          <TextBlock Text="设置预设" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="保存内存、窗口、画质、音量与按键设置；应用前自动备份。" Classes="muted" TextWrapping="Wrap"/>
+          <TextBox Text="{Binding PresetName}"/>
+          <CheckBox Content="包含模组配置（需相同游戏版本与加载器）" IsChecked="{Binding IncludeModConfigs}"/>
+          <Button Command="{Binding SavePresetCommand}" Content="保存当前实例为预设"/>
+          <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"/>
+          <WrapPanel>
+            <Button x:Name="ApplyPresetButton" Command="{Binding ApplyPresetCommand}" Classes="primary" Margin="0,0,6,6">
+              <TextBlock Text="应用选中预设" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+            <Button Command="{Binding DeletePresetCommand}" Content="移除预设" Classes="quiet" Margin="0,0,0,6"/>
+          </WrapPanel>
+          <TextBlock Text="不复制账号和 Java 路径；新旧格式不兼容的按键会跳过。" Classes="muted" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

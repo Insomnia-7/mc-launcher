@@ -36,13 +36,18 @@ internal static class CatalogScrollChecks
         check("分页模式替换结果且偏移正确",vm.Results.Count==50&&fixture.LastOffset==50&&vm.PageText.Contains("页"));
         check("移除黑色选中条",!window.GetVisualDescendants().OfType<Border>().Any(b=>b.Name=="SelectionRail"));
         model.IsInstanceSection=true;pump(100);
-        check("游戏库提供删除版本按钮",window.GetVisualDescendants().OfType<Button>().Any(b=>b.Name=="DeleteVersionButton"&&b.IsEffectivelyVisible));
+        model.OpenGameCommand.Execute(null);pump(100);
+        var moreGame=window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="GameMoreButton");
+        moreGame.Flyout!.ShowAt(moreGame);pump(80);
+        check("游戏详情更多菜单提供删除版本操作",moreGame.IsEffectivelyVisible&&moreGame.Flyout is MenuFlyout menu&&menu.Items.OfType<MenuItem>().Any(i=>ReferenceEquals(i.Command,model.DeleteInstanceCommand)));
+        moreGame.Flyout.Hide();
         var count=model.Instances.Count;model.DeleteInstanceCommand.Execute(null);
         check("删除版本先提示存档与配置风险",model.IsConfirmOpen&&model.ConfirmMessage.Contains("存档"));model.ConfirmCancelCommand.Execute(null);
         check("取消确认保留版本",model.Instances.Count==count);
         vm.IsBusy=true;check("下载期间禁用删除",!model.DeleteInstanceCommand.CanExecute(null));vm.IsBusy=false;
         model.DeleteInstanceCommand.Execute(null);model.ConfirmOkCommand.Execute(null);pump(100);
         check("确认删除仅移除选中的测试实例",model.Instances.Count==count-1);
+        model.ShowInstancesCommand.Execute(null);pump(50);
         fixture.CatalogCount=0;
     }
 }

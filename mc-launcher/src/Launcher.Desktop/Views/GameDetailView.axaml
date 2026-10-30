@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameDetailView">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <StackPanel Spacing="8">
+        <Button x:Name="BackToLibraryButton" Classes="quiet" Command="{Binding ShowInstancesCommand}" Content="‹ 游戏库" HorizontalAlignment="Left" Padding="0" />
+        <TextBlock x:Name="GameDetailTitle" Text="{Binding SelectedGameName}" FontSize="28" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{Binding SelectedGameMeta}" Classes="muted" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button x:Name="DetailLaunchButton" Classes="primary" Command="{Binding LaunchCommand}" Height="48"><icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+        <Button x:Name="GameMoreButton" Content="•••" ToolTip.Tip="更多游戏操作"><Button.Flyout><MenuFlyout>
+          <MenuItem Header="打开游戏目录" Command="{Binding OpenGameDirectoryCommand}" />
+          <MenuItem Header="导出游戏备份" Command="{Binding ExportInstanceCommand}" />
+          <MenuItem Header="删除游戏版本…" Command="{Binding DeleteInstanceCommand}" />
+        </MenuFlyout></Button.Flyout></Button>
+      </StackPanel>
+    </Grid>
+    <WrapPanel Grid.Row="1">
+      <Button x:Name="OverviewDetailTab" Classes="nav" Classes.active="{Binding IsOverviewTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="0" Content="概览" Margin="0,0,4,4" />
+      <Button x:Name="ModsDetailTab" Classes="nav" Classes.active="{Binding IsModsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="1" Content="模组与资源" Margin="0,0,4,4" />
+      <Button x:Name="BackupsDetailTab" Classes="nav" Classes.active="{Binding IsBackupsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="2" Content="存档与备份" Margin="0,0,4,4" />
+      <Button x:Name="SettingsDetailTab" Classes="nav" Classes.active="{Binding IsSettingsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="3" Content="设置" Margin="0,0,4,4" />
+      <Button x:Name="DiagnosticsDetailTab" Classes="nav" Classes.active="{Binding IsDiagnosticsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="4" Content="日志与诊断" Margin="0,0,0,4" />
+    </WrapPanel>
+    <ScrollViewer Grid.Row="2" IsVisible="{Binding IsOverviewTab}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+      <StackPanel Spacing="16">
+        <Border Classes="card" Padding="24"><Grid ColumnDefinitions="*,180" ColumnSpacing="24">
+          <StackPanel Spacing="16"><TextBlock Text="你的游戏，你来定义。" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="{Binding SelectedGameStatus}" Classes="muted" />
+            <StackPanel Spacing="6"><TextBlock Text="显示名称" Classes="muted" /><TextBox x:Name="GameNameInput" Text="{Binding GameDisplayName}" PlaceholderText="留空使用默认名称" MaxLength="80" /></StackPanel>
+            <StackPanel Spacing="6"><TextBlock Text="分组" Classes="muted" /><TextBox Text="{Binding GameGroupName}" PlaceholderText="例如：生存、建筑、和朋友一起" MaxLength="32" /></StackPanel>
+            <Button Classes="primary" Command="{Binding SaveGamePresentationCommand}" HorizontalAlignment="Left"><TextBlock Text="保存名称与分组" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="10"><Border Height="160" CornerRadius="16" Background="{DynamicResource FieldBrush}" ClipToBounds="True"><Grid><Image Source="{Binding SelectedGameCover}" Stretch="UniformToFill" IsVisible="{Binding HasGameCover}" /><icons:WorldArt Width="170" Height="150" IsVisible="{Binding !HasGameCover}" /></Grid></Border><Button Command="{Binding ChooseGameCoverCommand}" Content="更换游戏封面" /><Button Classes="quiet" Command="{Binding RemoveGameCoverCommand}" Content="恢复默认图标" /></StackPanel>
+        </Grid></Border>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16"><Border Classes="card"><StackPanel Spacing="8"><TextBlock Text="游戏内存" Classes="muted" /><TextBlock Text="{Binding MemoryText}" FontSize="22" FontWeight="SemiBold" /></StackPanel></Border><Border Grid.Column="1" Classes="card"><StackPanel Spacing="8"><TextBlock Text="Java 运行环境" Classes="muted" /><TextBlock Text="{Binding JavaText}" FontSize="16" TextTrimming="CharacterEllipsis" /><Button Classes="quiet" Command="{Binding DetectLocalJavaCommand}" Content="检索本地 Java" /></StackPanel></Border></Grid>
+        <Border Classes="card"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="6"><TextBlock Text="{Binding AccountText}" FontSize="16" FontWeight="SemiBold" /><TextBlock Text="{Binding AccountDetail}" Classes="muted" TextWrapping="Wrap" /></StackPanel><Button Grid.Column="1" Command="{Binding OpenAccountsCommand}" Content="更换身份" /></Grid></Border>
+      </StackPanel>
+    </ScrollViewer>
+    <ContentControl x:Name="DetailTabHost" Grid.Row="2" IsVisible="{Binding !IsOverviewTab}" />
+    <StackPanel Grid.Row="3" Spacing="7"><ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3" /><TextBlock Text="{Binding WorkspaceHint}" Classes="optional" TextWrapping="Wrap" /><TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="13" TextWrapping="Wrap" MaxHeight="50" /></StackPanel>
+  </Grid>
+</UserControl>

@@ -117,7 +117,7 @@ public sealed partial class MainViewModel
     [RelayCommand] private void OpenAppearance() { IsAppearanceOpen=true; }
     partial void OnIsAppearanceOpenChanged(bool value)
     {
-        if(value) IsNetworkOpen=false;
+        if(value) { IsNetworkOpen=false; IsExperienceOpen=false; IsAccountsOpen=false; IsSetupOpen=false; }
         OnPropertyChanged(nameof(IsPreferencesOpen));
     }
     [RelayCommand] private void CloseAppearance() { if(IsWallpaperBusy) return; if(TrySaveAppearance()) IsAppearanceOpen=false; }
@@ -154,10 +154,11 @@ public sealed partial class MainViewModel
     [RelayCommand] private void CloseTopOverlay()
     {
         if(IsConfirmOpen) ConfirmCancelCommand.Execute(null);
-        else if(IsExperienceOpen) CloseExperienceCommand.Execute(null);
-        else if(IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
-        else if(IsNetworkOpen) CloseNetworkCommand.Execute(null);
         else if(IsAccountsOpen) CloseAccountsCommand.Execute(null);
         else if(IsSetupOpen) CloseSetupCommand.Execute(null);
+        else if(IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
+        else if(IsNetworkOpen) CloseNetworkCommand.Execute(null);
+        else if(IsExperienceOpen) CloseExperienceCommand.Execute(null);
+        else if(IsDetailOpen) ShowInstances();
     }
 }

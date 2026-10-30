@@ -1,58 +1,156 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:art="using:Launcher.Desktop.Controls" xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.Views.LibraryView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.LibraryView">
   <ScrollViewer x:Name="LibraryScroll" Focusable="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-    <StackPanel Spacing="18" Margin="0,0,0,8">
-      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2"><StackPanel Spacing="7"><TextBlock Text="游戏库" FontSize="28" FontWeight="SemiBold" /><TextBlock Text="{Binding WorldCaption}" Classes="muted" FontSize="13" /></StackPanel><TextBlock Grid.Column="1" Text="PLAY YOUR WAY" Classes="eyebrow" VerticalAlignment="Bottom" Margin="12,0,0,3" /></Grid>
-      <Border Classes="card" Padding="28,24,28,24" MinHeight="302">
+    <StackPanel Spacing="20" Margin="0,0,0,12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="5">
+          <TextBlock Text="游戏库" FontSize="28" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding WorldCaption}" Classes="muted"/>
+        </StackPanel>
+        <Button Grid.Column="1" Classes="primary" Command="{Binding OpenSetupCommand}">
+          <icons:IconLabel Icon="ActionPlus" Text="添加游戏" Foreground="{Binding $parent[Button].Foreground}"/>
+        </Button>
+      </Grid>
+      <Border Classes="card" Padding="24" MinHeight="216">
         <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
-          <StackPanel Spacing="12" ZIndex="1">
-            <StackPanel Orientation="Horizontal" Spacing="8"><Border Background="{DynamicResource SelectedBrush}" CornerRadius="6" Padding="9,5"><TextBlock Text="MINECRAFT" FontSize="9" LetterSpacing="1.3" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" /></Border><TextBlock Text="JAVA EDITION" Classes="eyebrow" FontSize="8" VerticalAlignment="Center" /></StackPanel>
-            <TextBlock x:Name="WorldVersion" Text="{Binding WorldVersion}" FontSize="42" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
-            <TextBlock Text="{Binding WorldDisplayName}" Classes="muted" TextTrimming="CharacterEllipsis" IsVisible="{Binding IsModpackSelection}" />
-            <TextBlock Text="{Binding WorldKind}" Classes="muted" />
+          <StackPanel Spacing="8" ZIndex="1">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="{DynamicResource SelectedBrush}" CornerRadius="6" Padding="9,5">
+                <TextBlock Text="继续游玩" FontSize="12" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold"/>
+              </Border>
+              <TextBlock Text="JAVA EDITION" Classes="eyebrow" FontSize="8" VerticalAlignment="Center"/>
+            </StackPanel>
+            <TextBlock x:Name="WorldVersion" Text="{Binding WorldVersion}" FontSize="34" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+            <TextBlock Text="{Binding WorldDisplayName}" Classes="muted" TextTrimming="CharacterEllipsis" FontSize="16" IsVisible="{Binding HasWorldDisplayName}"/>
+            <TextBlock Text="{Binding WorldKind}" Classes="muted"/>
           </StackPanel>
-          <art:WorldArt Grid.Column="1" Width="260" Height="205" IsHitTestVisible="False" Margin="-12,-12,-12,0" />
-          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Grid.ColumnSpan="2" Margin="0,24,0,0">
+          <Grid Grid.Column="1" Width="160" Height="110" IsHitTestVisible="False">
+            <Border CornerRadius="12" ClipToBounds="True" IsVisible="{Binding HasGameCover}">
+              <Image Source="{Binding SelectedGameCover}" Stretch="UniformToFill"/>
+            </Border>
+            <icons:WorldArt IsVisible="{Binding !HasGameCover}"/>
+          </Grid>
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Grid.ColumnSpan="2" Margin="0,16,0,0">
             <Button x:Name="AccountEntry" Classes="quiet" Command="{Binding OpenAccountsCommand}" Padding="0" ToolTip.Tip="管理游戏身份">
-              <Grid ColumnDefinitions="44,*"><Border Width="34" Height="34" CornerRadius="11" Background="{DynamicResource SelectedBrush}" HorizontalAlignment="Left"><Grid><icons:UiIcon Kind="{Binding HasAccount, Converter={StaticResource AccountIcon}}" IsVisible="{Binding !HasSkinHead}" Width="34" Height="34" /><Image Source="{Binding SkinHead}" IsVisible="{Binding HasSkinHead}" Stretch="UniformToFill" /></Grid></Border><StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock Text="{Binding AccountText}" TextTrimming="CharacterEllipsis" MaxWidth="220" FontSize="14" /><TextBlock Text="{Binding AccountDetail}" TextTrimming="CharacterEllipsis" MaxWidth="220" Classes="muted" FontSize="12" /></StackPanel></Grid>
+              <Grid ColumnDefinitions="44,*">
+                <Border Width="34" Height="34" CornerRadius="11" Background="{DynamicResource SelectedBrush}" HorizontalAlignment="Left">
+                  <Grid>
+                    <icons:UiIcon Kind="{Binding HasAccount, Converter={StaticResource AccountIcon}}" IsVisible="{Binding !HasSkinHead}" Width="34" Height="34"/>
+                    <Image Source="{Binding SkinHead}" IsVisible="{Binding HasSkinHead}" Stretch="UniformToFill"/>
+                  </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding AccountText}" TextTrimming="CharacterEllipsis" MaxWidth="220" FontSize="14"/>
+                  <TextBlock Text="{Binding AccountDetail}" TextTrimming="CharacterEllipsis" MaxWidth="220" Classes="muted" FontSize="12"/>
+                </StackPanel>
+              </Grid>
             </Button>
-            <Button x:Name="LaunchButton" Grid.Column="1" Classes="primary" Command="{Binding LaunchCommand}" Width="180" Height="54" FontSize="16" AutomationProperties.Name="启动游戏" IsVisible="{Binding HasInstances}"><icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" IconSize="22" FontSize="16" FontWeight="SemiBold" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-            <Button Grid.Column="1" Classes="primary" Command="{Binding OpenSetupCommand}" Height="54" IsVisible="{Binding !HasInstances}"  AutomationProperties.Name="添加游戏版本"><icons:IconLabel Icon="ActionPlus" Text="添加游戏版本" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+            <Button x:Name="LaunchButton" Grid.Column="1" Classes="primary" Command="{Binding LaunchCommand}" Width="180" Height="54" FontSize="16" AutomationProperties.Name="启动游戏" IsVisible="{Binding HasInstances}">
+              <icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" IconSize="22" FontSize="16" FontWeight="SemiBold" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+            <Button Grid.Column="1" Classes="primary" Command="{Binding OpenSetupCommand}" Height="54" IsVisible="{Binding !HasInstances}" AutomationProperties.Name="添加游戏版本">
+              <icons:IconLabel Icon="ActionPlus" Text="添加游戏版本" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
           </Grid>
         </Grid>
       </Border>
-      <WrapPanel>
-        <Button x:Name="InstanceHistoryEntry" Command="{Binding OpenInstanceHistoryCommand}" Margin="0,0,8,8" AutomationProperties.Name="实例历史与预设"><icons:IconLabel Icon="ActionExport" Text="历史与预设" /></Button>
-        <Button Command="{Binding ImportModpackCommand}" Margin="0,0,8,8" AutomationProperties.Name="导入整合包"><icons:IconLabel Icon="ActionImport" Text="导入整合包" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-        <Button Command="{Binding ImportFolderCommand}" Margin="0,0,8,8" AutomationProperties.Name="导入文件夹"><icons:IconLabel Icon="ActionFolder" Text="导入文件夹" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-        <Button Command="{Binding ExportInstanceCommand}" Margin="0,0,8,8" AutomationProperties.Name="导出备份"><icons:IconLabel Icon="ActionExport" Text="导出备份" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-        <Button x:Name="DeleteVersionButton" Classes="quiet danger" Command="{Binding DeleteInstanceCommand}" Margin="0,0,8,8" IsVisible="{Binding HasInstances}" AutomationProperties.Name="删除游戏版本" ToolTip.Tip="删除当前选中的游戏版本"><icons:IconLabel Icon="ActionDelete" Text="删除版本" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-        <Button Classes="quiet" Command="{Binding OpenGameDirectoryCommand}" Margin="0,0,0,8" AutomationProperties.Name="打开目录"><icons:IconLabel Icon="ActionFolder" Text="打开目录" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-      </WrapPanel>
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Command="{Binding AutoDetectGameRootCommand}" IsEnabled="{Binding !IsToolBusy}" AutomationProperties.Name="自动找游戏目录" ToolTip.Tip="扫描各盘符下的 .minecraft / mclab / PCL / HMCL 等常见位置，找到就切过去"><icons:IconLabel Icon="ActionSearch" Text="自动找游戏目录" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-          <Button Command="{Binding DetectLocalJavaCommand}" IsEnabled="{Binding !IsToolBusy}" AutomationProperties.Name="检索本地 Java" ToolTip.Tip="扫描 PATH、常见安装目录和启动器数据目录里已有的 Java，只列出不下载"><icons:IconLabel Icon="ActionJava" Text="检索本地 Java" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+      <Border Classes="card" IsVisible="{Binding IsBusy}" Padding="18">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"/>
+            <Button Grid.Column="1" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" AutomationProperties.Name="取消">
+              <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+          </Grid>
+          <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4"/>
         </StackPanel>
-        <TextBlock Grid.Column="1" Text="{Binding ToolHint}" Classes="muted" FontSize="11" MaxWidth="360" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      </Border>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="全部游戏" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding LibraryResultText}" Classes="muted" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+          <Button x:Name="CardsLayoutButton" Classes="nav" Classes.active="{Binding !LibraryCompact}" Command="{Binding SetLibraryLayoutCommand}" CommandParameter="cards" Content="卡片"/>
+          <Button x:Name="ListLayoutButton" Classes="nav" Classes.active="{Binding LibraryCompact}" Command="{Binding SetLibraryLayoutCommand}" CommandParameter="list" Content="列表"/>
+          <Button Classes="quiet" Content="导入…">
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="导入整合包" Command="{Binding ImportModpackCommand}"/>
+                <MenuItem Header="导入文件夹" Command="{Binding ImportFolderCommand}"/>
+                <MenuItem Header="自动查找游戏目录" Command="{Binding AutoDetectGameRootCommand}"/>
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
       </Grid>
-      <Grid ColumnDefinitions="*,14,*" IsVisible="{Binding HasInstances}">
-        <Border Classes="card" Padding="18,16"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="6"><StackPanel Orientation="Horizontal" Spacing="6"><icons:UiIcon Kind="ActionMemory" Width="15" Height="15" Foreground="{DynamicResource MutedBrush}" /><TextBlock Text="游戏内存" Classes="muted" /></StackPanel><TextBlock Text="{Binding MemoryText}" FontSize="19" FontWeight="SemiBold" /></StackPanel><TextBlock Grid.Column="1" Text="MEMORY" Classes="eyebrow" FontSize="8" VerticalAlignment="Bottom" /></Grid></Border>
-        <Border Grid.Column="2" Classes="card" Padding="18,16"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="6"><StackPanel Orientation="Horizontal" Spacing="6"><icons:UiIcon Kind="ActionJava" Width="15" Height="15" Foreground="{DynamicResource MutedBrush}" /><TextBlock Text="Java 运行环境" Classes="muted" /></StackPanel><TextBlock Text="{Binding JavaText}" FontSize="16" FontWeight="Medium" TextTrimming="CharacterEllipsis" /></StackPanel><TextBlock Grid.Column="1" Text="RUNTIME" Classes="eyebrow" FontSize="8" VerticalAlignment="Bottom" /></Grid></Border>
+      <Grid ColumnDefinitions="*,160,Auto" ColumnSpacing="10">
+        <TextBox x:Name="LibrarySearch" Text="{Binding LibraryQuery}" PlaceholderText="搜索名称、游戏版本或加载器"/>
+        <ComboBox Grid.Column="1" ItemsSource="{Binding LibraryGroups}" SelectedItem="{Binding LibraryGroup}" AutomationProperties.Name="游戏分组"/>
+        <CheckBox Grid.Column="2" Content="仅收藏" IsChecked="{Binding LibraryFavoritesOnly}"/>
       </Grid>
-      <Border Classes="card" IsVisible="{Binding IsBusy}" Padding="18"><StackPanel Spacing="10"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" /><Button Grid.Column="1" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}"  AutomationProperties.Name="取消"><icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" /></Button></Grid><ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4" /></StackPanel></Border>
-      <Border Classes="card" IsVisible="{Binding HasDiagnosis}" Padding="18"><StackPanel Spacing="10"><TextBlock Text="{Binding DiagnosisText}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" /><WrapPanel><Button Command="{Binding CopyDiagnosisCommand}" Margin="0,0,8,0"  AutomationProperties.Name="复制诊断"><icons:IconLabel Icon="ActionCopy" Text="复制诊断" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Command="{Binding OpenNetworkCommand}"  AutomationProperties.Name="网络设置"><icons:IconLabel Icon="ActionGlobe" Text="网络设置" Foreground="{Binding $parent[Button].Foreground}" /></Button></WrapPanel></StackPanel></Border>
-      <Expander IsExpanded="{Binding IsSettingsOpen}" IsVisible="{Binding HasInstances}" AutomationProperties.Name="版本设置"><Expander.Header><icons:IconLabel Icon="ActionSettings" Text="版本设置" Foreground="{DynamicResource TextBrush}" /></Expander.Header>
-        <Border Classes="card" Margin="0,8,0,0"><StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,16,*"><StackPanel Spacing="6"><TextBlock Text="内存（MB）" Classes="muted" /><NumericUpDown x:Name="MemoryInput" Value="{Binding MemoryMb}" Minimum="512" Maximum="65536" Increment="512" FormatString="0" /></StackPanel><StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Java" Classes="muted" /><ComboBox ItemsSource="{Binding JavaOptions}" SelectedItem="{Binding SelectedJava}" /></StackPanel></Grid>
-          <Grid ColumnDefinitions="*,16,*"><StackPanel Spacing="6"><TextBlock Text="下载源" Classes="muted" /><ComboBox ItemsSource="{Binding DownloadSources}" SelectedIndex="{Binding DownloadSourceIndex}" /></StackPanel><StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="JVM 策略" Classes="muted" /><ComboBox SelectedIndex="{Binding JvmPresetIndex}"><ComboBoxItem Content="默认" /><ComboBoxItem Content="快速" /><ComboBoxItem Content="兼容" /></ComboBox></StackPanel></Grid>
-          <TextBox Text="{Binding ExtraJvmArgs}" PlaceholderText="额外 JVM 参数（可选）" /><TextBox Text="{Binding ExtraGameArgs}" PlaceholderText="额外游戏参数（可选）" />
-          <Grid ColumnDefinitions="*,16,*"><NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" FormatString="0" /><NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" FormatString="0" /></Grid>
-          <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding SettingsHint}" Classes="muted" TextWrapping="Wrap" /><Button x:Name="SaveSettingsButton" Grid.Column="1" Classes="primary" Command="{Binding SaveSettingsCommand}"  AutomationProperties.Name="保存设置"><icons:IconLabel Icon="ActionCheck" Text="保存设置" Foreground="{Binding $parent[Button].Foreground}" /></Button></Grid>
-        </StackPanel></Border>
-      </Expander>
-      <Expander IsVisible="{Binding HasInstances}" AutomationProperties.Name="模组管理"><Expander.Header><icons:IconLabel Icon="ActionFolder" Text="模组管理" Foreground="{DynamicResource TextBrush}" /></Expander.Header><Border Classes="card" Margin="0,8,0,0"><StackPanel Spacing="12"><WrapPanel><Button Command="{Binding RefreshModsCommand}" Margin="0,0,8,0"  AutomationProperties.Name="刷新模组"><icons:IconLabel Icon="ActionRefresh" Text="刷新模组" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Command="{Binding CheckModUpdatesCommand}"  AutomationProperties.Name="检查更新"><icons:IconLabel Icon="ActionUpdate" Text="检查更新" Foreground="{Binding $parent[Button].Foreground}" /></Button></WrapPanel><TextBlock Text="{Binding ModSummary}" Classes="muted" /><TextBlock Text="{Binding ModWarnings}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasModWarnings}" TextWrapping="Wrap" /><ItemsControl ItemsSource="{Binding InstalledMods}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MainViewModel+ModRow"><Grid ColumnDefinitions="*,Auto" Margin="0,6"><StackPanel><TextBlock Text="{Binding Title}" /><TextBlock Text="{Binding Meta}" Classes="muted" /></StackPanel><TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="muted" /></Grid></DataTemplate></ItemsControl.ItemTemplate></ItemsControl><ItemsControl ItemsSource="{Binding ModUpdates}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:MainViewModel+ModUpdateRow"><Grid ColumnDefinitions="*,Auto" Margin="0,6"><TextBlock Text="{Binding Title}" /><Button Grid.Column="1" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UpdateModCommand}" CommandParameter="{Binding}"  AutomationProperties.Name="更新"><icons:IconLabel Icon="ActionUpdate" Text="更新" Foreground="{Binding $parent[Button].Foreground}" /></Button></Grid></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel></Border></Expander>
-      <Expander AutomationProperties.Name="使用提示"><Expander.Header><icons:IconLabel Icon="StatusInfo" Text="使用提示" Foreground="{DynamicResource TextBrush}" /></Expander.Header><TextBlock Text="选择左侧版本，再点击启动游戏。整合包和模组可直接拖入窗口；更多内容在「发现资源」中查找。" Classes="muted" TextWrapping="Wrap" Margin="16,10" /></Expander>
-      <Border IsVisible="{Binding HasGameRootProblem}" Classes="card"><StackPanel Spacing="8"><TextBlock Text="{Binding GameRootProblem}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" /><Button Command="{Binding ChooseGameRootCommand}" HorizontalAlignment="Left"  AutomationProperties.Name="更换游戏目录"><icons:IconLabel Icon="ActionFolder" Text="更换游戏目录" Foreground="{Binding $parent[Button].Foreground}" /></Button></StackPanel></Border>
+      <TextBlock Text="没有匹配的游戏，试试其他关键词或分组。" Classes="muted" IsVisible="{Binding LibraryHasNoResults}" Margin="4,16"/>
+      <ItemsControl x:Name="LibraryCards" ItemsSource="{Binding LibraryEntries}" IsVisible="{Binding !LibraryCompact}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LibraryEntry">
+            <Border Classes="library-tile" Width="246" Margin="0,0,12,12" Padding="16">
+              <StackPanel Spacing="12">
+                <Button Classes="quiet" Padding="0" HorizontalContentAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}">
+                  <StackPanel Spacing="12" Width="214">
+                    <Border Height="102" CornerRadius="12" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+                      <Grid>
+                        <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
+                        <icons:UiIcon Kind="{Binding Icon}" Width="92" Height="92" IsVisible="{Binding !HasCover}"/>
+                      </Grid>
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Meta}" Classes="muted" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Status}" Classes="muted" FontSize="12"/>
+                  </StackPanel>
+                </Button>
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}" Content="管理游戏"/>
+                  <Button Grid.Column="1" Classes="quiet" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).FavoriteGameCommand}" CommandParameter="{Binding}" Content="{Binding FavoriteText}" AutomationProperties.Name="切换收藏"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ListBox x:Name="LibraryList" ItemsSource="{Binding LibraryEntries}" IsVisible="{Binding LibraryCompact}" SelectionChanged="SelectGameFromList">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:LibraryEntry">
+            <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="14">
+              <Border Width="48" Height="48" CornerRadius="10" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+                <Grid>
+                  <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
+                  <icons:UiIcon Kind="{Binding Icon}" Width="38" Height="38" IsVisible="{Binding !HasCover}"/>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding Meta}" Classes="muted"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Status}" Classes="muted" FontSize="12"/>
+                <TextBlock Text="{Binding FavoriteText}" HorizontalAlignment="Right"/>
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Border IsVisible="{Binding HasGameRootProblem}" Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding GameRootProblem}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}"/>
+          <Button Command="{Binding ChooseGameRootCommand}" HorizontalAlignment="Left" AutomationProperties.Name="更换游戏目录">
+            <icons:IconLabel Icon="ActionFolder" Text="更换游戏目录" Foreground="{Binding $parent[Button].Foreground}"/>
+          </Button>
+        </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

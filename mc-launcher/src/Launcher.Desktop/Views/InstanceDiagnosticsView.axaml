@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceDiagnosticsView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+    <StackPanel Spacing="16">
+      <TextBlock Text="只检查当前游戏，诊断包会隐藏账号凭据与个人路径。" Classes="muted" TextWrapping="Wrap"/>
+      <Border Classes="card" IsVisible="{Binding HasDiagnosis}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="最近一次启动提示" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding DiagnosisText}" TextWrapping="Wrap"/>
+          <Button Command="{Binding CopyDiagnosisCommand}" Content="复制启动诊断" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+      <WrapPanel>
+        <Button Command="{Binding OpenLogsCommand}" Content="打开日志目录" Margin="0,0,8,0"/>
+        <Button x:Name="InspectInstanceButton" Command="{Binding InspectInstanceCommand}" Content="检查当前实例" IsEnabled="{Binding CanEditExperience}" Margin="0,0,8,0"/>
+        <Button Command="{Binding ExportDiagnosticsCommand}" Content="导出脱敏诊断包" IsEnabled="{Binding CanEditExperience}"/>
+      </WrapPanel>
+      <ItemsControl ItemsSource="{Binding InspectionIssues}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="experience:InspectionIssue">
+            <Border Classes="card" Padding="12" Margin="0,0,0,7">
+              <StackPanel Spacing="5">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Evidence}" Classes="muted" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Advice}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

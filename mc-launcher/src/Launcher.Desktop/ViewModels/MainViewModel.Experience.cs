@@ -66,12 +66,13 @@ public sealed partial class MainViewModel
     public ObservableCollection<InstanceSnapshot> Snapshots {get;}=[];
     public ObservableCollection<SettingsPreset> Presets {get;}=[];
     public ObservableCollection<DurableTaskRow> DurableTasks {get;}=[];
+    public bool HasDurableTasks=>DurableTasks.Count>0;
     public ObservableCollection<InspectionIssue> InspectionIssues {get;}=[];
     public ObservableCollection<string> LockedModFiles {get;}=[];
     public string[] UpdateChannels {get;}=["正式版","测试版","开发版"];
     public string[] RestoreScopes {get;}=["仅模组与配置（保留存档）","仅恢复存档","模组配置与存档"];
     public bool IsWardrobeTab=>ExperienceTab==0;
-    public bool PreviewActive=>IsExperienceOpen&&IsWardrobeTab;
+    public bool PreviewActive=>IsRolePage;
     public bool IsHistoryTab=>ExperienceTab==1;
     public bool IsToolsTab=>ExperienceTab==2;
     public bool CanEditExperience=>!ExperienceBusy&&!IsBusy&&!Download.IsBusy&&!IsModBusy;
@@ -129,7 +130,7 @@ public sealed partial class MainViewModel
         {
             if(e.PropertyName is nameof(Account) or nameof(OfflineName))
             {OnPropertyChanged(nameof(AppearanceIdentity));OnPropertyChanged(nameof(LocalSkinHint));if(IsExperienceOpen&&IsWardrobeTab)_=RefreshWardrobeAsync();}
-            if(e.PropertyName==nameof(SelectedInstance)&&IsExperienceOpen)ReloadExperienceLists();
+            if(e.PropertyName==nameof(SelectedInstance)&&(IsExperienceOpen||IsDetailOpen))ReloadExperienceLists();
             if(e.PropertyName is nameof(IsBusy) or nameof(IsModBusy) or nameof(ExperienceBusy))OnPropertyChanged(nameof(CanEditExperience));
         };
         _experienceInitialized=true;RefreshTaskRows();
@@ -153,10 +154,13 @@ public sealed partial class MainViewModel
         IsSetupOpen=false;IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;
         ExperienceTab=0;IsExperienceOpen=true;await RefreshWardrobeAsync();
     }
-    [RelayCommand] private void OpenInstanceHistory(){ExperienceTab=1;IsExperienceOpen=true;ReloadExperienceLists();}
-    [RelayCommand] private void OpenTaskCenter(){ExperienceTab=2;IsExperienceOpen=true;ReloadExperienceLists();RefreshTaskRows();}
-    [RelayCommand] private void CloseExperience(){IsExperienceOpen=false;}
-    [RelayCommand] private void SelectExperienceTab(string? value){if(int.TryParse(value,out var index))ExperienceTab=index;}
+    [RelayCommand] private void OpenInstanceHistory(){OpenGame(null);DetailTab=2;ReloadExperienceLists();}
+    [RelayCommand] private void OpenTaskCenter(){IsSetupOpen=false;IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;ExperienceTab=2;IsExperienceOpen=true;RefreshTaskRows();}
+    [RelayCommand] private void CloseExperience(){ShowInstances();}
+    [RelayCommand] private void SelectExperienceTab(string? value)
+    {
+        if(value=="1")OpenInstanceHistory();else if(value=="2")OpenTaskCenter();else if(value=="0"){ExperienceTab=0;IsExperienceOpen=true;}
+    }
     public void PauseExperienceForShutdown()=>_tasks?.PauseActiveForShutdown();
     public bool HasActivePersistentTask=>_tasks?.ActiveId is not null;
     public Task PauseTasksForShutdownAsync()=>_tasks?.PauseAndWaitAsync()??Task.CompletedTask;
@@ -169,6 +173,7 @@ public sealed partial class MainViewModel
             if(row is null)DurableTasks.Insert(0,new(task));else row.Record=task;
         }
         OnPropertyChanged(nameof(CanEditExperience));
+        OnPropertyChanged(nameof(HasDurableTasks));
     }
     private void ReloadExperienceLists()
     {
@@ -324,9 +329,10 @@ public sealed partial class MainViewModel
     {
         await ExperienceActionAsync(async ct=>
         {
-            var instance=SelectedInstance??throw new InvalidOperationException("请选择游戏实例。");InspectionIssues.Clear();
-            var version=await _versionLoader.LoadAsync(GameRoot,instance.VersionId,ct);var required=version.JavaVersion?.MajorVersion??8;
+            var instance=SelectedInstance??throw new InvalidOperationException("请选择游戏实例。");var root=GameRoot;InspectionIssues.Clear();
+            var version=await _versionLoader.LoadAsync(root,instance.VersionId,ct);var required=version.JavaVersion?.MajorVersion??8;
             var javas=await _javaLocator.DiscoverAsync(ct);
+            if(root!=GameRoot||SelectedInstance?.InstanceId!=instance.InstanceId)return;
             if(!javas.Any(j=>j.MajorVersion>=required))InspectionIssues.Add(new("缺少合适的 Java",$"版本资料声明 Java {required}+；本机尚未发现。","启动时可自动准备，或在版本设置中指定 Java。",true));
             var settings=InstanceSettings.Load(GameRoot,instance.InstanceId);
             if(settings.MemoryMb>InstanceSettings.AdaptiveMemoryMb()*2)InspectionIssues.Add(new("分配内存偏高",$"当前分配 {settings.MemoryMb} MiB。","请结合整合包要求与系统剩余内存调整。"));

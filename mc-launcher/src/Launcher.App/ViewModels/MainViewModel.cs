@@ -356,12 +356,14 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowInstances()
     {
+        BeforeMainNavigation?.Invoke();
         IsInstanceSection = true;
     }
 
     [RelayCommand]
     private void ShowDownloads()
     {
+        BeforeMainNavigation?.Invoke();
         IsInstanceSection = false;
         Download.RefreshTarget();
         _ = Download.EnsureLoadedAsync();
@@ -1325,6 +1327,7 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.LogInformation("启动 {Version}，pid={Pid}，java={Java}", version.Id, process.Id, java.ExecutablePath);
 
             lock (_running) _running[version.Id] = process.Id;
+            GameStarted?.Invoke(instance.InstanceId);
 
             _ = WatchStartupAsync(process, logPath, version.Id);
         }
@@ -1388,6 +1391,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (_running.TryGetValue(versionId, out var pid) && pid == process.Id)
                     _running.Remove(versionId);
             }
+            RunningGamesChanged?.Invoke();
         }
     }
 

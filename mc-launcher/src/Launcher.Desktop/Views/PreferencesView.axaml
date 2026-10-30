@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.PreferencesView">
+  <Border x:Name="PreferencesSurface" Classes="card" Padding="24">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="设置" Classes="heading"/>
+          <TextBlock Text="调好外观，畅快连接。" Classes="muted"/>
+        </StackPanel>
+        <Button Classes="quiet" Command="{Binding CloseTopOverlayCommand}" Width="32" Height="32" MinHeight="32" Padding="7" HorizontalContentAlignment="Center" VerticalAlignment="Top" ToolTip.Tip="关闭设置" AutomationProperties.Name="关闭设置">
+          <icons:UiIcon Kind="ActionClose" Foreground="{Binding $parent[Button].Foreground}"/>
+        </Button>
+      </Grid>
+      <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="4">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+          <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceOpen}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
+            <icons:IconLabel Icon="ActionSettings" Text="外观"/>
+          </Button>
+          <Button x:Name="NetworkSettingsTab" Grid.Column="1" Classes="nav" Classes.active="{Binding IsNetworkOpen}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="网络">
+            <icons:IconLabel Icon="ActionGlobe" Text="网络"/>
+          </Button>
+        </Grid>
+      </Border>
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+        <StackPanel Spacing="16">
+          <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" MaxHeight="230">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel/>
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ThemeChoice">
+                <StackPanel Width="128" Spacing="8">
+                  <Border CornerRadius="12" Height="46" Background="{Binding Swatch}" BorderBrush="{Binding Accent}" BorderThickness="1">
+                    <Border Width="28" Height="6" CornerRadius="3" Background="{Binding Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <TextBlock Text="{Binding Name}" FontSize="12" HorizontalAlignment="Center"/>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Command="{Binding ImportWallpaperCommand}" AutomationProperties.Name="导入壁纸">
+              <icons:IconLabel Icon="ActionImport" Text="导入壁纸" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+            <Button Grid.Column="2" Command="{Binding RemoveWallpaperCommand}" AutomationProperties.Name="恢复主题背景">
+              <icons:IconLabel Icon="ActionRefresh" Text="恢复主题背景" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+          </Grid>
+          <StackPanel Spacing="6">
+            <TextBlock Text="壁纸显示强度" Classes="muted"/>
+            <Slider Value="{Binding WallpaperOpacity}" Minimum="0" Maximum="0.85" IsEnabled="{Binding CanEditAppearance}"/>
+          </StackPanel>
+          <StackPanel Spacing="7">
+            <TextBlock Text="动画" Classes="muted"/>
+            <ComboBox x:Name="MotionChoice" ItemsSource="{Binding MotionChoices}" SelectedItem="{Binding SelectedMotion}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding AppearanceHint}" Classes="muted" TextWrapping="Wrap"/>
+          <Button Command="{Binding CloseAppearanceCommand}" HorizontalAlignment="Right" Classes="primary" AutomationProperties.Name="完成">
+            <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}"/>
+          </Button>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsNetworkOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+        <StackPanel Spacing="16">
+          <TextBlock Text="游戏存储" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap"/>
+          <Button Command="{Binding ChooseGameRootCommand}" Content="更换游戏目录" HorizontalAlignment="Left"/>
+          <TextBlock Text="连接方式" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap"/>
+          <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}"/>
+          <TextBox Text="{Binding ProxyAddress}" PlaceholderText="http://127.0.0.1:7890" IsVisible="{Binding IsCustomProxy}"/>
+          <TextBlock Text="{Binding NetworkHint}" Classes="muted" TextWrapping="Wrap"/>
+          <Grid ColumnDefinitions="*,Auto">
+            <Button Command="{Binding CloseNetworkCommand}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
+              <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+            <Button Grid.Column="1" Classes="primary" Command="{Binding SaveNetworkCommand}" AutomationProperties.Name="保存">
+              <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}"/>
+            </Button>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Border>
+</UserControl>

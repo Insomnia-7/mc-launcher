@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceSettingsView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+    <Border Classes="card" Margin="0">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,16,*">
+          <StackPanel Spacing="6">
+            <TextBlock Text="内存（MB）" Classes="muted"/>
+            <NumericUpDown x:Name="MemoryInput" Value="{Binding MemoryMb}" Minimum="512" Maximum="65536" Increment="512" FormatString="0"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="6">
+            <TextBlock Text="Java" Classes="muted"/>
+            <ComboBox ItemsSource="{Binding JavaOptions}" SelectedItem="{Binding SelectedJava}"/>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="*,16,*">
+          <StackPanel Spacing="6">
+            <TextBlock Text="下载源" Classes="muted"/>
+            <ComboBox ItemsSource="{Binding DownloadSources}" SelectedIndex="{Binding DownloadSourceIndex}"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="6">
+            <TextBlock Text="JVM 策略" Classes="muted"/>
+            <ComboBox SelectedIndex="{Binding JvmPresetIndex}">
+              <ComboBoxItem Content="默认"/>
+              <ComboBoxItem Content="快速"/>
+              <ComboBoxItem Content="兼容"/>
+            </ComboBox>
+          </StackPanel>
+        </Grid>
+        <TextBox Text="{Binding ExtraJvmArgs}" PlaceholderText="额外 JVM 参数（可选）"/>
+        <TextBox Text="{Binding ExtraGameArgs}" PlaceholderText="额外游戏参数（可选）"/>
+        <Grid ColumnDefinitions="*,16,*">
+          <NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" FormatString="0"/>
+          <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" FormatString="0"/>
+        </Grid>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding SettingsHint}" Classes="muted" TextWrapping="Wrap"/>
+          <Button x:Name="SaveSettingsButton" Grid.Column="1" Classes="primary" Command="{Binding SaveSettingsCommand}" AutomationProperties.Name="保存设置">
+            <icons:IconLabel Icon="ActionCheck" Text="保存设置" Foreground="{Binding $parent[Button].Foreground}"/>
+          </Button>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </ScrollViewer>
+</UserControl>

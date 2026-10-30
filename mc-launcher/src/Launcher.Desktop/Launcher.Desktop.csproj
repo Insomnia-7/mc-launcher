@@ -5,7 +5,7 @@
     <AssemblyName>MCLauncher.Desktop</AssemblyName>
     <RootNamespace>Launcher.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>0.3.0-preview.3</Version>
+    <Version>0.4.0-preview.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyTitle>方隅</AssemblyTitle>
     <Product>方隅</Product>

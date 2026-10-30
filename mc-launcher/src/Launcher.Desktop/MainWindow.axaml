@@ -11,6 +11,9 @@
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
     <KeyBinding Gesture="Ctrl+2" Command="{Binding ShowDownloadsCommand}" />
+    <KeyBinding Gesture="Ctrl+3" Command="{Binding OpenWardrobeCommand}" />
+    <KeyBinding Gesture="Ctrl+4" Command="{Binding OpenTaskCenterCommand}" />
+    <KeyBinding Gesture="Ctrl+5" Command="{Binding OpenAppearanceCommand}" />
     <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenAppearanceCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CloseTopOverlayCommand}" />
   </Window.KeyBindings>
@@ -42,30 +45,23 @@
             <Image x:Name="SidebarAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="38" Height="38" HorizontalAlignment="Left" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="方隅" FontSize="15" FontWeight="SemiBold" /><TextBlock Text="FANGYU LAUNCHER" Classes="eyebrow" FontSize="8" LetterSpacing="0.8" /></StackPanel>
           </Grid>
-          <StackPanel Spacing="5">
-            <Button x:Name="LibraryNav" Classes="nav" Classes.active="{Binding IsInstanceSection}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏库" ><icons:IconLabel Icon="NavVersions" Text="游戏库" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-            <Button x:Name="DiscoverNav" Classes="nav" Classes.active="{Binding IsDownloadSection}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源" ><icons:IconLabel Icon="NavDownload" Text="发现资源" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+          <StackPanel Spacing="7">
+            <Button x:Name="LibraryNav" Classes="nav" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏库"><icons:IconLabel Icon="NavVersions" Text="游戏库" /></Button>
+            <Button x:Name="DiscoverNav" Classes="nav" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源"><icons:IconLabel Icon="NavDownload" Text="发现资源" /></Button>
+            <Button x:Name="WardrobeEntry" Classes="nav" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色"><icons:IconLabel Icon="ActionLogin" Text="角色" /></Button>
+            <Button x:Name="TaskCenterEntry" Classes="nav" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载任务"><icons:IconLabel Icon="ActionCloudDownload" Text="下载任务" /></Button>
+            <Button x:Name="SettingsEntry" Classes="nav" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>
           </StackPanel>
-          <Grid ColumnDefinitions="*,Auto" Margin="10,0,6,2"><TextBlock Text="我的世界" Classes="eyebrow" LetterSpacing="1" /><TextBlock Grid.Column="1" Text="{Binding Instances.Count}" Classes="muted" /></Grid>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Spacing="3" Margin="0,12,0,0">
-          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="8,0,8,10" />
-          <Button Classes="quiet" Command="{Binding OpenSetupCommand}"  AutomationProperties.Name="添加游戏版本"><icons:IconLabel Icon="ActionPlus" Text="添加游戏版本" Foreground="{Binding $parent[Button].Foreground}" /></Button>
-          <Button x:Name="WardrobeEntry" Classes="quiet" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色衣柜"><icons:IconLabel Icon="ActionLogin" Text="角色衣柜" /></Button>
-          <Button x:Name="TaskCenterEntry" Classes="quiet" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="任务与体检"><icons:IconLabel Icon="ActionCloudDownload" Text="任务与体检" /></Button>
-          <Button x:Name="SettingsEntry" Classes="quiet" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" Foreground="{Binding $parent[Button].Foreground}" /></Button>
+        <StackPanel DockPanel.Dock="Bottom" Spacing="12" Margin="8,12,8,0">
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <TextBlock Text="{Binding InstanceCountText}" Classes="muted" />
+          <Button Classes="quiet" Command="{Binding OpenAccountsCommand}" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="管理游戏身份"><Grid ColumnDefinitions="32,*" ColumnSpacing="8"><icons:UiIcon Kind="ActionLogin" Width="28" Height="28" /><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding AccountText}" FontSize="13" TextTrimming="CharacterEllipsis" /><TextBlock Text="管理游戏身份" Classes="muted" FontSize="12" /></StackPanel></Grid></Button>
         </StackPanel>
-        <ListBox x:Name="InstanceList" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Margin="0,12,0,0" AutomationProperties.Name="游戏版本列表">
-          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:InstanceCard">
-            <Grid ColumnDefinitions="44,*">
-              <Border Width="34" Height="36" HorizontalAlignment="Left" CornerRadius="10" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" VerticalAlignment="Center"><icons:UiIcon Kind="{Binding Converter={StaticResource InstanceIcon}}" Width="33" Height="33" /></Border>
-              <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding DisplayName}" FontWeight="Medium" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" /></StackPanel>
-            </Grid>
-          </DataTemplate></ListBox.ItemTemplate>
-        </ListBox>
+        <Border />
       </DockPanel>
     </Border>
-    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDownloadSection}" Grid.Row="1" Grid.Column="1">
+    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
       <TransitioningContentControl x:Name="PageHost"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
     </Grid>
     <Border Grid.Row="2" Grid.ColumnSpan="2" Padding="24,8,24,12">
