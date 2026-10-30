@@ -158,6 +158,9 @@ public static class UpdateVersion
     private static List<string> Tokenize(string version)
     {
         var text = version.Trim();
+        // SemVer 构建元数据不参与比较，避免提交号导致同版本被误判为新版。
+        var metadata = text.IndexOf('+');
+        if(metadata >= 0) text = text[..metadata];
         if (text.StartsWith('v') || text.StartsWith('V'))
             text = text[1..];
 

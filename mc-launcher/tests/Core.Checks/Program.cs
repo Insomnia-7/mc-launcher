@@ -50,6 +50,10 @@ if(args.Contains("--maintenance"))
 {
     await MaintenanceChecks.RunAsync(Check);Console.WriteLine($"Maintenance: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
 }
+if(args.Contains("--launcher-update"))
+{
+    await LauncherUpdateChecks.RunAsync(Check);Console.WriteLine($"Launcher update: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 
 var ctx = new PlatformContext("windows", "x86_64", "10.0.19045") { HasCustomResolution = false };
 var launcher = new LaunchContext(
@@ -1913,6 +1917,7 @@ Check("非网络错误不硬塞建议",
 await ExperienceChecks.RunAsync(Check);
 await ModWorkbenchChecks.RunAsync(Check);
 await MaintenanceChecks.RunAsync(Check);
+await LauncherUpdateChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

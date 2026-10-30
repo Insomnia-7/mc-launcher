@@ -54,6 +54,7 @@
           </StackPanel>
         </StackPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="12" Margin="8,12,8,0">
+          <Button x:Name="LauncherUpdateNotice" Content="方隅有新版本 · 查看更新" Command="{Binding OpenLauncherUpdatesCommand}" IsVisible="{Binding HasUpdate}" FontSize="12"/>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <TextBlock Text="{Binding InstanceCountText}" Classes="muted" />
           <Button Classes="quiet" Command="{Binding OpenAccountsCommand}" Padding="0" HorizontalContentAlignment="Stretch" AutomationProperties.Name="管理游戏身份"><Grid ColumnDefinitions="32,*" ColumnSpacing="8"><icons:UiIcon Kind="ActionLogin" Width="28" Height="28" /><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{Binding AccountText}" FontSize="13" TextTrimming="CharacterEllipsis" /><TextBlock Text="管理游戏身份" Classes="muted" FontSize="12" /></StackPanel></Grid></Button>

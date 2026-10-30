@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using Serilog;
 namespace Launcher.App;
 
@@ -118,5 +119,6 @@ public static class BuildInfo
 {
     public const string Name = "MCLauncher";
     public static string Version { get; } =
-        typeof(BuildInfo).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        typeof(BuildInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
+        ?? typeof(BuildInfo).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 }

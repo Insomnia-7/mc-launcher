@@ -37,8 +37,8 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _showsStorage;
     [ObservableProperty] private bool _storageBusy;
     [ObservableProperty] private string _storageHint = "扫描后显示缓存可回收量与游戏占用；扫描可能需要一些时间。";
-    public bool IsNetworkSettings => IsNetworkOpen && !ShowsStorage;
-    public bool IsAppearanceSettings => IsAppearanceOpen && !ShowsStorage;
+    public bool IsNetworkSettings => IsNetworkOpen && !ShowsStorage && !ShowsLauncherUpdates;
+    public bool IsAppearanceSettings => IsAppearanceOpen && !ShowsStorage && !ShowsLauncherUpdates;
     public bool CanManageStorage => !StorageBusy && CanEditExperience;
     public ObservableCollection<WorldRow> Worlds { get; } = [];
     public ObservableCollection<WorldBackup> WorldBackups { get; } = [];
@@ -46,7 +46,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<StorageArea> StorageAreas { get; } = [];
     private void InitializeMaintenance()
     {
-        BeforeNetworkSettings = () => ShowsStorage = false;
+        BeforeNetworkSettings = () => { ShowsStorage = false; ShowsLauncherUpdates = false; };
         PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(SelectedInstance) or nameof(GameRoot))
@@ -60,7 +60,7 @@ public sealed partial class MainViewModel
                 if (e.PropertyName == nameof(GameRoot)) { StorageAreas.Clear(); StorageHint = "游戏目录已切换，请重新扫描存储占用。"; }
             }
             if (e.PropertyName is nameof(IsAppearanceOpen) or nameof(IsNetworkOpen))
-            { ShowsStorage = false; OnPropertyChanged(nameof(IsNetworkSettings)); OnPropertyChanged(nameof(IsAppearanceSettings)); }
+            { ShowsStorage = false; ShowsLauncherUpdates = false; OnPropertyChanged(nameof(IsNetworkSettings)); OnPropertyChanged(nameof(IsAppearanceSettings)); }
             if (e.PropertyName is nameof(CanEditExperience) or nameof(StorageBusy)) OnPropertyChanged(nameof(CanManageStorage));
         };
     }

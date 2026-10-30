@@ -6,6 +6,9 @@ public sealed partial class MainViewModel
 {
     public Action? BeforeMainNavigation {get;set;}
     public Action? BeforeNetworkSettings {get;set;}
+    public string? DefaultUpdateLocation {get;set;}
+    public Func<bool>? ShouldCheckLauncherUpdates {get;set;}
+    public Func<Launcher.Application.Update.UpdateStaging,string,CancellationToken,Task>? LaunchSelfUpdater {get;set;}
     public Action<string>? GameStarted {get;set;}
     public Action? RunningGamesChanged {get;set;}
     public Func<ModUpdateRow,Task>? PreviewModUpdate {get;set;}

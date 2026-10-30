@@ -89,28 +89,30 @@ public sealed class UpdateClient(HttpClient http, UpdateSignatureVerifier? signa
             progress?.Report(new UpdateProgress("下载", Percent(done, manifest.TotalBytes), file.Path));
 
             var temporary = stagePath + ".part";
-
-            // 清单可以在本地目录里（测试 / U 盘更新），这时不需要走 HTTP
-            if (Uri.TryCreate(url, UriKind.Absolute, out var fileUri) && fileUri.IsFile)
+            try
             {
-                File.Copy(fileUri.LocalPath, temporary, overwrite: true);
+                await using(var source = Uri.TryCreate(url, UriKind.Absolute, out var fileUri) && fileUri.IsFile
+                    ? File.OpenRead(fileUri.LocalPath) : await http.GetStreamAsync(url, ct).ConfigureAwait(false))
+                await using(var destination = File.Create(temporary))
+                {
+                    var buffer = new byte[81920]; long received = 0; var last = System.Diagnostics.Stopwatch.StartNew(); int count;
+                    while((count = await source.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+                    {
+                        received += count;
+                        if(received > file.Size) throw new IOException("更新下载超过清单标注的大小，已停止下载。");
+                        await destination.WriteAsync(buffer.AsMemory(0, count), ct).ConfigureAwait(false);
+                        if(last.ElapsedMilliseconds >= 100) { progress?.Report(new("下载", Percent(done + received, manifest.TotalBytes), file.Path)); last.Restart(); }
+                    }
+                }
+                if (!await MatchesAsync(temporary, file, ct).ConfigureAwait(false))
+                {
+                    var actual = await Sha256Async(temporary, ct).ConfigureAwait(false);
+                    throw new InvalidOperationException($"文件校验不通过：{file.Path}（期望 sha256 {Short(file.Sha256)}，实际 {Short(actual)}）");
+                }
+                ct.ThrowIfCancellationRequested();
+                File.Move(temporary, stagePath, overwrite: true);
             }
-            else
-            {
-                await using var source = await http.GetStreamAsync(url, ct).ConfigureAwait(false);
-                await using var destination = File.Create(temporary);
-                await source.CopyToAsync(destination, 81920, ct).ConfigureAwait(false);
-            }
-
-            if (!await MatchesAsync(temporary, file, ct).ConfigureAwait(false))
-            {
-                var actual = await Sha256Async(temporary, ct).ConfigureAwait(false);
-                File.Delete(temporary);
-                throw new InvalidOperationException(
-                    $"文件校验不通过：{file.Path}（期望 sha256 {Short(file.Sha256)}，实际 {Short(actual)}）");
-            }
-
-            File.Move(temporary, stagePath, overwrite: true);
+            finally { if(File.Exists(temporary)) File.Delete(temporary); }
             downloaded++;
             done += Math.Max(0, file.Size);
             progress?.Report(new UpdateProgress("下载", Percent(done, manifest.TotalBytes), file.Path));

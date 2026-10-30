@@ -1,0 +1,71 @@
+name: Desktop Release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '已存在的桌面版本标签，例如 desktop-v0.7.0-preview.1'
+        required: true
+        type: string
+      notes:
+        description: '客户端显示的更新说明'
+        type: string
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: desktop-release-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-latest
+    environment: release-signing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: 检查版本标签
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if($env:RELEASE_TAG -notmatch '^desktop-v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$'){throw '无效的桌面版本标签'}
+          "RELEASE_VERSION=$($Matches[1])" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: 构建与回归
+        shell: pwsh
+        run: |
+          dotnet build mc-launcher/tests/Core.Checks -c Release -m:1
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          dotnet mc-launcher/tests/Core.Checks/bin/Release/net10.0/Core.Checks.dll
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          dotnet build mc-launcher/tests/Desktop.Checks -c Release -m:1
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          dotnet mc-launcher/tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.dll "${{ runner.temp }}/desktop-checks"
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+      - name: 打包自带运行环境的单文件
+        shell: pwsh
+        run: |
+          ./mc-launcher/packaging/publish-desktop.ps1 -Lean -Compress -OutputDirectory "$PWD/desktop-payload"
+          Copy-Item -LiteralPath desktop-payload/方隅.exe -Destination desktop-payload/Fangyu.exe
+      - name: 生成并签名更新清单
+        shell: pwsh
+        env:
+          MCLAUNCHER_UPDATE_SIGNING_KEY: ${{ secrets.MCLAUNCHER_UPDATE_SIGNING_KEY }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          ./mc-launcher/packaging/new-desktop-update.ps1 -Executable desktop-payload/Fangyu.exe -Version $env:RELEASE_VERSION -Tag $env:RELEASE_TAG -Notes $env:RELEASE_NOTES
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          [IO.File]::WriteAllText("$PWD/desktop-payload/release-notes.md", $env:RELEASE_NOTES)
+      - name: 上传完整草稿并发布
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh release create $env:RELEASE_TAG --verify-tag --draft --title "方隅 $env:RELEASE_VERSION" --notes-file desktop-payload/release-notes.md desktop-payload/Fangyu.exe desktop-payload/update.json desktop-payload/update.json.sig
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          gh release edit $env:RELEASE_TAG --draft=false --latest
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}

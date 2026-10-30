@@ -84,6 +84,7 @@ public sealed partial class MainViewModel
     public void InitializeExperience(IPlayerAppearanceClient appearance)
     {
         InitializeMaintenance();
+        InitializeLauncherUpdates();
         _appearanceClient=appearance;_tasks=new(AppPaths.DataDirectory);_tasks.Execute=ExecuteDurableTaskAsync;
         _tasks.Changed+=()=>{_ = PlatformUi.RunOnUiAsync(RefreshTaskRows);};
         Download.QueueTask=QueueExperienceTaskAsync;

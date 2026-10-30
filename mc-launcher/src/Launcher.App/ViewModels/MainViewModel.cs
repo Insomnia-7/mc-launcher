@@ -219,20 +219,33 @@ public sealed partial class MainViewModel : ObservableObject
 
     private UpdateManifest? _pendingUpdate;
     private string? _pendingUpdateLocation;
+    private CancellationTokenSource? _launcherUpdateCts;
+    [ObservableProperty] private bool _isCheckingLauncherUpdate;
+    [ObservableProperty] private bool _launcherUpdateFailed;
+    [ObservableProperty] private string _launcherUpdateNotes = "";
+    [ObservableProperty] private string _launcherUpdateVersion = "";
+    [ObservableProperty] private string _launcherUpdateSize = "";
+    [ObservableProperty] private string _launcherUpdateCheckedAt = "尚未检查";
 
     /// <summary>手动「检查更新」用；正常情况下开机 2 秒后自动跑一次。</summary>
     [RelayCommand]
     private async Task CheckUpdateAsync()
     {
+        if(IsCheckingLauncherUpdate || IsUpdating) return;
+        IsCheckingLauncherUpdate = true; LauncherUpdateFailed = false; UpdateText = "正在检查启动器更新…";
         try
         {
-            var location = UpdateSettings.ReadUrl(AppPaths.DataDirectory);
+            var location = UpdateSettings.ReadUrl(AppPaths.DataDirectory) ?? DefaultUpdateLocation;
             var result = await _updateClient.CheckAsync(BuildInfo.Version, location).ConfigureAwait(true);
+            LauncherUpdateCheckedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
 
             if (result.Manifest is { } manifest)
             {
                 _pendingUpdate = manifest;
                 _pendingUpdateLocation = result.Location;
+                LauncherUpdateNotes = manifest.Notes ?? "此版本未提供更新说明。";
+                LauncherUpdateVersion = manifest.Version;
+                LauncherUpdateSize = $"{manifest.TotalBytes / 1048576d:F1} MB";
                 UpdateText = $"发现新版本 {manifest.Version}（当前 {BuildInfo.Version}）";
                 HasUpdate = true;
                 _logger.LogInformation("发现新版本 {Version}", manifest.Version);
@@ -241,37 +254,44 @@ public sealed partial class MainViewModel : ObservableObject
 
             _pendingUpdate = null;
             HasUpdate = false;
-            UpdateText = result.Reason is { Length: > 0 } reason && (reason.StartsWith("已是最新", StringComparison.Ordinal) || reason.StartsWith("更新验证失败", StringComparison.Ordinal))
-                ? reason
-                : string.Empty;
-
-            if (UpdateText.Length > 0)
-                StatusText = UpdateText;
+            LauncherUpdateNotes = ""; LauncherUpdateVersion = ""; LauncherUpdateSize = "";
+            LauncherUpdateFailed = result.Failed;
+            UpdateText = result.Reason ?? "已完成更新检查。";
         }
         catch (Exception ex)
         {
+            _pendingUpdate = null; HasUpdate = false; LauncherUpdateFailed = true;
+            LauncherUpdateNotes = ""; LauncherUpdateVersion = ""; LauncherUpdateSize = "";
+            UpdateText = "暂时无法检查更新：" + ErrorText.Describe(ex);
             _logger.LogWarning(ex, "检查更新失败");
         }
+        finally { IsCheckingLauncherUpdate = false; }
     }
 
     /// <summary>下载新版本 → 交给 mclupd 替换文件 → 主程序退出，让 updater 重启它。</summary>
     [RelayCommand]
     private async Task ApplyUpdateAsync()
     {
+        if(IsBusy || Download.IsBusy || IsModBusy) { StatusText = UpdateText = "请先完成或暂停当前任务，再更新启动器。"; return; }
+        lock(_running) if(_running.Count > 0) { StatusText = UpdateText = "请先关闭正在运行的游戏，再更新启动器。"; return; }
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "更新启动器");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         if (_pendingUpdate is not { } manifest || IsUpdating)
             return;
 
-        IsUpdating = true;
+        IsUpdating = true; IsBusy = true; LauncherUpdateFailed = false;
+        _launcherUpdateCts?.Dispose(); _launcherUpdateCts = new CancellationTokenSource();
+        var updateOperation = _launcherUpdateCts;
         try
         {
-            var updater = FindUpdater() ?? throw new FileNotFoundException("找不到更新器，安装包可能不完整，请重新下载启动器。");
+            var updater = LaunchSelfUpdater is null ? FindUpdater() ?? throw new FileNotFoundException("找不到更新器，安装包可能不完整，请重新下载启动器。") : null;
+            if(LaunchSelfUpdater is not null) SingleFileUpdate.ValidateManifest(manifest);
             var target = AppContext.BaseDirectory;
             var progress = new Progress<UpdateProgress>(report =>
             {
+                if(!IsUpdating || _launcherUpdateCts != updateOperation || updateOperation.IsCancellationRequested) return;
                 ProgressPercent = report.Percent;
-                StatusText = $"{report.Stage} {report.Percent:F0}% {report.Detail}";
+                StatusText = UpdateText = $"{report.Stage} {report.Percent:F0}% {report.Detail}";
             });
 
             var staging = await _updateClient.StageAsync(
@@ -279,12 +299,20 @@ public sealed partial class MainViewModel : ObservableObject
                 _pendingUpdateLocation,
                 target,
                 AppPaths.DataDirectory,
-                progress).ConfigureAwait(true);
+                progress, _launcherUpdateCts.Token).ConfigureAwait(true);
+
+            if(LaunchSelfUpdater is not null)
+            {
+                await LaunchSelfUpdater(staging, target, _launcherUpdateCts.Token);
+                StatusText = UpdateText = "更新已就绪，正在重启…";
+                PlatformUi.Shutdown();
+                return;
+            }
 
             StatusText = $"更新已就绪（{staging.DownloadedFiles} 个文件），正在重启…";
             _logger.LogInformation("更新暂存完成：{Directory}", staging.Directory);
 
-            var startInfo = new ProcessStartInfo(updater)
+            var startInfo = new ProcessStartInfo(updater!)
             {
                 UseShellExecute = false,
                 WorkingDirectory = Path.GetDirectoryName(updater)!,
@@ -303,23 +331,26 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LauncherUpdateFailed = ex is not OperationCanceledException;
             _logger.LogError(ex, "应用更新失败");
-            StatusText = "更新失败：" + ErrorText.Describe(ex);
+            StatusText = UpdateText = ex is OperationCanceledException ? "已取消下载，旧版保持不变；可以重新尝试更新。" : "更新失败：" + ErrorText.Describe(ex);
             if (BlockedAppGuidance.TryFor(ex) is { } blocked)
             {
                 DiagnosisText = blocked.ToDisplayText();
                 StatusText = "更新失败：" + blocked.Title;
             }
 
-            IsUpdating = false;
-            ProgressPercent = 0;
         }
+        finally { IsUpdating = false; IsBusy = false; ProgressPercent = 0; }
     }
+
+    [RelayCommand] private void CancelLauncherUpdate() => _launcherUpdateCts?.Cancel();
 
     private async Task DelayedUpdateCheckAsync()
     {
         // 首帧之后再上网：1.5 秒足够让窗口显示完，也不至于让用户等太久
         await Task.Delay(TimeSpan.FromSeconds(1.5));
+        if(ShouldCheckLauncherUpdates?.Invoke() == false) return;
         await CheckUpdateAsync();
     }
 

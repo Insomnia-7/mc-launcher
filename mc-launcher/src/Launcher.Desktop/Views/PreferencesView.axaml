@@ -11,7 +11,7 @@
         </Button>
       </Grid>
       <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="4">
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
           <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
             <icons:IconLabel Icon="ActionSettings" Text="外观"/>
           </Button>
@@ -19,6 +19,7 @@
             <icons:IconLabel Icon="ActionGlobe" Text="网络"/>
           </Button>
           <Button x:Name="StorageSettingsTab" Grid.Column="2" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Center"/>
+          <Button x:Name="LauncherUpdateSettingsTab" Grid.Column="3" Classes="nav" Classes.active="{Binding ShowsLauncherUpdates}" Command="{Binding OpenLauncherUpdatesCommand}" Content="关于与更新" HorizontalContentAlignment="Center"/>
         </Grid>
       </Border>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
@@ -80,6 +81,35 @@
               <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}"/>
             </Button>
           </Grid>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsLauncherUpdates}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+        <StackPanel Spacing="16">
+          <TextBlock Text="方隅" FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding LauncherCurrentVersion, StringFormat='当前版本：{0}'}" Classes="muted"/>
+          <CheckBox x:Name="AutomaticLauncherUpdateToggle" Content="启动后在后台检查更新" IsChecked="{Binding AutomaticLauncherUpdates}"/>
+          <TextBlock Text="只在首屏显示后检查；发现新版会提示，由你确认后下载安装。" Classes="muted" TextWrapping="Wrap"/>
+          <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Padding="18">
+            <StackPanel Spacing="12">
+              <TextBlock x:Name="LauncherUpdateStatus" Text="{Binding UpdateText}" TextWrapping="Wrap" FontSize="15"/>
+              <TextBlock Text="{Binding LauncherUpdateCheckedAt, StringFormat='最近检查：{0}'}" Classes="muted"/>
+              <StackPanel IsVisible="{Binding HasUpdate}" Spacing="6">
+                <TextBlock Text="{Binding LauncherUpdateVersion, StringFormat='新版本：{0}'}" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding LauncherUpdateSize, StringFormat='下载大小：{0}'}" Classes="muted"/>
+                <TextBlock Text="更新说明" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap"/>
+              </StackPanel>
+              <ProgressBar IsVisible="{Binding IsUpdating}" Value="{Binding ProgressPercent}" Height="4"/>
+              <WrapPanel>
+                <Button x:Name="CheckLauncherUpdateButton" Command="{Binding CheckUpdateCommand}" Content="检查更新" IsEnabled="{Binding CanCheckLauncherUpdate}" Margin="0,0,8,8"/>
+                <Button x:Name="InstallLauncherUpdateButton" Command="{Binding ConfirmLauncherUpdateCommand}" Classes="primary" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding CanInstallLauncherUpdate}" Margin="0,0,8,8"><TextBlock Text="下载并重启更新" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+                <Button x:Name="CancelLauncherUpdateButton" Command="{Binding CancelLauncherUpdateCommand}" Content="取消下载" IsVisible="{Binding IsUpdating}" Margin="0,0,8,8"/>
+                <Button Command="{Binding OpenLauncherReleasePageCommand}" Content="打开发布页" Classes="quiet" Margin="0,0,0,8"/>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding LauncherUpdatePreviousResult}" TextWrapping="Wrap"/>
+          <TextBlock Text="Windows 支持自动替换与重启；其他平台请从发布页下载。0.6 及更早版本需先手动升级到此版本，之后可在此接收更新。" Classes="muted" TextWrapping="Wrap"/>
         </StackPanel>
       </ScrollViewer>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">

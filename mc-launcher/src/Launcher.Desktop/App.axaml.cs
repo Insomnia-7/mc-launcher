@@ -43,8 +43,9 @@ public sealed partial class App : Avalonia.Application
             window.Opened += (_, _) => Dispatcher.UIThread.Post(async () =>
             {
                 Log.Information("[desktop boot] 界面就绪 {Ms} ms", boot.ElapsedMilliseconds);
+                Launcher.Application.Update.SingleFileUpdate.AcknowledgeStartup(AppPaths.DataDirectory);
                 // No network, Java scan, or image decoding is needed to construct the first screen.
-                model.StartBackgroundWork(checkUpdates: false);
+                model.StartBackgroundWork(checkUpdates: true);
                 await model.LoadAppearanceWallpaperAsync();
             }, DispatcherPriority.Background);
             desktop.Exit += (_, _) =>

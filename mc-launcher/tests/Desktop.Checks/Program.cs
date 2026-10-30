@@ -82,6 +82,7 @@ internal static class Program
         try
         {
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
+            if(args.Contains("--launcher-update")){LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);Check("自动更新页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} launcher update checks passed");return 0;}
             if(args.Contains("--maintenance")){MaintenanceUiChecks.Run(window,Pump,Check,Capture);Check("维护页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} maintenance checks passed");return 0;}
             if(args.Contains("--workspace")){WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);Check("新版工作区无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workspace checks passed");return 0;}
             if(args.Contains("--mod-workbench")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);Check("模组工作台无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} mod workbench checks passed");return 0;}
@@ -238,6 +239,7 @@ internal static class Program
             WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);
             ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);
             MaintenanceUiChecks.Run(window,Pump,Check,Capture);
+            LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

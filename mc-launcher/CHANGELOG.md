@@ -1,5 +1,11 @@
 # 方隅版本记录
 
+## 0.7.0-preview.1 · 启动器自动更新版
+
+首次接通桌面单文件自动更新：首屏后后台检测、设置中的更新入口与开关、版本 / 大小 / 更新说明、确认下载与取消、签名及 SHA-256 校验、自身临时副本更新、保留当前文件名、旧版备份、新窗口就绪确认及失败回退。补录旧 Release 不触发降级，同版本构建号不触发升级。旧版用户需先手动安装一次。详细行为见 [自动更新说明](docs/launcher-auto-update.md)。
+
+---
+
 记录范围为已交付的 0.2.0-preview.1 至 0.6.0-preview.1。历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
 当前推荐下载：[0.6.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.6.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
