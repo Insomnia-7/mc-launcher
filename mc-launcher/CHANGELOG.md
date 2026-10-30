@@ -4,11 +4,15 @@
 
 首次接通桌面单文件自动更新：首屏后后台检测、设置中的更新入口与开关、版本 / 大小 / 更新说明、确认下载与取消、签名及 SHA-256 校验、自身临时副本更新、保留当前文件名、旧版备份、新窗口就绪确认及失败回退。补录旧 Release 不触发降级，同版本构建号不触发升级。旧版用户需先手动安装一次。详细行为见 [自动更新说明](docs/launcher-auto-update.md)。
 
+[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.7.0-preview.1) · [源码 36371a1](https://github.com/Insomnia-7/mc-launcher/commit/36371a169491ff3ca0322d77ba4d8da5ab94bb65)。Windows 原始单文件 23,783,841 字节，SHA-256：`10ca469356ca688217a87ddc79a7932d76f651f0181e199a14793cb97008f54d`。
+
+通过 1085 项回归检查，另实测 6 组原生更新情形：中文、英文及自定义名称成功替换重启；无效新程序、文件占用与篡改包保留或恢复旧版。
+
 ---
 
-记录范围为已交付的 0.2.0-preview.1 至 0.6.0-preview.1。历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
+记录范围为已交付的 0.2.0-preview.1 至 0.7.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
-当前推荐下载：[0.6.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.6.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
+当前推荐下载：[0.7.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.7.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
 
 历史包早于源码提交打包，因此部分旧 EXE 的 ProductVersion 后缀仍指向前一次提交。下列源码提交对应功能版本；原始二进制版本后缀、大小与 SHA-256 均另行保留，不能将两者视为完全一致的构建来源标记。0.4、0.5、0.6 的成品版本后缀与源码提交一致。
 

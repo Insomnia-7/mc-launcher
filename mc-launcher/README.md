@@ -2,7 +2,7 @@
 
 Minecraft Java 版桌面启动器，使用 C#、.NET 10 和 Avalonia。当前交付 Windows x64 单文件版，Linux / macOS 保留构建入口，旧 WPF 入口继续保留。
 
-[下载最新版本](https://github.com/Insomnia-7/mc-launcher/releases/latest) · [全部 Release](https://github.com/Insomnia-7/mc-launcher/releases) · [完整版本记录（0.2–0.6）](CHANGELOG.md)
+[下载最新版本](https://github.com/Insomnia-7/mc-launcher/releases/latest) · [全部 Release](https://github.com/Insomnia-7/mc-launcher/releases) · [完整版本记录（0.2–0.7）](CHANGELOG.md)
 
 
 ## Avalonia 新版界面（预览）

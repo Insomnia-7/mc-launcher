@@ -208,5 +208,20 @@
     "sha256": "f757b3d140ce7c70eb2695eea9c34d91a169b33c1f76fd3e5728e37247633794",
     "binaryProductVersion": "0.6.0-preview.1+203a6ee8941d639ec11f6c5f3c7e6cd97dcefc59",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "0.7.0-preview.1",
+    "date": "2026-10-31",
+    "title": "启动器自动更新版",
+    "tag": "desktop-v0.7.0-preview.1",
+    "sourceCommit": "36371a169491ff3ca0322d77ba4d8da5ab94bb65",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/36371a169491ff3ca0322d77ba4d8da5ab94bb65",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.7.0-preview.1",
+    "changes": "首屏后后台检查、关于与更新、用户确认下载、签名与 SHA-256 校验、自身临时副本替换、保留当前文件名、重启确认及失败回退。",
+    "platform": "Windows x64",
+    "bytes": 23783841,
+    "sha256": "10ca469356ca688217a87ddc79a7932d76f651f0181e199a14793cb97008f54d",
+    "binaryProductVersion": "0.7.0-preview.1+36371a169491ff3ca0322d77ba4d8da5ab94bb65",
+    "buildMetadataMatchesSource": true
   }
 ]
