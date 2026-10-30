@@ -79,6 +79,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
             if(args.Contains("--legacy-theme"))
             {
                 Check("旧彩色主题迁移为夜间黑", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);
@@ -228,6 +229,7 @@ internal static class Program
             CatalogScrollChecks.Run(model,window,resourceFixture,Pump,Check,Capture);
             var presentationChecks=ResourceCenterChecks.CheckPresentationCacheAsync(root,Check);PumpUntil(()=>presentationChecks.IsCompleted,5000);presentationChecks.GetAwaiter().GetResult();
             ExperienceUiChecks.Run(model,window,appearanceFixture,resourceFixture,Pump,Check,Capture,root);
+            SkinPreviewChecks.Run(root,Check,Pump);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

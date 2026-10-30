@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using System.Runtime.InteropServices;
 
 namespace Launcher.Desktop.Controls;
 
@@ -19,22 +21,50 @@ public sealed class PlayerPreview:Control
     public bool Slim{get=>GetValue(SlimProperty);set=>SetValue(SlimProperty,value);}
     public bool OuterLayer{get=>GetValue(OuterLayerProperty);set=>SetValue(OuterLayerProperty,value);}
     public double Rotation{get=>GetValue(RotationProperty);set=>SetValue(RotationProperty,value);}
-    private Bitmap? _skin,_cape;
+    private TextureSet? _skin,_cape;
     private Point? _drag;
     private sealed record Face(Point[] Points,double Depth,Rect Texture,Bitmap? Image,double Shade);
     private readonly record struct V(double X,double Y,double Z);
     static PlayerPreview()=>AffectsRender<PlayerPreview>(SkinProperty,CapeProperty,SlimProperty,OuterLayerProperty,RotationProperty);
-    public PlayerPreview(){Focusable=true;MinHeight=200;ToolTip.SetTip(this,"拖动旋转角色；方向键也可旋转。纹理预览不代表游戏内已应用。");}
+    public PlayerPreview(){Focusable=true;MinHeight=200;RenderOptions.SetBitmapInterpolationMode(this,BitmapInterpolationMode.None);ToolTip.SetTip(this,"拖动旋转角色；方向键也可旋转。纹理预览不代表游戏内已应用。");}
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
         if(change.Property==SkinProperty){_skin?.Dispose();_skin=Decode(Skin);}
         if(change.Property==CapeProperty){_cape?.Dispose();_cape=Decode(Cape);}
     }
-    private static Bitmap? Decode(byte[]? data)
+    private static TextureSet? Decode(byte[]? data)
     {
         if(data is null)return null;
-        try {using var stream=new MemoryStream(data);return new Bitmap(stream);}catch(ArgumentException){return null;}
+        try {using var stream=new MemoryStream(data);using var original=new Bitmap(stream);return new TextureSet(original);}catch(ArgumentException){return null;}
+    }
+    // Cache face lighting in the texture, preserving alpha even on translucent outer layers.
+    // Normalizing DPI keeps atlas coordinates in pixels, independent of PNG metadata.
+    private sealed class TextureSet:IDisposable
+    {
+        public Bitmap Image {get;}
+        private readonly Dictionary<double,Bitmap> _shaded=[];
+        public TextureSet(Bitmap original)=>Image=Copy(original,0);
+        public Bitmap At(double shade)
+        {
+            if(shade==0)return Image;
+            if(!_shaded.TryGetValue(shade,out var bitmap))_shaded[shade]=bitmap=Copy(Image,shade);
+            return bitmap;
+        }
+        private static Bitmap Copy(Bitmap source,double shade)
+        {
+            var bitmap=new WriteableBitmap(source.PixelSize,new Vector(96,96),PixelFormat.Rgba8888,AlphaFormat.Unpremul);
+            using var frame=bitmap.Lock();source.CopyPixels(frame);
+            if(shade>0)
+            {
+                var bytes=new byte[frame.RowBytes*frame.Size.Height];Marshal.Copy(frame.Address,bytes,0,bytes.Length);
+                for(var y=0;y<frame.Size.Height;y++)for(var x=0;x<frame.Size.Width;x++)
+                {var i=y*frame.RowBytes+x*4;for(var c=0;c<3;c++)bytes[i+c]=(byte)Math.Round(bytes[i+c]*(1-shade));}
+                Marshal.Copy(bytes,0,frame.Address,bytes.Length);
+            }
+            return bitmap;
+        }
+        public void Dispose(){Image.Dispose();foreach(var bitmap in _shaded.Values)bitmap.Dispose();}
     }
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {base.OnPointerPressed(e);if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed){_drag=e.GetPosition(this);e.Pointer.Capture(this);Focus();e.Handled=true;}}
@@ -46,18 +76,20 @@ public sealed class PlayerPreview:Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);if(Bounds.Width<=0||Bounds.Height<=0)return;
-        var scale=Math.Min(Bounds.Width/31,Bounds.Height/40);var yaw=Rotation*Math.PI/180;const double pitch=0.12;
+        var scale=Math.Min(Bounds.Width/26,Bounds.Height/36);var yaw=Rotation*Math.PI/180;const double pitch=-0.13;
         (Point,double) Project(V v)
         {var x=v.X*Math.Cos(yaw)+v.Z*Math.Sin(yaw);var z=-v.X*Math.Sin(yaw)+v.Z*Math.Cos(yaw);return(new(Bounds.Width/2+x*scale,Bounds.Height/2-((v.Y-16)*Math.Cos(pitch)-z*Math.Sin(pitch))*scale),z);}
         var faces=new List<Face>();
-        void Box(double x,double y,double z,double w,double h,double d,int tx,int ty,Bitmap? texture,double grow=0)
+        void Box(double x,double y,double z,double w,double h,double d,int tx,int ty,TextureSet? texture,double grow=0)
         {
             var l=x-w/2-grow;var r=x+w/2+grow;var b=y-grow;var t=y+h+grow;var front=z-d/2-grow;var back=z+d/2+grow;
             void Face(V a,V b,V c,V e,Rect uv,double shade)
             {
-                if(texture is not null&&(uv.Right>texture.PixelSize.Width||uv.Bottom>texture.PixelSize.Height))return;
+                if(texture is not null&&(uv.Right>texture.Image.PixelSize.Width||uv.Bottom>texture.Image.PixelSize.Height))return;
                 var points=new[]{Project(a),Project(b),Project(c),Project(e)};
-                faces.Add(new(points.Select(p=>p.Item1).ToArray(),points.Average(p=>p.Item2),uv,texture,shade));
+                var edge=points[1].Item1-points[0].Item1;var side=points[3].Item1-points[0].Item1;
+                if(edge.X*side.Y-edge.Y*side.X<=0.0001)return; // Hide inward faces, including behind transparent hat pixels.
+                faces.Add(new(points.Select(p=>p.Item1).ToArray(),points.Average(p=>p.Item2),uv,texture?.At(shade),shade));
             }
             Face(new(l,t,front),new(r,t,front),new(r,b,front),new(l,b,front),new(tx+d,ty+d,w,h),0);
             Face(new(r,t,back),new(l,t,back),new(l,b,back),new(r,b,back),new(tx+2*d+w,ty+d,w,h),0.12);
@@ -66,7 +98,7 @@ public sealed class PlayerPreview:Control
             Face(new(l,t,back),new(r,t,back),new(r,t,front),new(l,t,front),new(tx+d,ty,w,d),0);
             Face(new(l,b,front),new(r,b,front),new(r,b,back),new(l,b,back),new(tx+d+w,ty,w,d),0.22);
         }
-        var arm=Slim?3:4;var armX=4+arm/2d;var modern=_skin?.PixelSize.Height!=32;
+        var arm=Slim?3:4;var armX=4+arm/2d;var modern=_skin?.Image.PixelSize.Height!=32;
         Box(0,24,0,8,8,8,0,0,_skin);Box(0,12,0,8,12,4,16,16,_skin);
         Box(-armX,12,0,arm,12,4,40,16,_skin);Box(armX,12,0,arm,12,4,modern?32:40,modern?48:16,_skin);
         Box(-2,0,0,4,12,4,0,16,_skin);Box(2,0,0,4,12,4,modern?16:0,modern?48:16,_skin);
