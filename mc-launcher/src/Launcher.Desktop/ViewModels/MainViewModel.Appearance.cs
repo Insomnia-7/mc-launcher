@@ -159,6 +159,8 @@ public sealed partial class MainViewModel
         else if(IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
         else if(IsNetworkOpen) CloseNetworkCommand.Execute(null);
         else if(IsExperienceOpen) CloseExperienceCommand.Execute(null);
+        else if(IsModPreviewOpen) CloseModPreview();
+        else if(IsCloneEditorOpen) CloseCloneEditor();
         else if(IsDetailOpen) ShowInstances();
     }
 }

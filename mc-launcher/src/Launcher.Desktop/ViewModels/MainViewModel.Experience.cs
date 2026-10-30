@@ -185,9 +185,9 @@ public sealed partial class MainViewModel
         }
         catch(Exception ex){ExperienceHint=ErrorText.Describe(ex);}
     }
-    private void EnsureInstanceStopped(string id)
+    private void EnsureInstanceStopped(string id,string? root=null)
     {
-        var version=Instances.FirstOrDefault(i=>i.InstanceId==id)?.VersionId??id;
+        var version=Launcher.Application.Instances.InstanceRegistry.ResolveVersionId(root??GameRoot,id);
         lock(_running)if(_running.ContainsKey(version))throw new InvalidOperationException("请先关闭此实例的游戏，再修改外观组件、配置或存档。");
     }
     private async Task ExperienceActionAsync(Func<CancellationToken,Task> action)
@@ -352,9 +352,9 @@ public sealed partial class MainViewModel
         var path=await PlatformUi.SaveFileAsync("导出已脱敏诊断包","Zip 诊断包|*.zip","方隅-诊断.zip");if(path is null)return;
         await ExperienceActionAsync(async ct=>{await DiagnosticBundle.ExportAsync(path,GameRoot,instance.InstanceId,DiagnosisText+"\n"+string.Join("\n\n",InspectionIssues.Select(i=>i.Title+"\n依据："+i.Evidence+"\n建议："+i.Advice)),ct);ExperienceHint="已导出日志尾部与模组列表，未包含账号文件，敏感令牌已脱敏。";});
     }
-    private async Task QueueExperienceTaskAsync(DurableTaskRequest request)
+    private async Task<DurableTaskRecord?> QueueExperienceTaskAsync(DurableTaskRequest request)
     {
-        if(ExperienceBusy){ExperienceHint="请等待实例管理完成。";return;}
+        if(ExperienceBusy){ExperienceHint="请等待实例管理完成。";return null;}
         var task=_tasks.Add(request);ExperienceHint="已保存任务："+request.Title;
         if(_tasks.ActiveId is null&&!IsBusy&&!Download.IsBusy)
         {
@@ -369,6 +369,7 @@ public sealed partial class MainViewModel
             };
             ExperienceHint=result.Detail;
         }
+        return _tasks.List().Single(t=>t.Id==task.Id);
     }
     [RelayCommand] private async Task ResumeDurableTaskAsync(DurableTaskRow? task)
     {
@@ -379,7 +380,7 @@ public sealed partial class MainViewModel
     [RelayCommand] private void CancelDurableTask(DurableTaskRow? task){if(task is not null)_tasks.Cancel(task.Id);}
     private async Task ExecuteDurableTaskAsync(DurableTaskRequest request,IProgress<TaskProgress> progress,CancellationToken ct)
     {
-        if(request.InstanceId is {} targetInstance)EnsureInstanceStopped(targetInstance);
+        if(request.InstanceId is {} targetInstance)EnsureInstanceStopped(targetInstance,request.GameRoot);
         using var operation=GameOperationCoordinator.Shared.TryEnter(request.GameRoot,request.Title);
         if(operation is null)throw new InvalidOperationException(GameOperationCoordinator.Shared.BusyMessage(request.GameRoot));
         await PlatformUi.RunOnUiAsync(()=>{IsBusy=true;Download.IsBusy=true;StatusText="任务："+request.Title;});
@@ -387,7 +388,11 @@ public sealed partial class MainViewModel
         {
             var activeTask=_tasks.ActiveId;
             IProgress<TaskProgress> uiProgress=new Progress<TaskProgress>(p=>{if(ct.IsCancellationRequested||_tasks.ActiveId!=activeTask||!_tasks.List().Any(t=>t.Id==activeTask&&t.State==DurableTaskState.Running))return;ProgressPercent=p.Percent;Download.ProgressPercent=p.Percent;StatusText=Download.Status=p.Detail;progress.Report(p);});
-            if(request.Kind=="update")
+            if(request.Kind is "mod-batch" or "clone" or "trial-update")
+            {
+                await ExecuteWorkbenchTaskAsync(request,uiProgress,ct);
+            }
+            else if(request.Kind=="update")
             {
                 var id=request.InstanceId??throw new InvalidOperationException("更新任务缺少目标实例。");
                 var args=request.Arguments;
@@ -405,8 +410,19 @@ public sealed partial class MainViewModel
                 await _modpackInstaller.ImportAsync(source,request.GameRoot,new Progress<ModpackImportProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
             }
             else await Download.ExecutePersistentInstallAsync(request,uiProgress,ct);
-            await PlatformUi.RunOnUiAsync(()=>{StatusText=Download.Status="任务已完成："+request.Title;RefreshInstances();});
+            await PlatformUi.RunOnUiAsync(()=>
+            {
+                StatusText=Download.Status="任务已完成："+request.Title;
+                if(GameRoot!=request.GameRoot)return;
+                RefreshInstances();
+                if(request.Kind is "clone" or "trial-update")
+                {
+                    var clone=System.Text.Json.JsonSerializer.Deserialize<Launcher.Application.Instances.InstanceCloneRequest>(request.Arguments["clone"]);
+                    SelectedInstance=Instances.FirstOrDefault(i=>i.InstanceId==clone?.DestinationId)??SelectedInstance;
+                    IsDetailOpen=true;DetailTab=request.Kind=="trial-update"?1:0;
+                }
+            });
         }
-        finally{await PlatformUi.RunOnUiAsync(()=>{IsBusy=false;Download.IsBusy=false;ProgressPercent=0;Download.ProgressPercent=0;});}
+        finally{await PlatformUi.RunOnUiAsync(()=>{IsBusy=false;Download.IsBusy=false;ProgressPercent=0;Download.ProgressPercent=0;if(request.Kind is "clone" or "trial-update"&&GameRoot==request.GameRoot)RefreshInstances();});}
     }
 }

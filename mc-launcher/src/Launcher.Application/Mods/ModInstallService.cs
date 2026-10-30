@@ -59,6 +59,7 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
 
         // 必需依赖：只做广度扩散，深度用 visited 控住
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { version.ProjectId };
+        var resolvedVersions = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase) {{version.ProjectId,version.Id}};
 
         var pending = new Queue<(string ProjectId, string? VersionId, int Depth)>();
         foreach (var dependency in version.RequiredDependencies)
@@ -81,7 +82,12 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
         while (pending.Count > 0)
         {
             var (projectId, dependencyVersionId, depth) = pending.Dequeue();
-            if (!visited.Add(projectId)) continue;
+            if (!visited.Add(projectId))
+            {
+                if(strict&&dependencyVersionId is not null&&resolvedVersions.TryGetValue(projectId,out var previous)&&previous!=dependencyVersionId)
+                    throw new InvalidOperationException("同一必需前置出现不同的指定版本："+projectId);
+                continue;
+            }
             if (depth > MaxDependencyDepth)
             {
                 if (strict) throw new InvalidOperationException("必需前置超过支持的递归深度，已保留旧模组。");
@@ -103,6 +109,7 @@ public sealed class ModInstallService(IDownloader downloader, IModrinthClient mo
                     if (strict) throw new InvalidOperationException($"必需前置没有适配版本：{projectId}");
                     continue;
                 }
+                resolvedVersions[projectId]=chosen!.Id;
 
                 entries.Add(new(new DownloadEntry(
                     dependencyFile.Url,

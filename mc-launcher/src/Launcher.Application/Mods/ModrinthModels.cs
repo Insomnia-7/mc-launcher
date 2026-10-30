@@ -73,6 +73,7 @@ public sealed record ModrinthVersion(
     /// <summary>首选文件：primary=true 的那份，没有就取第一个。</summary>
     [JsonPropertyName("downloads")] public long Downloads { get; init; }
     [JsonPropertyName("version_type")] public string? VersionType { get; init; }
+    [JsonPropertyName("changelog")] public string? Changelog { get; init; }
     public ModrinthFile? PrimaryFile =>
         Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 

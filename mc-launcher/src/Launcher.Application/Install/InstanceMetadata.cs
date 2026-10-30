@@ -20,7 +20,8 @@ public sealed record InstanceMetadata(
     string? Loader,
     string? MinecraftVersion,
     string? ImportedAt,
-    string? LoaderVersionId = null)
+    string? LoaderVersionId = null,
+    bool IsModpack = true)
 {
     public const string FileName = "instance.json";
 

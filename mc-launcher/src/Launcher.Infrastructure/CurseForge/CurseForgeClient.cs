@@ -151,6 +151,9 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
     public async Task<CfFile?> GetFileAsync(int modId,int fileId,CancellationToken ct=default) =>
         (await GetAsync<CfSingleFileResponse>($"mods/{modId}/files/{fileId}",ct).ConfigureAwait(false))?.Data;
 
+    public async Task<string?> GetFileChangelogAsync(int modId,int fileId,CancellationToken ct=default)=>
+        (await GetAsync<CfStringResponse>($"mods/{modId}/files/{fileId}/changelog",ct).ConfigureAwait(false))?.Data;
+
     public async Task<CfFileResponse> GetFilesPageAsync(int modId,string? gameVersion=null,string? loaderSlug=null,int index=0,CancellationToken ct=default)
     {
         var query=new List<string>{"pageSize=50",$"index={Math.Max(0,index)}"};

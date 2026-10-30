@@ -6,6 +6,7 @@
     <RootNamespace>Launcher.CoreChecks</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../TestFixtures/WorkbenchFixture.cs" Link="Fixtures/WorkbenchFixture.cs" />
     <ProjectReference Include="..\..\src\Launcher.Domain\Launcher.Domain.csproj" />
     <ProjectReference Include="..\..\src\Launcher.Application\Launcher.Application.csproj" />
     <ProjectReference Include="..\..\src\Launcher.Infrastructure\Launcher.Infrastructure.csproj" />

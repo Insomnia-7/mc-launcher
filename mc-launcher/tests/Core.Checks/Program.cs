@@ -42,6 +42,11 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--workbench"))
+{
+    await ModWorkbenchChecks.RunAsync(Check);Console.WriteLine($"Workbench: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
+
 var ctx = new PlatformContext("windows", "x86_64", "10.0.19045") { HasCustomResolution = false };
 var launcher = new LaunchContext(
     PlayerName: "Steve",
@@ -1902,6 +1907,7 @@ Check("非网络错误不硬塞建议",
 }
 
 await ExperienceChecks.RunAsync(Check);
+await ModWorkbenchChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

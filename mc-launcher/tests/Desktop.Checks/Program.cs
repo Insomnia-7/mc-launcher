@@ -47,8 +47,9 @@ internal static class Program
         var javaPath = Path.Combine(data, OperatingSystem.IsWindows() ? "java.exe" : "java"); File.WriteAllBytes(javaPath, [0]);
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
         var log = new BindingLog(); Logger.Sink = log;
-        var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();
+        var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
+            s.AddSingleton(workbenchFixture.Plans);
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -82,6 +83,7 @@ internal static class Program
         {
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
             if(args.Contains("--workspace")){WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);Check("新版工作区无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workspace checks passed");return 0;}
+            if(args.Contains("--mod-workbench")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);Check("模组工作台无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} mod workbench checks passed");return 0;}
             if(args.Contains("--legacy-theme"))
             {
                 Check("旧彩色主题迁移为夜间黑", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);
@@ -233,6 +235,7 @@ internal static class Program
             ExperienceUiChecks.Run(model,window,appearanceFixture,resourceFixture,Pump,Check,Capture,root);
             SkinPreviewChecks.Run(root,Check,Pump);
             WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);
+            ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

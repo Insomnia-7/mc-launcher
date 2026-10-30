@@ -577,6 +577,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<ModRow> InstalledMods { get; } = [];
     public ObservableCollection<ModUpdateRow> ModUpdates { get; } = [];
+    private int _modScanRevision;
 
     [ObservableProperty]
     private string _modSummary = "先选一个版本";
@@ -593,6 +594,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshModsAsync()
     {
+        var revision=Interlocked.Increment(ref _modScanRevision);
+        var root=GameRoot;
         ModUpdates.Clear();
         InstalledMods.Clear();
         ModWarnings = string.Empty;
@@ -606,8 +609,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            var modsDirectory = Path.Combine(GameRoot, "instances", instance.InstanceId, ".minecraft", "mods");
+            var modsDirectory = Path.Combine(root, "instances", instance.InstanceId, ".minecraft", "mods");
             var scan = await Task.Run(() => InstalledModScanner.Scan(modsDirectory)).ConfigureAwait(true);
+            if(revision!=_modScanRevision||GameRoot!=root||SelectedInstance?.InstanceId!=instance.InstanceId)return;
             foreach (var mod in scan.Mods)
             {
                 InstalledMods.Add(new ModRow(
@@ -650,7 +654,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task CheckModUpdatesAsync()
     {
-        if (SelectedInstance is not { } instance || IsModBusy) return;
+        if (SelectedInstance is not { } instance || IsModBusy || IsBusy || Download.IsBusy) return;
+        var root=GameRoot;
 
         IsModBusy = true;
         StatusText = "正在检查模组更新…";
@@ -658,8 +663,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var progress = new Progress<ModInstallProgress>(p =>
                 StatusText = $"{p.Stage} {p.Percent:N0}%{(p.Detail is null ? string.Empty : " · " + p.Detail)}");
-            var report = await _modUpdates.CheckAsync(GameRoot, instance.InstanceId, progress: progress,
+            var report = await _modUpdates.CheckAsync(root, instance.InstanceId, progress: progress,
                 ct: _runningCts?.Token ?? CancellationToken.None, channel:ModUpdateReleaseChannel).ConfigureAwait(true);
+            if(GameRoot!=root||SelectedInstance?.InstanceId!=instance.InstanceId)return;
 
             ModUpdates.Clear();
             foreach (var candidate in report.Updates.Where(c=>IsModUpdateAllowed?.Invoke(c)??true))
@@ -691,6 +697,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void UpdateMod(ModUpdateRow? row)
     {
         if (row is null || SelectedInstance is not { } instance) return;
+        if(PreviewModUpdate is not null){_ = PreviewModUpdate(row);return;}
 
         AskConfirm(
             "更新模组",
@@ -1746,7 +1753,7 @@ public sealed partial class MainViewModel : ObservableObject
                 subtitle = "原版";
             }
 
-            Instances.Add(new InstanceCard(id, versionId, title, subtitle, jarVersion, metadata is not null));
+            Instances.Add(new InstanceCard(id, versionId, title, subtitle, jarVersion, metadata?.IsModpack==true));
         }
 
         // 选择优先级：上次选的 → 整合包（有 instance.json 的）→ 第一个

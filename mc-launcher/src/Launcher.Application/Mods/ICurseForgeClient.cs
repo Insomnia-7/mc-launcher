@@ -8,6 +8,7 @@ using Launcher.Domain.Content;
 /// </summary>
 public interface ICurseForgeClient
 {
+    Task<string?> GetFileChangelogAsync(int modId,int fileId,CancellationToken ct=default)=>Task.FromResult<string?>(null);
     async Task<CfFile?> GetFileAsync(int modId,int fileId,CancellationToken ct=default) =>
         (await GetFilesAsync(modId,ct:ct)).FirstOrDefault(f=>f.Id==fileId);
     async Task<CfFileResponse> GetFilesPageAsync(int modId,string? gameVersion=null,string? loaderSlug=null,int index=0,CancellationToken ct=default) =>
