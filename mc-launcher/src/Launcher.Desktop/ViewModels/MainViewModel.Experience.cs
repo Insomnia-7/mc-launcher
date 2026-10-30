@@ -48,6 +48,7 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _lookName="新皮肤";
     [ObservableProperty] private bool _previewSlim;
     [ObservableProperty] private bool _previewOuterLayer=true;
+    [ObservableProperty] private bool _previewAnimate=true;
     [ObservableProperty] private byte[]? _previewSkin;
     [ObservableProperty] private byte[]? _previewCape;
     [ObservableProperty] private WardrobeLook? _selectedLook;
@@ -70,6 +71,7 @@ public sealed partial class MainViewModel
     public string[] UpdateChannels {get;}=["正式版","测试版","开发版"];
     public string[] RestoreScopes {get;}=["仅模组与配置（保留存档）","仅恢复存档","模组配置与存档"];
     public bool IsWardrobeTab=>ExperienceTab==0;
+    public bool PreviewActive=>IsExperienceOpen&&IsWardrobeTab;
     public bool IsHistoryTab=>ExperienceTab==1;
     public bool IsToolsTab=>ExperienceTab==2;
     public bool CanEditExperience=>!ExperienceBusy&&!IsBusy&&!Download.IsBusy&&!IsModBusy;
@@ -134,6 +136,7 @@ public sealed partial class MainViewModel
     }
     partial void OnExperienceTabChanged(int value)
     {
+        OnPropertyChanged(nameof(PreviewActive));
         OnPropertyChanged(nameof(IsWardrobeTab));OnPropertyChanged(nameof(IsHistoryTab));OnPropertyChanged(nameof(IsToolsTab));
         if(IsExperienceOpen&&value==0)_=RefreshWardrobeAsync();
     }
@@ -141,6 +144,7 @@ public sealed partial class MainViewModel
     partial void OnUpdateChannelChanged(string value)=>ModUpdateReleaseChannel=value=="测试版"?"beta":value=="开发版"?"alpha":"release";
     partial void OnIsExperienceOpenChanged(bool value)
     {
+        OnPropertyChanged(nameof(PreviewActive));
         OnPropertyChanged(nameof(HasOverlay));
         if(!value){WardrobeBusy=false;_wardrobeCts?.Cancel();_wardrobeRevision++;PreviewSkin=null;PreviewCape=null;}
     }

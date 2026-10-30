@@ -1,126 +1,103 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
-using System.Runtime.InteropServices;
+using Avalonia.Threading;
 
 namespace Launcher.Desktop.Controls;
 
-/// <summary>Orthographic textured cuboids, repainted only when the texture or viewing angle changes.</summary>
-public sealed class PlayerPreview:Control
+public sealed class PlayerPreview:Grid
 {
     public static readonly StyledProperty<byte[]?> SkinProperty=AvaloniaProperty.Register<PlayerPreview,byte[]?>(nameof(Skin));
     public static readonly StyledProperty<byte[]?> CapeProperty=AvaloniaProperty.Register<PlayerPreview,byte[]?>(nameof(Cape));
     public static readonly StyledProperty<bool> SlimProperty=AvaloniaProperty.Register<PlayerPreview,bool>(nameof(Slim));
     public static readonly StyledProperty<bool> OuterLayerProperty=AvaloniaProperty.Register<PlayerPreview,bool>(nameof(OuterLayer),true);
     public static readonly StyledProperty<double> RotationProperty=AvaloniaProperty.Register<PlayerPreview,double>(nameof(Rotation),-22);
+    public static readonly StyledProperty<double> PitchProperty=AvaloniaProperty.Register<PlayerPreview,double>(nameof(Pitch),-8,coerce:(_,v)=>Math.Clamp(v,-55,55));
+    public static readonly StyledProperty<double> ZoomProperty=AvaloniaProperty.Register<PlayerPreview,double>(nameof(Zoom),1,coerce:(_,v)=>Math.Clamp(double.IsFinite(v)?v:1,0.65,1.65));
+    public static readonly StyledProperty<bool> AnimateProperty=AvaloniaProperty.Register<PlayerPreview,bool>(nameof(Animate),true);
+    public static readonly StyledProperty<bool> PreferGpuProperty=AvaloniaProperty.Register<PlayerPreview,bool>(nameof(PreferGpu),true);
+    public static readonly StyledProperty<bool> PreviewActiveProperty=AvaloniaProperty.Register<PlayerPreview,bool>(nameof(PreviewActive),true);
+    public bool PreviewActive{get=>GetValue(PreviewActiveProperty);set=>SetValue(PreviewActiveProperty,value);}
     public byte[]? Skin{get=>GetValue(SkinProperty);set=>SetValue(SkinProperty,value);}
     public byte[]? Cape{get=>GetValue(CapeProperty);set=>SetValue(CapeProperty,value);}
     public bool Slim{get=>GetValue(SlimProperty);set=>SetValue(SlimProperty,value);}
     public bool OuterLayer{get=>GetValue(OuterLayerProperty);set=>SetValue(OuterLayerProperty,value);}
     public double Rotation{get=>GetValue(RotationProperty);set=>SetValue(RotationProperty,value);}
-    private TextureSet? _skin,_cape;
+    public double Pitch{get=>GetValue(PitchProperty);set=>SetValue(PitchProperty,value);}
+    public double Zoom{get=>GetValue(ZoomProperty);set=>SetValue(ZoomProperty,value);}
+    public bool Animate{get=>GetValue(AnimateProperty);set=>SetValue(AnimateProperty,value);}
+    public bool PreferGpu{get=>GetValue(PreferGpuProperty);set=>SetValue(PreferGpuProperty,value);}
+    private readonly SoftwarePlayerPreview _software=new(){IsHitTestVisible=false};
+    private PlayerGlPreview? _gpu;
+    private readonly DispatcherTimer _timer=new(){Interval=TimeSpan.FromMilliseconds(33)};
+    private readonly Stopwatch _clock=new();
+    private Window? _window;
     private Point? _drag;
-    private sealed record Face(Point[] Points,double Depth,Rect Texture,Bitmap? Image,double Shade);
-    private readonly record struct V(double X,double Y,double Z);
-    static PlayerPreview()=>AffectsRender<PlayerPreview>(SkinProperty,CapeProperty,SlimProperty,OuterLayerProperty,RotationProperty);
-    public PlayerPreview(){Focusable=true;MinHeight=200;RenderOptions.SetBitmapInterpolationMode(this,BitmapInterpolationMode.None);ToolTip.SetTip(this,"拖动旋转角色；方向键也可旋转。纹理预览不代表游戏内已应用。");}
+    private bool _ready;
+    public bool IsGpuReady=>_ready;
+    public string RendererDescription {get;private set;}="兼容预览";
+    public bool IsAnimationRunning=>_timer.IsEnabled;
+    internal PlayerGlPreview? Gpu=>_gpu;
+    public PlayerPreview()
+    {
+        Focusable=true;MinHeight=200;ClipToBounds=true;Background=Brushes.Transparent;
+        RenderOptions.SetBitmapInterpolationMode(this,BitmapInterpolationMode.None);
+        Children.Add(_software);_timer.Tick+=(_,_)=>{if(!ShouldAnimate()){UpdateAnimation();return;}SyncFrame();};
+        ToolTip.SetTip(this,"拖动旋转与俯仰 · 滚轮缩放 · 方向键旋转 · +/- 缩放 · Home 复位");
+    }
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);_window=TopLevel.GetTopLevel(this) as Window;
+        if(_window is not null)_window.PropertyChanged+=WindowChanged;
+        MotionPreferences.Changed+=UpdateAnimation;EnsureGpu();SyncFrame();UpdateAnimation();
+    }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        _timer.Stop();_clock.Stop();MotionPreferences.Changed-=UpdateAnimation;if(_window is not null)_window.PropertyChanged-=WindowChanged;_window=null;
+        base.OnDetachedFromVisualTree(e);
+    }
+    private void WindowChanged(object? sender,AvaloniaPropertyChangedEventArgs e){if(e.Property.Name is "IsActive" or "WindowState" or "IsVisible")UpdateAnimation();}
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        base.OnPropertyChanged(change);
-        if(change.Property==SkinProperty){_skin?.Dispose();_skin=Decode(Skin);}
-        if(change.Property==CapeProperty){_cape?.Dispose();_cape=Decode(Cape);}
+        base.OnPropertyChanged(change);if(_software is null)return;
+        if(change.Property==PreferGpuProperty||change.Property==SkinProperty||change.Property==PreviewActiveProperty)EnsureGpu();
+        if(change.Property==SkinProperty||change.Property==CapeProperty||change.Property==SlimProperty||change.Property==OuterLayerProperty||change.Property==RotationProperty||change.Property==PitchProperty||change.Property==ZoomProperty||change.Property==AnimateProperty||change.Property==PreviewActiveProperty||change.Property==IsVisibleProperty)
+        {SyncFrame();UpdateAnimation();}
+        if(change.Property.Name=="RenderOptions")RenderOptions.SetBitmapInterpolationMode(_software,RenderOptions.GetBitmapInterpolationMode(this));
     }
-    private static TextureSet? Decode(byte[]? data)
+    private void EnsureGpu()
     {
-        if(data is null)return null;
-        try {using var stream=new MemoryStream(data);using var original=new Bitmap(stream);return new TextureSet(original);}catch(ArgumentException){return null;}
+        if(!PreferGpu||Skin is null){if(_gpu is not null){Children.Remove(_gpu);_gpu=null;}_ready=false;_software.IsVisible=true;return;}
+        if(_gpu is not null||!PreviewActive||!IsEffectivelyVisible||TopLevel.GetTopLevel(this) is null)return;
+        _gpu=new(){IsHitTestVisible=false};
+        _gpu.RenderState+=(ok,description)=>{_ready=ok;RendererDescription=description;_software.IsVisible=!ok;if(!ok&&_gpu is not null)_gpu.IsVisible=false;UpdateAnimation();};Children.Add(_gpu);
     }
-    // Cache face lighting in the texture, preserving alpha even on translucent outer layers.
-    // Normalizing DPI keeps atlas coordinates in pixels, independent of PNG metadata.
-    private sealed class TextureSet:IDisposable
+    private bool ShouldAnimate()=>_ready&&PreviewActive&&Animate&&MotionPreferences.Enabled&&Skin is not null&&IsEffectivelyVisible&&_window is {IsActive:true,WindowState:not WindowState.Minimized};
+    private void UpdateAnimation()
     {
-        public Bitmap Image {get;}
-        private readonly Dictionary<double,Bitmap> _shaded=[];
-        public TextureSet(Bitmap original)=>Image=Copy(original,0);
-        public Bitmap At(double shade)
-        {
-            if(shade==0)return Image;
-            if(!_shaded.TryGetValue(shade,out var bitmap))_shaded[shade]=bitmap=Copy(Image,shade);
-            return bitmap;
-        }
-        private static Bitmap Copy(Bitmap source,double shade)
-        {
-            var bitmap=new WriteableBitmap(source.PixelSize,new Vector(96,96),PixelFormat.Rgba8888,AlphaFormat.Unpremul);
-            using var frame=bitmap.Lock();source.CopyPixels(frame);
-            if(shade>0)
-            {
-                var bytes=new byte[frame.RowBytes*frame.Size.Height];Marshal.Copy(frame.Address,bytes,0,bytes.Length);
-                for(var y=0;y<frame.Size.Height;y++)for(var x=0;x<frame.Size.Width;x++)
-                {var i=y*frame.RowBytes+x*4;for(var c=0;c<3;c++)bytes[i+c]=(byte)Math.Round(bytes[i+c]*(1-shade));}
-                Marshal.Copy(bytes,0,frame.Address,bytes.Length);
-            }
-            return bitmap;
-        }
-        public void Dispose(){Image.Dispose();foreach(var bitmap in _shaded.Values)bitmap.Dispose();}
+        if(ShouldAnimate()){_clock.Start();_timer.Start();}else{_timer.Stop();_clock.Stop();}
+        if(_gpu is not null){_gpu.Animate=Animate&&MotionPreferences.Enabled;_gpu.RequestNextFrameRendering();}
     }
+    private void SyncFrame()
+    {
+        _software.Skin=Skin;_software.Cape=Cape;_software.Slim=Slim;_software.OuterLayer=OuterLayer;_software.Rotation=Rotation;_software.Zoom=Zoom;_software.Pitch=Pitch;
+        if(_gpu is not null){_gpu.Skin=Skin;_gpu.Cape=Cape;_gpu.Slim=Slim;_gpu.OuterLayer=OuterLayer;_gpu.Yaw=Rotation;_gpu.Pitch=Pitch;_gpu.Zoom=Zoom;_gpu.Seconds=_clock.Elapsed.TotalSeconds;_gpu.Animate=Animate&&MotionPreferences.Enabled;_gpu.RequestNextFrameRendering();}
+    }
+    public void ResetView(){Rotation=-22;Pitch=-8;Zoom=1;}
+    public void ShowBack(){Rotation=180;Pitch=-8;Zoom=1;}
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {base.OnPointerPressed(e);if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed){_drag=e.GetPosition(this);e.Pointer.Capture(this);Focus();e.Handled=true;}}
     protected override void OnPointerMoved(PointerEventArgs e)
-    {base.OnPointerMoved(e);if(_drag is {} previous){var point=e.GetPosition(this);Rotation+=(point.X-previous.X)*0.7;_drag=point;e.Handled=true;}}
+    {base.OnPointerMoved(e);if(_drag is {} previous){var p=e.GetPosition(this);Rotation+=(p.X-previous.X)*0.6;Pitch+=(p.Y-previous.Y)*0.35;_drag=p;e.Handled=true;}}
     protected override void OnPointerReleased(PointerReleasedEventArgs e){base.OnPointerReleased(e);_drag=null;e.Pointer.Capture(null);}
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e){base.OnPointerCaptureLost(e);_drag=null;}
-    protected override void OnKeyDown(KeyEventArgs e){base.OnKeyDown(e);if(e.Key is Key.Left or Key.Right){Rotation+=e.Key==Key.Left?-15:15;e.Handled=true;}}
-    public override void Render(DrawingContext context)
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e){base.OnPointerWheelChanged(e);Zoom*=Math.Exp(e.Delta.Y*0.1);e.Handled=true;}
+    protected override void OnKeyDown(KeyEventArgs e)
     {
-        base.Render(context);if(Bounds.Width<=0||Bounds.Height<=0)return;
-        var scale=Math.Min(Bounds.Width/26,Bounds.Height/36);var yaw=Rotation*Math.PI/180;const double pitch=-0.13;
-        (Point,double) Project(V v)
-        {var x=v.X*Math.Cos(yaw)+v.Z*Math.Sin(yaw);var z=-v.X*Math.Sin(yaw)+v.Z*Math.Cos(yaw);return(new(Bounds.Width/2+x*scale,Bounds.Height/2-((v.Y-16)*Math.Cos(pitch)-z*Math.Sin(pitch))*scale),z);}
-        var faces=new List<Face>();
-        void Box(double x,double y,double z,double w,double h,double d,int tx,int ty,TextureSet? texture,double grow=0)
-        {
-            var l=x-w/2-grow;var r=x+w/2+grow;var b=y-grow;var t=y+h+grow;var front=z-d/2-grow;var back=z+d/2+grow;
-            void Face(V a,V b,V c,V e,Rect uv,double shade)
-            {
-                if(texture is not null&&(uv.Right>texture.Image.PixelSize.Width||uv.Bottom>texture.Image.PixelSize.Height))return;
-                var points=new[]{Project(a),Project(b),Project(c),Project(e)};
-                var edge=points[1].Item1-points[0].Item1;var side=points[3].Item1-points[0].Item1;
-                if(edge.X*side.Y-edge.Y*side.X<=0.0001)return; // Hide inward faces, including behind transparent hat pixels.
-                faces.Add(new(points.Select(p=>p.Item1).ToArray(),points.Average(p=>p.Item2),uv,texture?.At(shade),shade));
-            }
-            Face(new(l,t,front),new(r,t,front),new(r,b,front),new(l,b,front),new(tx+d,ty+d,w,h),0);
-            Face(new(r,t,back),new(l,t,back),new(l,b,back),new(r,b,back),new(tx+2*d+w,ty+d,w,h),0.12);
-            Face(new(l,t,back),new(l,t,front),new(l,b,front),new(l,b,back),new(tx,ty+d,d,h),0.17);
-            Face(new(r,t,front),new(r,t,back),new(r,b,back),new(r,b,front),new(tx+d+w,ty+d,d,h),0.1);
-            Face(new(l,t,back),new(r,t,back),new(r,t,front),new(l,t,front),new(tx+d,ty,w,d),0);
-            Face(new(l,b,front),new(r,b,front),new(r,b,back),new(l,b,back),new(tx+d+w,ty,w,d),0.22);
-        }
-        var arm=Slim?3:4;var armX=4+arm/2d;var modern=_skin?.Image.PixelSize.Height!=32;
-        Box(0,24,0,8,8,8,0,0,_skin);Box(0,12,0,8,12,4,16,16,_skin);
-        Box(-armX,12,0,arm,12,4,40,16,_skin);Box(armX,12,0,arm,12,4,modern?32:40,modern?48:16,_skin);
-        Box(-2,0,0,4,12,4,0,16,_skin);Box(2,0,0,4,12,4,modern?16:0,modern?48:16,_skin);
-        if(OuterLayer&&_skin is not null)
-        {
-            Box(0,24,0,8,8,8,32,0,_skin,0.4);
-            if(modern){Box(0,12,0,8,12,4,16,32,_skin,0.22);Box(-armX,12,0,arm,12,4,40,32,_skin,0.22);Box(armX,12,0,arm,12,4,48,48,_skin,0.22);Box(-2,0,0,4,12,4,0,32,_skin,0.22);Box(2,0,0,4,12,4,0,48,_skin,0.22);}
-        }
-        if(_cape is not null)Box(0,7.5,3,10,16,1,0,0,_cape);
-        foreach(var face in faces.OrderByDescending(f=>f.Depth))
-        {
-            var a=face.Points[0];var b=face.Points[1];var d=face.Points[3];var uv=face.Texture;
-            var matrix=new Matrix((b.X-a.X)/uv.Width,(b.Y-a.Y)/uv.Width,(d.X-a.X)/uv.Height,(d.Y-a.Y)/uv.Height,a.X,a.Y);
-            if(Math.Abs(matrix.GetDeterminant())<0.0001)continue;
-            using(context.PushTransform(matrix))
-            {
-                var destination=new Rect(0,0,uv.Width,uv.Height);
-                if(face.Image is {} image)context.DrawImage(image,uv,destination);
-                else context.DrawRectangle(new SolidColorBrush(Color.FromRgb(150,165,153)),null,destination);
-                // Shade opaque base geometry only; transparent outer layers retain their alpha.
-                if(face.Shade>0&&face.Image is null)context.DrawRectangle(new SolidColorBrush(Color.FromArgb((byte)(face.Shade*255),0,0,0)),null,destination);
-            }
-        }
+        base.OnKeyDown(e);
+        switch(e.Key){case Key.Left:Rotation-=15;break;case Key.Right:Rotation+=15;break;case Key.Up:Pitch-=5;break;case Key.Down:Pitch+=5;break;case Key.Add:case Key.OemPlus:Zoom*=1.1;break;case Key.Subtract:case Key.OemMinus:Zoom/=1.1;break;case Key.Home:ResetView();break;default:return;}e.Handled=true;
     }
 }

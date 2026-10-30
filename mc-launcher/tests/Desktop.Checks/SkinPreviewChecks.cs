@@ -48,7 +48,7 @@ internal static class SkinPreviewChecks
     {var result=new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96));result.Render(window);return result;}
     private static byte[] Pixels(Bitmap bitmap)
     {using var converted=new WriteableBitmap(bitmap.PixelSize,new Vector(96,96),PixelFormat.Rgba8888,AlphaFormat.Unpremul);using var frame=converted.Lock();bitmap.CopyPixels(frame);var bytes=new byte[frame.RowBytes*frame.Size.Height];Marshal.Copy(frame.Address,bytes,0,bytes.Length);return bytes;}
-    private static byte[] Texture(bool checker)
+    internal static byte[] Texture(bool checker)
     {
         using var bitmap=new WriteableBitmap(new PixelSize(64,64),new Vector(96,96),PixelFormat.Rgba8888,AlphaFormat.Unpremul);
         using(var frame=bitmap.Lock())

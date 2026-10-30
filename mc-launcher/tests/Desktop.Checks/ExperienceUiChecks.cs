@@ -54,6 +54,11 @@ internal static class ExperienceUiChecks
         var preview=window.GetVisualDescendants().OfType<PlayerPreview>().Single();var before=preview.Rotation;preview.Focus();
         window.KeyPress(Key.Right,Avalonia.Input.RawInputModifiers.None,PhysicalKey.ArrowRight,null);window.KeyRelease(Key.Right,Avalonia.Input.RawInputModifiers.None,PhysicalKey.ArrowRight,null);pump(50);
         check("角色模型可使用键盘旋转",preview.Rotation>before);
+        window.KeyPress(Key.OemPlus,Avalonia.Input.RawInputModifiers.None,PhysicalKey.Equal,null);window.KeyRelease(Key.OemPlus,Avalonia.Input.RawInputModifiers.None,PhysicalKey.Equal,null);pump(30);
+        check("角色预览可使用键盘缩放",preview.Zoom>1);
+        preview.ShowBack();check("查看背面入口完整转向披风",preview.Rotation==180&&preview.Zoom==1);
+        preview.ResetView();check("复位视角恢复缩放和俯仰",preview.Rotation==-22&&preview.Zoom==1&&preview.Pitch==-8);
+        model.SelectExperienceTabCommand.Execute("2");check("离开衣柜停止预览活动",!model.PreviewActive&&!preview.IsAnimationRunning);model.SelectExperienceTabCommand.Execute("0");pump(100);
         capture("wardrobe-offline",true);
         window.Width=900;window.Height=640;pump(80);var close=window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="CloseExperienceButton");
         check("最小窗口玩家中心关闭入口仍完整可见",close.TranslatePoint(new Point(),window) is {} p&&p.X>window.ClientSize.Width/2&&p.Y>=0&&p.X+close.Bounds.Width<=window.ClientSize.Width);

@@ -30,6 +30,7 @@ internal static class Program
     {
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--gpu-native"))return GpuPreviewChecks.Start(root);
         var data = Path.Combine(root, "fixture"); var game = Path.Combine(data, "game");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", data);
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", game);
