@@ -12,6 +12,8 @@
 
 使用步骤与范围见 [游戏设置同步与统一动效](docs/settings-sync-and-motion.md)。没有新增运行库或网页内核。
 
+[源码 e62bd34](https://github.com/Insomnia-7/mc-launcher/commit/e62bd34d0ab9e5539ab2495c59772f4d9831d3d6)。Windows 单文件 23863706 字节，SHA-256：`04bcc69845d1aa461c9a0551f25666025505da1978d72a294c9444d886a80afa`。1177 项回归检查通过；另验证 2 次独立成品启动、6 组 0.8 → 0.9 原生更新情形。
+
 ## 0.8.0-preview.1 · 整合包升级版
 
 2026-10-31。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.8.0-preview.1)。
@@ -36,9 +38,9 @@
 
 ---
 
-记录范围为已交付的 0.2.0-preview.1 至 0.8.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
+记录范围为已交付的 0.2.0-preview.1 至 0.9.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
-当前推荐下载：[0.8.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.8.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
+当前推荐下载：[0.9.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.9.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
 
 历史包早于源码提交打包，因此部分旧 EXE 的 ProductVersion 后缀仍指向前一次提交。下列源码提交对应功能版本；原始二进制版本后缀、大小与 SHA-256 均另行保留，不能将两者视为完全一致的构建来源标记。0.4、0.5、0.6 的成品版本后缀与源码提交一致。
 

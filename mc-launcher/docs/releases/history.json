@@ -238,5 +238,20 @@
     "sha256": "d40f2b7ac821f2219de90b98764542a8bfcfdc9841ad6a50a28056e23b8f2c42",
     "binaryProductVersion": "0.8.0-preview.1+d5b81469cdefcc7e3f8016c309dde369785518bf",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "0.9.0-preview.1",
+    "date": "2026-10-31",
+    "title": "设置同步与动效版",
+    "tag": "desktop-v0.9.0-preview.1",
+    "sourceCommit": "e62bd34d0ab9e5539ab2495c59772f4d9831d3d6",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/e62bd34d0ab9e5539ab2495c59772f4d9831d3d6",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.9.0-preview.1",
+    "changes": "按范围共享游戏设置、实例例外、差异预览、启动前同步、来源退出刷新、备份恢复、统一页面和展开动画及操作结果提示。",
+    "platform": "Windows x64",
+    "bytes": 23863706,
+    "sha256": "04bcc69845d1aa461c9a0551f25666025505da1978d72a294c9444d886a80afa",
+    "binaryProductVersion": "0.9.0-preview.1+e62bd34d0ab9e5539ab2495c59772f4d9831d3d6",
+    "buildMetadataMatchesSource": true
   }
 ]
