@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO.Compression;
+using System.Text.Json;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,6 +21,7 @@ namespace Launcher.App.ViewModels;
 
 public sealed partial class DurableTaskRow(DurableTaskRecord record):ObservableObject
 {
+    public bool CanReorder=>Record.State==DurableTaskState.Ready;
     [ObservableProperty] private DurableTaskRecord _record=record;
     public string Id=>Record.Id;
     public string Title=>Record.Title;
@@ -30,7 +32,7 @@ public sealed partial class DurableTaskRow(DurableTaskRecord record):ObservableO
     public bool CanPause=>Record.CanPause;
     public bool CanCancel=>Record.CanCancel;
     partial void OnRecordChanged(DurableTaskRecord value)
-    {foreach(var property in new[]{nameof(Title),nameof(StateText),nameof(Detail),nameof(Percent),nameof(CanResume),nameof(CanPause),nameof(CanCancel)})OnPropertyChanged(property);}
+    {foreach(var property in new[]{nameof(Title),nameof(StateText),nameof(Detail),nameof(Percent),nameof(CanResume),nameof(CanPause),nameof(CanCancel),nameof(CanReorder)})OnPropertyChanged(property);}
 }
 public sealed partial class MainViewModel
 {
@@ -86,6 +88,14 @@ public sealed partial class MainViewModel
         InitializeMaintenance();
         InitializeLauncherUpdates();
         _appearanceClient=appearance;_tasks=new(AppPaths.DataDirectory);_tasks.Execute=ExecuteDurableTaskAsync;
+        AutoContinueDownloads = ExperienceFiles.Read<QueuePreferences>(Path.Combine(AppPaths.DataDirectory,"download-queue.json"))?.AutoContinue ?? true;
+        _tasks.AutoContinue = AutoContinueDownloads;
+        InitializePackWorkbench();
+        _tasks.CleanupRequest = request =>
+        {
+            if (request.Kind == "pack-update" && request.Arguments.TryGetValue("plan", out var path) && ExperienceFiles.Read<PackUpdatePlan>(path) is {} plan && plan.GameRoot == request.GameRoot && plan.InstanceId == request.InstanceId)
+                _packUpdates.Discard(plan);
+        };
         _tasks.Changed+=()=>{_ = PlatformUi.RunOnUiAsync(RefreshTaskRows);};
         Download.QueueTask=QueueExperienceTaskAsync;
         CancelPersistentTask=()=>{if(_tasks.ActiveId is not {} id)return false;_tasks.Cancel(id);return true;};
@@ -169,13 +179,18 @@ public sealed partial class MainViewModel
     private void RefreshTaskRows()
     {
         if(!_experienceInitialized)return;
-        foreach(var task in _tasks.List())
+        var ordered = _tasks.List().OrderBy(t=>t.State==DurableTaskState.Running?0:t.State==DurableTaskState.Ready?1:2)
+            .ThenBy(t=>t.State==DurableTaskState.Ready?(t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder):-t.CreatedAt.UtcTicks).ToArray();
+        for(var index=0;index<ordered.Length;index++)
         {
+            var task=ordered[index];
             var row=DurableTasks.FirstOrDefault(r=>r.Id==task.Id);
-            if(row is null)DurableTasks.Insert(0,new(task));else row.Record=task;
+            if(row is null)DurableTasks.Insert(index,new(task));
+            else { row.Record=task; var current=DurableTasks.IndexOf(row); if(current!=index)DurableTasks.Move(current,index); }
         }
         OnPropertyChanged(nameof(CanEditExperience));
         OnPropertyChanged(nameof(HasDurableTasks));
+        RefreshPackTaskState();
     }
     private void ReloadExperienceLists()
     {
@@ -340,9 +355,10 @@ public sealed partial class MainViewModel
             var settings=InstanceSettings.Load(GameRoot,instance.InstanceId);
             if(settings.MemoryMb>InstanceSettings.AdaptiveMemoryMb()*2)InspectionIssues.Add(new("分配内存偏高",$"当前分配 {settings.MemoryMb} MiB。","请结合整合包要求与系统剩余内存调整。"));
             var scan=InstalledModScanner.Scan(Path.Combine(GameRoot,"instances",instance.InstanceId,".minecraft","mods"),ct);
-            foreach(var duplicate in scan.Mods.Where(m=>m.Enabled&&m.ModId is not null).GroupBy(m=>m.ModId).Where(g=>g.Count()>1))InspectionIssues.Add(new("重复模组："+duplicate.Key,string.Join("、",duplicate.Select(m=>m.FileName)),"保留一个适配版本，禁用或移除重复文件。",true));
             var environment=InstanceEnvironment.Resolve(GameRoot,instance.InstanceId);
-            foreach(var mod in scan.Mods.Where(m=>m.Enabled&&m.LoaderKind is {} loader&&environment.LoaderSlug is {} current&&!loader.Contains(current,StringComparison.OrdinalIgnoreCase)&&!(current=="quilt"&&loader.Contains("fabric",StringComparison.OrdinalIgnoreCase))))InspectionIssues.Add(new("可能装错加载器："+mod.FileName,$"文件声明 {mod.LoaderKind}；实例为 {environment.Loader}。","核对模组下载版本；多加载器模组需结合项目说明确认。"));
+            var compatibility = await Task.Run(() => ModCompatibility.Inspect(scan.Mods.Where(m=>m.Enabled).Select(m=>m.FullPath), environment.GameVersion, environment.LoaderSlug, environment.LoaderVersion, ct:ct), ct);
+            if(root!=GameRoot||SelectedInstance?.InstanceId!=instance.InstanceId)return;
+            foreach(var issue in compatibility) InspectionIssues.Add(issue);
             var log=Path.Combine(GameRoot,"instances",instance.InstanceId,".minecraft","logs","latest.log");
             if(StartupDiagnostics.Analyze(log) is {} diagnosis)InspectionIssues.Add(new(diagnosis.Summary,diagnosis.Evidence??"匹配最近游戏日志规则。",diagnosis.Advice));
             if(InspectionIssues.Count==0)InspectionIssues.Add(new("基础检查通过","未发现 Java 版本与重复 Mod ID 问题。","这不代表所有模组运行逻辑均兼容，可结合实际启动结果判断。"));
@@ -381,6 +397,8 @@ public sealed partial class MainViewModel
     }
     [RelayCommand] private void PauseDurableTask(DurableTaskRow? task){if(task is not null)_tasks.Pause(task.Id);}
     [RelayCommand] private void CancelDurableTask(DurableTaskRow? task){if(task is not null)_tasks.Cancel(task.Id);}
+    [RelayCommand] private void MoveDurableTaskUp(DurableTaskRow? task){if(task is not null)_tasks.MoveReady(task.Id,-1);}
+    [RelayCommand] private void MoveDurableTaskDown(DurableTaskRow? task){if(task is not null)_tasks.MoveReady(task.Id,1);}
     private async Task ExecuteDurableTaskAsync(DurableTaskRequest request,IProgress<TaskProgress> progress,CancellationToken ct)
     {
         if(request.InstanceId is {} targetInstance)EnsureInstanceStopped(targetInstance,request.GameRoot);
@@ -404,6 +422,18 @@ public sealed partial class MainViewModel
                 var version = await _versionLoader.LoadAsync(request.GameRoot, request.Arguments["version"], ct);
                 var repairProgress = new Progress<DownloadProgress>(p => uiProgress.Report(new(p.Percent, "修复游戏文件 · " + p.CurrentFile)));
                 await Task.Run(() => _installer.RepairAsync(version, request.GameRoot, repairProgress, ct), ct);
+            }
+            else if(request.Kind == "pack-update")
+            {
+                var plan = ExperienceFiles.Read<PackUpdatePlan>(request.Arguments["plan"]) ?? throw new InvalidDataException("更新预览已不存在，请重新准备。");
+                if (plan.GameRoot != request.GameRoot || plan.InstanceId != request.InstanceId) throw new InvalidDataException("更新任务与预览目标不符。");
+                var choices = JsonSerializer.Deserialize<Dictionary<string,bool>>(request.Arguments["choices"]) ?? new();
+                await _packUpdates.ApplyAsync(plan, choices, _modpackFactory, new Progress<ModpackImportProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))), ct);
+                _packUpdates.Discard(plan);
+            }
+            else if(request.Kind == "pack-restore")
+            {
+                await _packUpdates.RestoreAsync(request.GameRoot, request.InstanceId!, request.Arguments["recovery"], ct);
             }
             else if(request.Kind is "mod-batch" or "clone" or "trial-update")
             {
@@ -432,6 +462,7 @@ public sealed partial class MainViewModel
                 StatusText=Download.Status="任务已完成："+request.Title;
                 if(GameRoot!=request.GameRoot)return;
                 RefreshInstances();
+                if(request.Kind is "pack-update" or "pack-restore") RefreshPackRecovery();
                 if(request.Kind is "clone" or "trial-update")
                 {
                     var clone=System.Text.Json.JsonSerializer.Deserialize<Launcher.Application.Instances.InstanceCloneRequest>(request.Arguments["clone"]);

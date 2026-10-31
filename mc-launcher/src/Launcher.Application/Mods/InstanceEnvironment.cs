@@ -48,8 +48,8 @@ public sealed record InstanceEnvironment(
             // 版本文件坏了就当没有，loaders 反推仍然能给出大部分信息
         }
 
-        var parsed = VersionIdParser.Parse(instanceId, parent);
         var metadata = InstanceMetadata.TryRead(gameRoot, instanceId);
+        var parsed = VersionIdParser.Parse(metadata?.LoaderVersionId ?? instanceId, parent);
 
         var gameVersion = metadata?.MinecraftVersion ?? parsed.GameVersion;
         return new InstanceEnvironment(instanceId, gameVersion, parsed.Loader, parsed.LoaderVersion);

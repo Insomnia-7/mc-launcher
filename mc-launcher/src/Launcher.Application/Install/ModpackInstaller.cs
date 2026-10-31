@@ -61,11 +61,13 @@ public sealed class ModpackInstaller(
     INeoForgeInstaller neoForgeInstaller,
     IDownloader downloader)
 {
+    public ModpackUpdateService CreateUpdateService() => new(gameInstaller, this, downloader);
+
     public async Task<ModpackImportReport> ImportAsync(
         IModpackSource source,
         string gameRoot,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, ModpackOrigin? origin = null)
     {
         var pack = source.Pack;
         var minecraft = pack.MinecraftVersion
@@ -150,6 +152,9 @@ public sealed class ModpackInstaller(
             // ④ overrides：整包内嵌的配置、资源、地图等
             progress?.Report(ModpackImportProgress.Of("解压 overrides", 0));
             var overrideFiles = await source.ExtractOverridesAsync(stagedDirectory, progress, ct).ConfigureAwait(false);
+
+            var baseline = await ModpackBaseline.CaptureAsync(stagedDirectory, pack.Name, pack.VersionId, pack.SourceLabel, origin, ct).ConfigureAwait(false);
+            Launcher.Application.Experience.ExperienceFiles.Write(Path.Combine(staging.InstanceRoot, ModpackBaseline.FileName), baseline);
 
             // 导入清单的实际文件保留来源；overrides 改写了内容时，不绑定不匹配的来源。
             var sourceLabel = pack.SourceLabel.ToLowerInvariant();
@@ -252,7 +257,7 @@ public sealed class ModpackInstaller(
         return missing;
     }
 
-    private async Task<(LoaderKind Loader, string? Version, string InstanceId)> InstallLoaderAsync(
+    internal async Task<(LoaderKind Loader, string? Version, string InstanceId)> InstallLoaderAsync(
         string minecraft,
         Launcher.Domain.Modpacks.ModrinthPack pack,
         string gameRoot,
@@ -309,7 +314,7 @@ public sealed class ModpackInstaller(
         outer is null ? null : new DownloadProgressAdapter(outer, stage);
 
     /// <summary>加载器的人类可读名字，例如「Forge 47.4.18」；纯原版返回 null。</summary>
-    private static string? DescribeLoader(LoaderKind loader, string? version) =>
+    internal static string? DescribeLoader(LoaderKind loader, string? version) =>
         loader == LoaderKind.Vanilla
             ? null
             : version is null ? loader.ToString() : $"{loader} {version}";

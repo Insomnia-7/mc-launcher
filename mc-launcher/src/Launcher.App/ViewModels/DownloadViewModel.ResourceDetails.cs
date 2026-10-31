@@ -102,6 +102,7 @@ public sealed partial class DownloadViewModel
     }
     private void NotifyResourceView()
     {
+        NotifyPackPresentation();
         NotifyResourceHeader();
         OnPropertyChanged(nameof(IsResourceDetail));OnPropertyChanged(nameof(IsResourceList));
         OnPropertyChanged(nameof(ShowsBrowseControls));OnPropertyChanged(nameof(ShowsResourceDependencies));OnPropertyChanged(nameof(ShowsResourceLoaderFilter));
@@ -122,14 +123,16 @@ public sealed partial class DownloadViewModel
         ResourceGameVersion=preferredGame;
         ResourceLoader=item.Category.UsesLoader()?FilterValue(LoaderFilter)??(item.Category!=DownloadCategory.Modpack?ResolveLoader()??"全部":"全部"):"全部";
         _settingResourceFilters=false;
-        await LoadResourceVersionsAsync();
+        PackOverview = item.Category == DownloadCategory.Modpack;
+        await Task.WhenAll(LoadResourceVersionsAsync(), LoadPackPresentationAsync(item));
     }
 
     [RelayCommand]
     private void BackToResources() { if(!IsBusy) CloseResourceDetails(); }
     private void CloseResourceDetails()
     {
-        _resourceDetailCts?.Cancel();_resourceDependencyCts?.Cancel();
+        _resourceDetailCts?.Cancel();_resourceDependencyCts?.Cancel();_packGalleryCts?.Cancel();
+        PackCover=null;PackDescription="";PackOverview=false;
         OpenedResource=null;SelectedResourceRelease=null;
         _resourceReleases.Clear();ResourceReleaseGroups.Clear();HasMoreResourceVersions=false;
         IsLoadingResourceVersions=false;NotifyResourceView();

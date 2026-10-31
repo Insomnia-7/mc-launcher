@@ -23,7 +23,7 @@ public sealed partial class GameDetailView:UserControl
         if(_model is null||_model.DetailTab==0){DetailTabHost.Content=null;return;}
         if(!_pages.TryGetValue(_model.DetailTab,out var page))
         {
-            page=_model.DetailTab switch {1=>new InstanceModsView(),2=>new InstanceHistoryView(),3=>new InstanceSettingsView(),_=>new InstanceDiagnosticsView()};
+            page=_model.DetailTab switch {1=>new InstanceModsView(),2=>new InstanceHistoryView(),3=>new InstanceSettingsView(),5=>new InstanceModpackView(),_=>new InstanceDiagnosticsView()};
             _pages[_model.DetailTab]=page;
         }
         DetailTabHost.Content=page;

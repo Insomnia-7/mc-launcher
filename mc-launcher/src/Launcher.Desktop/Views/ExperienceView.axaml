@@ -86,6 +86,7 @@
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" IsVisible="{Binding IsToolsTab}">
       <StackPanel Spacing="16">
         <TextBlock Text="暂停保留断点；恢复沿用安装参数。取消会清理未完成文件。关闭程序时会保存正在运行的任务。" Classes="muted" TextWrapping="Wrap"/>
+        <CheckBox x:Name="AutoContinueDownloadsChoice" IsChecked="{Binding AutoContinueDownloads}" Content="完成后自动开始下一个等待任务（暂停或失败时停止接续）"/>
         <Border Classes="card" IsVisible="{Binding !HasDurableTasks}" Padding="32"><StackPanel Spacing="12"><icons:UiIcon Kind="ActionCloudDownload" Width="40" Height="40" HorizontalAlignment="Left" /><TextBlock Text="还没有下载任务" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="去发现资源，为你的世界添加新内容。" Classes="muted" /><Button Command="{Binding ShowDownloadsCommand}" Content="浏览资源" HorizontalAlignment="Left" /></StackPanel></Border>
         <ItemsControl x:Name="DurableTasksList" ItemsSource="{Binding DurableTasks}">
           <ItemsControl.ItemTemplate>
@@ -99,6 +100,8 @@
                   <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="12"/>
                   <ProgressBar Value="{Binding Percent}" Height="3"/>
                   <WrapPanel>
+                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskUpCommand}" CommandParameter="{Binding}" Content="提前" IsVisible="{Binding CanReorder}" Margin="0,0,6,0"/>
+                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskDownCommand}" CommandParameter="{Binding}" Content="延后" IsVisible="{Binding CanReorder}" Margin="0,0,6,0"/>
                     <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ResumeDurableTaskCommand}" CommandParameter="{Binding}" Content="开始 / 恢复 / 重试" IsEnabled="{Binding CanResume}" Margin="0,0,6,0"/>
                     <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).PauseDurableTaskCommand}" CommandParameter="{Binding}" Content="暂停" IsEnabled="{Binding CanPause}" Margin="0,0,6,0"/>
                     <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CancelDurableTaskCommand}" CommandParameter="{Binding}" Content="取消并清理" IsEnabled="{Binding CanCancel}"/>

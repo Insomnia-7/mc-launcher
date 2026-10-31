@@ -4,6 +4,12 @@ using Launcher.Domain.Install;
 
 namespace Launcher.Application.Mods;
 
+public sealed record ModpackRelease(ModpackOrigin Origin, string Name, string Channel, string GameVersions, DateTimeOffset? Date)
+{
+    public string Label => $"{Name} · {Channel} · {GameVersions}";
+    public override string ToString() => Label;
+}
+
 /// <summary>
 /// 从 Modrinth 直接装整合包：先下 .mrpack 到缓存目录，再交给 <see cref="ModpackInstaller"/>
 /// 走"原版 → 加载器 → 清单文件 → overrides"那一套。
@@ -15,6 +21,50 @@ public sealed class ModpackDownloadService(
     IModpackSourceFactory sourceFactory,
     ModpackInstaller modpackInstaller)
 {
+    public async Task<IReadOnlyList<ModpackRelease>> GetReleasesAsync(ModpackOrigin origin, CancellationToken ct = default)
+    {
+        if (origin.Source.Equals("Modrinth", StringComparison.OrdinalIgnoreCase))
+            return (await modrinth.GetVersionsAsync(origin.ProjectId, ct: ct).ConfigureAwait(false))
+                .Where(v => v.PrimaryFile?.Filename.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) == true)
+                .Select(v => new ModpackRelease(new("Modrinth", v.ProjectId, v.Id), v.VersionNumber,
+                    v.VersionType switch { "release" => "正式版", "beta" => "测试版", "alpha" => "开发版", _ => "未标注" }, string.Join(" / ", v.GameVersions), v.DatePublished)).ToArray();
+        if (!origin.Source.Equals("CurseForge", StringComparison.OrdinalIgnoreCase) || !int.TryParse(origin.ProjectId, out var project))
+            throw new InvalidOperationException("此实例尚未关联支持的整合包平台，可选择本地更新包。");
+        return (await curseForge.GetFilesAsync(project, ct: ct).ConfigureAwait(false)).Where(f => f.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            .Select(f => new ModpackRelease(new("CurseForge", project.ToString(), f.Id.ToString()), f.DisplayName,
+                f.ReleaseType switch { 1 => "正式版", 2 => "测试版", 3 => "开发版", _ => "未标注" }, string.Join(" / ", f.GameVersions.Where(v => v.Length > 0 && char.IsDigit(v[0]))), f.FileDate)).ToArray();
+    }
+
+    public async Task<string> DownloadReleaseAsync(string gameRoot, ModpackOrigin origin, CancellationToken ct = default)
+    {
+        DownloadEntry entry;
+        if (origin.Source.Equals("Modrinth", StringComparison.OrdinalIgnoreCase))
+        {
+            var release = await modrinth.GetVersionAsync(origin.ReleaseId, ct).ConfigureAwait(false) ?? throw new InvalidDataException("整合包版本已不存在。");
+            if (release.ProjectId != origin.ProjectId) throw new InvalidDataException("整合包项目与所选版本不符。");
+            var file = release.PrimaryFile ?? throw new InvalidDataException("版本没有可用文件。");
+            entry = new(file.Url, Path.GetFileName(file.Filename), file.Size, file.Hashes?.Sha1, DownloadKind.ModpackFile);
+        }
+        else
+        {
+            if (!origin.Source.Equals("CurseForge", StringComparison.OrdinalIgnoreCase) || !int.TryParse(origin.ProjectId, out var project) || !int.TryParse(origin.ReleaseId, out var id))
+                throw new InvalidDataException("无效的整合包来源。");
+            var file = await curseForge.GetFileAsync(project, id, ct).ConfigureAwait(false) ?? throw new InvalidDataException("整合包版本已不存在。");
+            if (file.ModId != project) throw new InvalidDataException("整合包项目与所选版本不符。");
+            var url = file.DownloadUrl ?? await curseForge.GetDownloadUrlAsync(project, id, ct).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("作者关闭了第三方分发，请下载后选择本地更新包。");
+            entry = new(url, Path.GetFileName(file.FileName), file.FileLength, file.Sha1, DownloadKind.ModpackFile);
+        }
+        if (!entry.RelativePath.EndsWith(".mrpack", StringComparison.OrdinalIgnoreCase) && !entry.RelativePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("所选文件不是受支持的整合包。");
+        var directory = Path.Combine(gameRoot, ".cache", "modpacks", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(origin.Source + ":" + origin.ProjectId + ":" + origin.ReleaseId))));
+        await downloader.DownloadAsync([entry], directory, ct: ct).ConfigureAwait(false);
+        var path = Path.Combine(directory, entry.RelativePath);
+        if (!File.Exists(path) || entry.Size > 0 && new FileInfo(path).Length != entry.Size || entry.Sha1 is {} sha && !sha.Equals(await ModSourceStore.HashAsync(path, ct).ConfigureAwait(false), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("整合包下载校验失败。");
+        return path;
+    }
+
     public async Task<ModpackImportReport> InstallAsync(
         string gameRoot,
         string projectIdOrSlug,
@@ -58,7 +108,7 @@ public sealed class ModpackDownloadService(
         }
 
         await using var source = sourceFactory.Open(localPath);
-        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct).ConfigureAwait(false);
+        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("Modrinth", version.ProjectId, version.Id)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -110,7 +160,7 @@ public sealed class ModpackDownloadService(
         }
 
         await using var source = sourceFactory.Open(localPath);
-        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct).ConfigureAwait(false);
+        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("CurseForge", modId.ToString(), file.Id.ToString())).ConfigureAwait(false);
     }
 
     private sealed class DownloadProgressAdapter(IProgress<ModpackImportProgress> outer, string stage)

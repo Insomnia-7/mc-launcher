@@ -109,6 +109,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     private readonly ModInstallService _installer;
     private readonly CurseForgeInstallService _cfInstaller;
     private readonly ModpackDownloadService _modpackDownloader;
+    public ModpackDownloadService Modpacks => _modpackDownloader;
     private readonly GameInstaller _gameInstaller;
     private readonly IVersionMetaClient _meta;
     private readonly ILogger<DownloadViewModel> _logger;

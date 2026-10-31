@@ -31,7 +31,15 @@ public sealed record ModrinthProjectInfo(
     [property:JsonPropertyName("id")] string Id,
     [property:JsonPropertyName("slug")] string Slug,
     [property:JsonPropertyName("title")] string Title,
-    [property:JsonPropertyName("description")] string Description);
+    [property:JsonPropertyName("description")] string Description)
+{
+    [JsonPropertyName("body")] public string? Body { get; init; }
+    [JsonPropertyName("gallery")] public IReadOnlyList<ModrinthGalleryImage>? Gallery { get; init; }
+}
+public sealed record ModrinthGalleryImage(
+    [property:JsonPropertyName("url")] string Url,
+    [property:JsonPropertyName("featured")] bool Featured,
+    [property:JsonPropertyName("title")] string? Title);
 
 public sealed record ModrinthSearchResponse(
     [property: JsonPropertyName("hits")] IReadOnlyList<ModrinthProject> Hits,

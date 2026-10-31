@@ -200,7 +200,7 @@ public sealed partial class MainViewModel
         var preferences=PreferencesFor(SelectedInstance.InstanceId);GameDisplayName=preferences.Name;GameGroupName=preferences.Group;
         ReloadExperienceLists();NotifySelectedGame();
     }
-    [RelayCommand] private void SelectDetailTab(string? value){if(int.TryParse(value,out var index)&&index is >=0 and <=4)DetailTab=index;}
+    [RelayCommand] private void SelectDetailTab(string? value){if(int.TryParse(value,out var index)&&index is >=0 and <=5)DetailTab=index;}
     [RelayCommand] private void SaveGamePresentation()
     {
         if(SelectedInstance is not {} instance)return;

@@ -1266,6 +1266,8 @@ public sealed partial class MainViewModel : ObservableObject
                 return;
             }
 
+            if (BeforeLaunchChecks is not null && !await BeforeLaunchChecks(instance.InstanceId, cts.Token)) return;
+
             // Forge / NeoForge 的版本 json 只有增量，必须沿 inheritsFrom 合并出完整的
             // mainClass / libraries / arguments，否则 classpath 是空的，java 只会报「找不到主类」
             // 令牌快过期就先换新的；续期失败会回 null，本次按离线身份走

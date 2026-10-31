@@ -8,6 +8,7 @@ public enum DurableTaskState { Ready, Running, Paused, Completed, Failed, Cancel
 public sealed record DurableTaskRequest(string Kind,string Title,string GameRoot,string? InstanceId,Dictionary<string,string> Arguments);
 public sealed record DurableTaskRecord(string Id,DurableTaskRequest Request,DurableTaskState State,double Percent,string Detail,DateTimeOffset CreatedAt,IReadOnlyList<string> Partials)
 {
+    public long QueueOrder {get;init;}
     public string Title=>Request.Title;
     public string StateText=>State switch {DurableTaskState.Ready=>"待开始",DurableTaskState.Running=>"进行中",DurableTaskState.Paused=>"已暂停，可恢复",DurableTaskState.Completed=>"已完成",DurableTaskState.Failed=>"失败，可重试",_=>"已取消"};
     public bool CanResume=>State is DurableTaskState.Ready or DurableTaskState.Paused or DurableTaskState.Failed;
@@ -23,6 +24,8 @@ public sealed class DurableExecution
     public static DurableExecution? Current {get=>Context.Value;internal set=>Context.Value=value;}
     public string Directory {get;}
     public bool Pausing {get;internal set;}
+    public bool Committed {get;private set;}
+    public void MarkCommitted() => Committed=true;
     public ConcurrentDictionary<string,byte> Partials {get;}=new(StringComparer.OrdinalIgnoreCase);
     internal DurableExecution(string directory)=>Directory=directory;
     public static void TrackPartial(string path)=>Current?.Partials.TryAdd(Path.GetFullPath(path),0);
@@ -37,7 +40,10 @@ public sealed class PersistentTasks
     private DurableExecution? _execution;
     private string? _active;
     private TaskCompletionSource? _completion;
+    private int _queueEpoch;
     public Func<DurableTaskRequest,IProgress<TaskProgress>,CancellationToken,Task>? Execute {get;set;}
+    public Action<DurableTaskRequest>? CleanupRequest {get;set;}
+    public bool AutoContinue {get;set;}
     public event Action? Changed;
     public string? ActiveId {get{lock(_sync)return _active;}}
     public IReadOnlyList<DurableTaskRecord> List() {lock(_sync)return _tasks.OrderByDescending(t=>t.CreatedAt).ToArray();}
@@ -55,7 +61,7 @@ public sealed class PersistentTasks
     }
     public DurableTaskRecord Add(DurableTaskRequest request)
     {
-        var item=new DurableTaskRecord(Guid.NewGuid().ToString("N"),request with{GameRoot=Path.GetFullPath(request.GameRoot),Arguments=new(request.Arguments)},DurableTaskState.Ready,0,"等待开始",DateTimeOffset.UtcNow,[]);
+        var item=new DurableTaskRecord(Guid.NewGuid().ToString("N"),request with{GameRoot=Path.GetFullPath(request.GameRoot),Arguments=new(request.Arguments)},DurableTaskState.Ready,0,"等待开始",DateTimeOffset.UtcNow,[]){QueueOrder=DateTimeOffset.UtcNow.UtcTicks};
         lock(_sync){_tasks.Add(item);Save(item);}Changed?.Invoke();return item;
     }
     private void Save(DurableTaskRecord record)=>ExperienceFiles.Write(ExperienceFiles.Child(_root,record.Id+".json"),record);
@@ -64,6 +70,33 @@ public sealed class PersistentTasks
         lock(_sync){var index=_tasks.FindIndex(x=>x.Id==id);if(index<0)return;_tasks[index]=update(_tasks[index]);Save(_tasks[index]);}Changed?.Invoke();
     }
     public async Task RunAsync(string id,CancellationToken ct=default)
+    {
+        int epoch; lock(_sync) epoch=_queueEpoch;
+        while(true)
+        {
+            await RunOneAsync(id,ct).ConfigureAwait(false);
+            lock(_sync)
+            {
+                if(epoch!=_queueEpoch||!AutoContinue||ct.IsCancellationRequested||_tasks.Single(t=>t.Id==id).State!=DurableTaskState.Completed||_active is not null)return;
+                var next=_tasks.Where(t=>t.State==DurableTaskState.Ready).OrderBy(t=>t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder).FirstOrDefault();
+                if(next is null)return;
+                id=next.Id;
+            }
+        }
+    }
+    public void MoveReady(string id,int direction)
+    {
+        lock(_sync)
+        {
+            var ready=_tasks.Where(t=>t.State==DurableTaskState.Ready).OrderBy(t=>t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder).ToArray();
+            var index=Array.FindIndex(ready,t=>t.Id==id);var other=index+Math.Sign(direction);
+            if(index<0||other<0||other>=ready.Length)return;
+            var a=ready[index];var b=ready[other];
+            Update(a.Id,t=>t with{QueueOrder=b.QueueOrder==0?b.CreatedAt.UtcTicks:b.QueueOrder});
+            Update(b.Id,t=>t with{QueueOrder=a.QueueOrder==0?a.CreatedAt.UtcTicks:a.QueueOrder});
+        }
+    }
+    private async Task RunOneAsync(string id,CancellationToken ct)
     {
         DurableTaskRecord item;DurableExecution execution;CancellationTokenSource cancellation;
         lock(_sync)
@@ -87,7 +120,7 @@ public sealed class PersistentTasks
                 var now=DateTimeOffset.UtcNow;if(now-last<TimeSpan.FromMilliseconds(250)&&p.Percent<100)return;
                 last=now;Update(id,t=>t.State==DurableTaskState.Running?t with{Percent=Math.Clamp(p.Percent,0,100),Detail=p.Detail,Partials=execution.Partials.Keys.ToArray()}:t);
             }),cancellation.Token).ConfigureAwait(false);
-            cancellation.Token.ThrowIfCancellationRequested();
+            if(!execution.Committed)cancellation.Token.ThrowIfCancellationRequested();
             Update(id,t=>t with{State=DurableTaskState.Completed,Percent=100,Detail="安装完成",Partials=[]});
             ExperienceFiles.DeleteTree(execution.Directory,_root);
         }
@@ -107,16 +140,18 @@ public sealed class PersistentTasks
     }
     public void Pause(string id)
     {
-        lock(_sync)if(_active==id&&_execution is not null){_execution.Pausing=true;_running?.Cancel();}
+        lock(_sync)if(_active==id&&_execution is {Committed:false}){_execution.Pausing=true;_running?.Cancel();}
     }
     public void Cancel(string id)
     {
-        lock(_sync)if(_active==id){if(_execution is not null)_execution.Pausing=false;_running?.Cancel();return;}
+        lock(_sync)if(_active==id){if(_execution?.Committed==true)return;if(_execution is not null)_execution.Pausing=false;_running?.Cancel();return;}
         Update(id,t=>t with{State=DurableTaskState.Canceled});Cleanup(id);
     }
     private void Cleanup(string id)
     {
         var record=List().Single(t=>t.Id==id);var failures=new List<string>();
+        try { CleanupRequest?.Invoke(record.Request); }
+        catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or InvalidDataException) { failures.Add(ex.Message); }
         var allowedRoots=new[]{record.Request.GameRoot,ExperienceFiles.Child(_root,id),Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_root))!,"java",".cache")};
         foreach(var path in record.Partials)
         {
@@ -133,11 +168,11 @@ public sealed class PersistentTasks
         try{ExperienceFiles.DeleteTree(ExperienceFiles.Child(_root,id),_root);}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){failures.Add(id);}
         Update(id,t=>t with{Detail=failures.Count==0?"已取消，未完成文件已清理；完整共享资源保留。":"部分文件无法清理，请检查："+string.Join("；",failures),Partials=failures});
     }
-    public void PauseActiveForShutdown() {if(ActiveId is {} id)Pause(id);}
+    public void PauseActiveForShutdown() {lock(_sync)_queueEpoch++;if(ActiveId is {} id)Pause(id);}
     public async Task PauseAndWaitAsync()
     {
         Task? completion;
-        lock(_sync){if(_execution is not null)_execution.Pausing=true;_running?.Cancel();completion=_completion?.Task;}
+        lock(_sync){_queueEpoch++;if(_execution is not null)_execution.Pausing=true;_running?.Cancel();completion=_completion?.Task;}
         if(completion is not null)await completion.ConfigureAwait(false);
     }
     private sealed class DirectProgress<T>(Action<T> report):IProgress<T>{public void Report(T value)=>report(value);}

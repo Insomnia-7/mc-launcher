@@ -23,6 +23,7 @@
       </StackPanel>
     </Grid>
     <WrapPanel Grid.Row="1">
+      <Button x:Name="PackDetailTab" IsVisible="{Binding IsModpackSelection}" Classes="nav" Classes.active="{Binding IsPackDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="5" Content="整合包更新" Margin="0,0,4,4"/>
       <Button x:Name="OverviewDetailTab" Classes="nav" Classes.active="{Binding IsOverviewTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="0" Content="概览" Margin="0,0,4,4"/>
       <Button x:Name="ModsDetailTab" Classes="nav" Classes.active="{Binding IsModsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="1" Content="模组与资源" Margin="0,0,4,4"/>
       <Button x:Name="BackupsDetailTab" Classes="nav" Classes.active="{Binding IsBackupsDetailTab}" Command="{Binding SelectDetailTabCommand}" CommandParameter="2" Content="存档与备份" Margin="0,0,4,4"/>

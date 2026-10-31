@@ -61,6 +61,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     }
     public Task<ModrinthProjectInfo?> GetProjectAsync(string id,CancellationToken ct=default)
     {
+        if(id=="pack") return Task.FromResult<ModrinthProjectInfo?>(new(id,"fixture-pack","Fixture Pack","整合包介绍") {Body="## 探索一个新的世界\n[![Install](https://fixture.invalid/badge.svg)](https://fixture.invalid/install)\n\n收集、建造，与朋友一起开启冒险。",Gallery=[new("https://fixture.invalid/cover.png",true,"封面")]});
         if(PendingDependency is {} pending) { PendingDependency=null;return pending.Task; }
         return Task.FromResult<ModrinthProjectInfo?>(new(id,"fabric-api","Fabric API","library"));
     }
@@ -154,6 +155,8 @@ internal static class ResourceCenterChecks
         vm.BackToResourcesCommand.Execute(null);vm.SelectedSource=DownloadViewModel.ModrinthSource;
         vm.SelectedCategory=vm.Categories.First(c=>c.Category==DownloadCategory.Modpack&&!c.IsSeparator);vm.Query="";Wait(vm.SearchCommand.ExecuteAsync(null));
         item=vm.Results.Single();Wait(vm.OpenResourceCommand.ExecuteAsync(item));
+        check("整合包默认展示封面和介绍",vm.ShowsPackOverview&&vm.HasPackCover&&vm.PackDescription.Contains("探索")&&!vm.PackDescription.Contains("[]("));
+        vm.ShowPackVersionsCommand.Execute(null);pump(50);check("整合包版本入口独立显示",vm.ShowsResourceVersions&&!vm.ShowsPackOverview);
         old=vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="pack-old");fixture.Downloaded.Clear();
         Wait(vm.InstallResourceReleaseCommand.ExecuteAsync(old));
         check("整合包精确下载所选历史版本并建立独立实例",fixture.Downloaded.Contains("pack-old.mrpack")&&!fixture.Downloaded.Contains("pack-new.mrpack")&&model.Instances.Any(i=>i.DisplayName.Contains("Fixture Pack")&&i.DisplayName.Contains("old")));

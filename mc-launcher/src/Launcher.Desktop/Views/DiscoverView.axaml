@@ -47,7 +47,7 @@
         </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
       </ScrollViewer>
       <Grid IsVisible="{Binding Download.IsResourceDetail}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
-        <Border Classes="card" Padding="14">
+        <Border Classes="card" Padding="14" IsVisible="{Binding Download.ShowsStandardResourceHeader}">
           <Grid ColumnDefinitions="Auto,56,*" ColumnSpacing="12">
             <Button x:Name="BackToResources" Classes="quiet" Content="‹ 返回" Command="{Binding Download.BackToResourcesCommand}" VerticalAlignment="Center" />
             <Border Grid.Column="1" Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="Tile.CatMod" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}" /></Grid></Border>
@@ -58,16 +58,55 @@
             </StackPanel>
           </Grid>
         </Border>
+        <Border x:Name="PackResourceHero" IsVisible="{Binding Download.IsPackResourceDetail}" CornerRadius="18" ClipToBounds="True" Height="184" Background="{DynamicResource FieldBrush}">
+          <Grid>
+            <icons:WorldArt Width="280" Height="220" HorizontalAlignment="Right" Margin="0,-15,24,0" IsVisible="{Binding !Download.HasPackCover}"/>
+            <icons:ResourcePicture Bytes="{Binding Download.PackCover}" IsVisible="{Binding Download.HasPackCover}"/>
+            <Border Background="#99000000" IsVisible="{Binding Download.HasPackCover}"/>
+            <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,Auto">
+              <Button Content="‹ 返回资源" Command="{Binding Download.BackToResourcesCommand}" Classes="compact" HorizontalAlignment="Left"/>
+              <Border Grid.Column="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10,5" VerticalAlignment="Top"><TextBlock Text="整合包" FontSize="12"/></Border>
+              <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="76,*" ColumnSpacing="16" VerticalAlignment="Bottom">
+                <Border Width="76" Height="76" CornerRadius="16" Background="{DynamicResource CardBrush}" ClipToBounds="True"><Grid><icons:UiIcon Kind="Tile.LoaderModpack" Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center"/><icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}"/></Grid></Border>
+                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" IsVisible="{Binding !Download.HasPackCover}"/>
+                  <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" IsVisible="{Binding !Download.HasPackCover}"/>
+                  <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="White" IsVisible="{Binding Download.HasPackCover}"/>
+                  <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" Foreground="#EEEEEE" IsVisible="{Binding Download.HasPackCover}"/>
+                </StackPanel>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Border>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding Download.IsPackResourceDetail}">
+          <Button x:Name="PackOverviewTab" Classes="nav" Classes.active="{Binding Download.PackOverview}" Command="{Binding Download.ShowPackOverviewCommand}" Content="介绍"/>
+          <Button x:Name="PackVersionsTab" Classes="nav" Classes.active="{Binding !Download.PackOverview}" Command="{Binding Download.ShowPackVersionsCommand}" Content="版本与安装"/>
+        </StackPanel>
         <Border Grid.Row="1" Classes="card" Padding="12" IsVisible="{Binding Download.ShowsResourceDependencies}">
           <StackPanel Spacing="5"><TextBlock Text="所选版本的前置依赖" FontWeight="SemiBold" /><ScrollViewer MaxHeight="70" HorizontalScrollBarVisibility="Disabled"><TextBlock x:Name="ResourceDependencyNotice" Text="{Binding Download.ResourceDependencyHint}" TextWrapping="Wrap" Classes="muted" FontSize="12" /></ScrollViewer></StackPanel>
         </Border>
-        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" IsEnabled="{Binding Download.CanConfigureVersion}">
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" IsVisible="{Binding Download.ShowsResourceVersions}" IsEnabled="{Binding Download.CanConfigureVersion}">
           <ComboBox x:Name="ResourceGameFilter" ItemsSource="{Binding Download.ResourceGameVersions}" SelectedItem="{Binding Download.ResourceGameVersion}" AutomationProperties.Name="筛选游戏版本" />
           <ComboBox Grid.Column="1" x:Name="ResourceLoaderFilter" IsVisible="{Binding Download.ShowsResourceLoaderFilter}" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.ResourceLoader}" AutomationProperties.Name="筛选加载器" />
           <ComboBox Grid.Column="2" x:Name="ResourceChannelFilter" ItemsSource="{Binding Download.ResourceReleaseChannels}" SelectedItem="{Binding Download.ResourceReleaseChannel}" AutomationProperties.Name="筛选发布类型" />
           <Button Grid.Column="3" Content="刷新" Command="{Binding Download.RetryResourceVersionsCommand}" />
         </Grid>
-        <ScrollViewer Grid.Row="3" x:Name="ResourceReleaseScroll" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
+        <ScrollViewer Grid.Row="3" x:Name="PackOverviewScroll" IsVisible="{Binding Download.ShowsPackOverview}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+          <StackPanel Spacing="16">
+            <Border Classes="card" Padding="20"><StackPanel Spacing="10">
+              <TextBlock Text="关于这个整合包" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding Download.PackDescription}" FontSize="14" LineHeight="23" TextWrapping="Wrap"/>
+            </StackPanel></Border>
+            <Border Classes="card" Padding="18"><StackPanel Spacing="10">
+              <TextBlock Text="适配信息" FontSize="16" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding Download.PackSupportedVersions}" Classes="muted" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding Download.PackLoaders}" Classes="muted" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding Download.PackActivity}" Classes="muted" TextWrapping="Wrap"/>
+              <Button Command="{Binding Download.ShowPackVersionsCommand}" Content="选择版本并安装 →" HorizontalAlignment="Left"/>
+            </StackPanel></Border>
+          </StackPanel>
+        </ScrollViewer>
+        <ScrollViewer Grid.Row="3" x:Name="ResourceReleaseScroll" IsVisible="{Binding Download.ShowsResourceVersions}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
           <ProgressBar IsVisible="{Binding Download.IsLoadingResourceVersions}" IsIndeterminate="True" Height="3" />
           <TextBlock Text="{Binding Download.ResourceVersionsStatus}" Classes="muted" TextWrapping="Wrap" />
           <ItemsControl ItemsSource="{Binding Download.ResourceReleaseGroups}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResourceReleaseGroup">

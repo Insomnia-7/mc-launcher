@@ -82,6 +82,7 @@ internal static class Program
         try
         {
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
+            if(args.Contains("--pack-upgrade")){ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);Check("整合包页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} pack upgrade checks passed");return 0;}
             if(args.Contains("--launcher-update")){LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);Check("自动更新页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} launcher update checks passed");return 0;}
             if(args.Contains("--maintenance")){MaintenanceUiChecks.Run(window,Pump,Check,Capture);Check("维护页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} maintenance checks passed");return 0;}
             if(args.Contains("--workspace")){WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);Check("新版工作区无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workspace checks passed");return 0;}
@@ -109,12 +110,18 @@ internal static class Program
             {
                 void WaitLive(Task task) { PumpUntil(()=>task.IsCompleted,45000); if(!task.IsCompleted) throw new TimeoutException("Live request timed out");task.GetAwaiter().GetResult();Pump(100); }
                 var livePacks=args.Contains("--live-packs");
-                model.IsInstanceSection=false;model.Download.SelectedCategory=model.Download.Categories.First(c=>c.Category==(livePacks?Launcher.Domain.Content.DownloadCategory.ResourcePack:Launcher.Domain.Content.DownloadCategory.Mod));model.Download.Query=livePacks?"":"sodium";
+                model.IsInstanceSection=false;model.Download.SelectedCategory=model.Download.Categories.First(c=>!c.IsSeparator&&c.Category==(livePacks?Launcher.Domain.Content.DownloadCategory.Modpack:Launcher.Domain.Content.DownloadCategory.Mod));model.Download.Query=livePacks?"Fabulously Optimized":"sodium";
                 WaitLive(model.Download.SearchCommand.ExecuteAsync(null));
                 Check("真实平台返回项目元数据",model.Download.Results.Any(i=>(livePacks||i.Slug=="sodium")&&i.DownloadsText.Length>0));
                 var project=model.Download.Results.First(i=>livePacks||i.Slug=="sodium");PumpUntil(()=>project.IconBytes is {Length:>0},25000);
                 Check("真实项目原色图标下载成功",project.IconBytes is {Length:>0});Capture("live-resource-list");
                 WaitLive(model.Download.OpenResourceCommand.ExecuteAsync(project));
+                if(livePacks)
+                {
+                    Check("真实整合包介绍页可用",model.Download.ShowsPackOverview&&model.Download.PackDescription.Length>0);Capture("live-pack-overview");
+                    model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");Pump(100);Capture("live-pack-overview-dark");
+                    model.Download.ShowPackVersionsCommand.Execute(null);Pump(100);
+                }
                 Check("真实项目版本可按游戏版本浏览",model.Download.ResourceReleaseGroups.Count>0);Capture("live-resource-versions");
                 Check("真实项目无绑定错误",log.Errors.Count==0);return 0;
             }
@@ -240,6 +247,7 @@ internal static class Program
             ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);
             MaintenanceUiChecks.Run(window,Pump,Check,Capture);
             LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);
+            ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

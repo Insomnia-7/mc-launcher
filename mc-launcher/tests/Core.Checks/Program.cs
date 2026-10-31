@@ -42,6 +42,10 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--pack-upgrade"))
+{
+    await ModpackUpgradeChecks.RunAsync(Check);Console.WriteLine($"Pack upgrade: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--workbench"))
 {
     await ModWorkbenchChecks.RunAsync(Check);Console.WriteLine($"Workbench: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
@@ -1918,6 +1922,7 @@ await ExperienceChecks.RunAsync(Check);
 await ModWorkbenchChecks.RunAsync(Check);
 await MaintenanceChecks.RunAsync(Check);
 await LauncherUpdateChecks.RunAsync(Check);
+await ModpackUpgradeChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {
