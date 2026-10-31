@@ -45,7 +45,9 @@ public sealed partial class App : Avalonia.Application
                 Log.Information("[desktop boot] 界面就绪 {Ms} ms", boot.ElapsedMilliseconds);
                 Launcher.Application.Update.SingleFileUpdate.AcknowledgeStartup(AppPaths.DataDirectory);
                 // No network, Java scan, or image decoding is needed to construct the first screen.
-                model.StartBackgroundWork(checkUpdates: true);
+                if(Environment.GetEnvironmentVariable("FANGYU_SMOKE_TEST")=="1")
+                    DispatcherTimer.RunOnce(()=>desktop.Shutdown(),TimeSpan.FromSeconds(2));
+                else model.StartBackgroundWork(checkUpdates: true);
                 await model.LoadAppearanceWallpaperAsync();
             }, DispatcherPriority.Background);
             desktop.Exit += (_, _) =>

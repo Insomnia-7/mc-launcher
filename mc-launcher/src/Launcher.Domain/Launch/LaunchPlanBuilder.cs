@@ -81,6 +81,7 @@ public static class LaunchPlanBuilder
         };
 
         result.AddRange(ArgumentExpander.SplitArguments(launch.ExtraJvmArgs));
+        if(ctx.OsName=="osx")result.Add("-XstartOnFirstThread");
 
         // 1.13+ 有 arguments.jvm；更早的版本只有隐含约定
         if (version.Arguments is { Jvm.Count: > 0 })

@@ -18,7 +18,8 @@ public sealed record UpdateManifest(
     IReadOnlyList<UpdateFile> Files,
     string? Notes = null,
     DateTimeOffset? PublishedAt = null,
-    string? Entry = null)
+    string? Entry = null,
+    string? Runtime = null)
 {
     [JsonIgnore]
     public UpdateSignatureProof? SignatureProof { get; init; }
@@ -100,7 +101,7 @@ public static class UpdateManifestParser
         if (files.Count == 0)
             throw new UpdateManifestException("更新清单里没有任何文件");
 
-        return new UpdateManifest(raw.Version.Trim(), files, raw.Notes, raw.PublishedAt, raw.Entry);
+        return new UpdateManifest(raw.Version.Trim(), files, raw.Notes, raw.PublishedAt, raw.Entry, raw.Runtime);
     }
 
     private sealed record RawManifest(
@@ -108,7 +109,8 @@ public static class UpdateManifestParser
         [property: JsonPropertyName("files")] List<RawFile>? Files,
         [property: JsonPropertyName("notes")] string? Notes,
         [property: JsonPropertyName("publishedAt")] DateTimeOffset? PublishedAt,
-        [property: JsonPropertyName("entry")] string? Entry);
+        [property: JsonPropertyName("entry")] string? Entry,
+        [property: JsonPropertyName("runtime")] string? Runtime);
 
     private sealed record RawFile(
         [property: JsonPropertyName("path")] string? Path,

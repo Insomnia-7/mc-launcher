@@ -150,12 +150,11 @@ internal static class LauncherServices
         services.AddSingleton<IUpdateClient>(_ =>
             new UpdateClient(UpdateClient.CreateHttpClient()));
 
-        if (DpapiSecretProtector.TryCreate() is { } protector)
+        if (SystemKeySecretProtector.TryCreate(AppPaths.DataDirectory) is { } protector)
             services.AddSingleton<ISecretProtector>(protector);
 
         // 玩家头像：只用来显示，失败不影响任何功能
         services.AddSingleton<ISkinService>(_ => new SkinService(AppPaths.DataDirectory));
-        if(!OperatingSystem.IsWindows()) services.AddSingleton<IJavaProvisioner, ManualJavaProvisioner>();
         configure?.Invoke(services);
         return services.BuildServiceProvider();
     }

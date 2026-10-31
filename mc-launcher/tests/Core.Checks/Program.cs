@@ -263,8 +263,8 @@ Console.WriteLine("== 8. Java 自动安装（Adoptium 响应 / sha256 / 解压 /
 
             using var http = new HttpClient(new StubHttpHandler(_ => json));
             var downloader = new FakeDownloader((_, _) => zipBytes);
-            // 探针返回 null：合成出来的 java.exe 当然跑不起来，正好验证「用 API 的版本号兜底」
-            var provisioner = new JavaProvisioner(http, downloader, new FakeJavaLocator(probe: _ => null));
+            // 模拟 JVM 探测成功；实际下载必须在提交前通过 -version，不能仅相信元数据。
+            var provisioner = new JavaProvisioner(http, downloader, new FakeJavaLocator(probe: path => File.Exists(path)?new JavaInstall(path,21,"21.0.12.1+1-test","Adoptium","x64"):null));
 
             var install = await provisioner.EnsureAsync(21, dataDir);
 
@@ -283,7 +283,7 @@ Console.WriteLine("== 8. Java 自动安装（Adoptium 响应 / sha256 / 解压 /
             Check("zip 的顶层目录被剥掉（bin 直接挂在安装目录下）", File.Exists(Path.Combine(installDir, "bin", "java.exe")));
             Check("staging 目录零残留", stagingLeft.Length == 0, string.Join(",", stagingLeft.Select(Path.GetFileName)));
             Check("安装包用完即删", cacheLeft.Length == 0, string.Join(",", cacheLeft.Select(Path.GetFileName)));
-            Check("探不出 -version 时用 API 的版本信息兜底",
+            Check("安装返回已通过 JVM 探测的版本信息",
                 install.MajorVersion == 21 && install.Vendor == "Adoptium" && install.Arch == "x64" &&
                 install.VersionString == "21.0.12.1+1-test",
                 install.ToString());

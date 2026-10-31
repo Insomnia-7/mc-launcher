@@ -286,7 +286,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var updater = LaunchSelfUpdater is null ? FindUpdater() ?? throw new FileNotFoundException("找不到更新器，安装包可能不完整，请重新下载启动器。") : null;
             if(LaunchSelfUpdater is not null) SingleFileUpdate.ValidateManifest(manifest);
-            var target = AppContext.BaseDirectory;
+            var target = UpdateTargetDirectory?.Invoke() ?? AppContext.BaseDirectory;
             var progress = new Progress<UpdateProgress>(report =>
             {
                 if(!IsUpdating || _launcherUpdateCts != updateOperation || updateOperation.IsCancellationRequested) return;

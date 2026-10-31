@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
+using System.Formats.Tar;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -31,11 +32,10 @@ namespace Launcher.Infrastructure.Java;
 /// </code>
 /// 顶层是数组（一般 1 个元素）；zip 内是单个顶层目录 <c>jdk-21.0.12.1+1-jre/bin/java.exe</c>（已用 Range 请求读 zip 尾部确认）。
 /// </summary>
-public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJavaLocator locator) : IJavaProvisioner
+public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJavaLocator locator, JavaRuntimeTarget? runtimeTarget = null) : IJavaProvisioner
 {
+    private readonly JavaRuntimeTarget _runtime=runtimeTarget??JavaRuntimeTarget.Current;
     /// <summary>追加 vendor=eclipse 固定 Temurin：同版本多厂商共存时，不指定厂商的返回顺序并不稳定。</summary>
-    private const string AdoptiumLatestUrl =
-        "https://api.adoptium.net/v3/assets/latest/{0}/hotspot?os=windows&architecture=x64&image_type=jre&vendor=eclipse";
 
     /// <summary>Adoptium 是公益镜像，带可识别 UA 比默认值礼貌，也不容易被 CDN 当脚本流量拦。</summary>
     private const string UserAgent = "MinecraftLauncher/1.0 (+https://localhost)";
@@ -122,7 +122,7 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
         // 解压完真跑一次 -version：装出来的东西能不能用，只有 JVM 自己说了算
         progress?.Report(JavaProvisionProgress.Of($"确认 Java {majorVersion} 可用", 98));
         var probed = await locator.ProbeAsync(javaExe, ct).ConfigureAwait(false);
-        var install = probed ?? new JavaInstall(javaExe, package.MajorVersion, package.VersionString, "Adoptium", "x64");
+        var install = probed ?? throw new IOException("Java 解压完成但无法运行，请确认系统与处理器架构受支持。");
 
         progress?.Report(JavaProvisionProgress.Of($"Java {install.MajorVersion} 就绪", 100, install.ToString()));
         return install;
@@ -251,7 +251,7 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
     /// <summary>查 Adoptium 最新 Temurin JRE。厂商固定 eclipse，否则同版本多厂商的返回顺序不稳定。</summary>
     private async Task<JavaPackage> ResolvePackageAsync(int majorVersion, CancellationToken ct)
     {
-        var url = string.Format(CultureInfo.InvariantCulture, AdoptiumLatestUrl, majorVersion);
+        var url = _runtime.AssetUrl(majorVersion);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.UserAgent.ParseAdd(UserAgent);
@@ -276,7 +276,7 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
 
         if (package is null)
             throw new InvalidOperationException(
-                $"Adoptium 没有 Java {majorVersion} 的 Windows x64 JRE（该大版本可能已停止维护）。");
+                $"Adoptium 没有 Java {majorVersion} 的 {_runtime.Os} / {_runtime.Architecture} JRE（此平台可能不支持该版本）。");
 
         if (string.IsNullOrWhiteSpace(package.Checksum))
             throw new InvalidOperationException(
@@ -286,9 +286,11 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
             .Select(a => a.Version)
             .FirstOrDefault(v => v?.Major == majorVersion) ?? assets![0].Version;
 
+        if(package.Name is not {Length:>0} name || name!=Path.GetFileName(name) || name.Contains('\\') || !name.EndsWith(_runtime.PackageExtension,StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Java 安装包文件名或格式不符合当前平台。");
         return new JavaPackage(
             package.Link!,
-            package.Name ?? $"OpenJDK{majorVersion}U-jre_x64_windows_hotspot.zip",
+            name,
             package.Checksum,
             package.Size,
             version?.Major ?? majorVersion,
@@ -300,24 +302,33 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
     /// （半成品会被下次的 FindLocalAsync 当成"已装好"，然后启动器一直报找不到主类）。
     /// zip 里只有一层 <c>jdk-x.y.z-jre/</c>，所以搬的时候把那一层剥掉。
     /// </summary>
-    private static async Task<string> ExtractAsync(string zipPath, string installDir, JavaPackage package, CancellationToken ct)
+    private async Task<string> ExtractAsync(string zipPath, string installDir, JavaPackage package, CancellationToken ct)
     {
         var staging = installDir + ".staging-" + Guid.NewGuid().ToString("N")[..8];
         Directory.CreateDirectory(staging);
 
         try
         {
-            await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, staging, overwriteFiles: true), ct)
-                .ConfigureAwait(false);
+            await Task.Run(async () =>
+            {
+                if(_runtime.Os=="windows")ZipFile.ExtractToDirectory(zipPath,staging,overwriteFiles:true);
+                else
+                {
+                    await using var input=File.OpenRead(zipPath);await using var gzip=new GZipStream(input,CompressionMode.Decompress);
+                    await TarFile.ExtractToDirectoryAsync(gzip,staging,overwriteFiles:false,cancellationToken:ct);
+                }
+            },ct).ConfigureAwait(false);
 
             var stagedExe = FindJavaExe(staging)
                 ?? throw new IOException(
                     $"Java {package.MajorVersion} 安装包内容异常：找不到 bin/java.exe（{package.Name}）。");
 
+            if(await locator.ProbeAsync(stagedExe,ct).ConfigureAwait(false) is not {} probe || probe.MajorVersion<package.MajorVersion)
+                throw new IOException("暂存的 Java 无法运行，原安装保持不变。");
             var home = Path.GetDirectoryName(Path.GetDirectoryName(stagedExe)!)!;
             ReplaceDirectory(home, installDir);
 
-            var javaExe = Path.Combine(installDir, "bin", "java.exe");
+            var javaExe = Path.Combine(installDir, "bin", _runtime.Executable);
             if (!File.Exists(javaExe))
                 throw new IOException(
                     $"Java {package.MajorVersion} 解压后没找到 bin/java.exe，安装目录可能被其它程序（杀毒/网盘同步）占用。");
@@ -338,19 +349,21 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
     }
 
     /// <summary>两种布局都能认：剥好的（bin/java.exe 直接在根下）和原始 zip 的（外面还套一层 jdk-xxx）。</summary>
-    private static string? FindJavaExe(string root)
+    private string? FindJavaExe(string root)
     {
         if (!Directory.Exists(root)) return null;
 
-        var direct = Path.Combine(root, "bin", "java.exe");
+        var direct = Path.Combine(root, "bin", _runtime.Executable);
         if (File.Exists(direct)) return direct;
 
         try
         {
             foreach (var child in Directory.EnumerateDirectories(root))
             {
-                var nested = Path.Combine(child, "bin", "java.exe");
+                var nested = Path.Combine(child, "bin", _runtime.Executable);
                 if (File.Exists(nested)) return nested;
+                var bundle=Path.Combine(child,"Contents","Home","bin",_runtime.Executable);
+                if(File.Exists(bundle))return bundle;
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

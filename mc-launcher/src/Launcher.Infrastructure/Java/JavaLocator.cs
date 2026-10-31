@@ -35,7 +35,7 @@ public sealed class JavaLocator : IJavaLocator
                 .ToArray();
     }
 
-    private static readonly string[] KnownRoots =
+    private static readonly string[] KnownRoots = OperatingSystem.IsWindows() ?
     [
         @"C:\Program Files\Java",
         @"C:\Program Files (x86)\Java",
@@ -50,7 +50,7 @@ public sealed class JavaLocator : IJavaLocator
         @"C:\Program Files\JetBrains",
         @"C:\Program Files\Android\Android Studio",
         @"C:\Program Files\Common Files\Oracle\Java",
-    ];
+    ] : OperatingSystem.IsMacOS() ? ["/Library/Java/JavaVirtualMachines",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Library/Java/JavaVirtualMachines"),"/opt/homebrew/opt","/usr/local/opt"] : ["/usr/lib/jvm","/usr/java","/opt/java"];
 
     private static readonly TimeSpan ProbeCacheLifetime = TimeSpan.FromMinutes(2);
     private readonly ConcurrentDictionary<string, ProbeState> _probes = new(StringComparer.OrdinalIgnoreCase);
@@ -90,7 +90,7 @@ public sealed class JavaLocator : IJavaLocator
             ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(root)) continue;
 
-            foreach (var binDir in Descend(root, maxDepth: 3, ct))
+            foreach (var binDir in Descend(root, maxDepth: OperatingSystem.IsMacOS()?5:3, ct))
             {
                 var exe = Path.Combine(binDir, JavaExeName);
                 if (File.Exists(exe)) candidates.Add(exe);
@@ -204,6 +204,7 @@ public sealed class JavaLocator : IJavaLocator
                 RedirectStandardOutput = true, RedirectStandardError = true,
                 UseShellExecute = false, CreateNoWindow = true,
             };
+            psi.ArgumentList.Add("-XshowSettings:properties");
             psi.ArgumentList.Add("-version");
             using var process = new Process { StartInfo = psi };
             if (!process.Start()) return null;
@@ -257,10 +258,10 @@ public sealed class JavaLocator : IJavaLocator
             "OpenJDK";
 
         var arch =
-            output.Contains("64-Bit", StringComparison.OrdinalIgnoreCase) ||
-            output.Contains("x86_64", StringComparison.OrdinalIgnoreCase) ? "x64" :
             output.Contains("aarch64", StringComparison.OrdinalIgnoreCase) ||
-            output.Contains("ARM64", StringComparison.OrdinalIgnoreCase) ? "arm64" : "x86";
+            output.Contains("ARM64", StringComparison.OrdinalIgnoreCase) ? "arm64" :
+            output.Contains("64-Bit", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("x86_64", StringComparison.OrdinalIgnoreCase) || output.Contains("amd64",StringComparison.OrdinalIgnoreCase) ? "x64" : "x86";
 
         return new JavaInstall(javaExePath, major, versionString, vendor, arch);
     }

@@ -12,14 +12,14 @@ public sealed record LauncherUpdatePreferences(bool Automatic = true);
 public sealed partial class MainViewModel
 {
     public const string LauncherReleasePage = "https://github.com/Insomnia-7/mc-launcher/releases/latest";
-    public const string LauncherUpdateFeed = "https://github.com/Insomnia-7/mc-launcher/releases/latest/download/update.json";
+    public static string LauncherUpdateFeed => "https://github.com/Insomnia-7/mc-launcher/releases/latest/download/"+DesktopUpdateLayout.FeedName;
     [ObservableProperty] private bool _showsLauncherUpdates;
     [ObservableProperty] private bool _automaticLauncherUpdates = true;
     [ObservableProperty] private string _launcherUpdatePreviousResult = "";
     public string LauncherCurrentVersion => BuildInfo.Version;
     public bool CanCheckLauncherUpdate => !IsCheckingLauncherUpdate && !IsUpdating;
-    public bool CanInstallLauncherUpdate => OperatingSystem.IsWindows() && HasUpdate && CanCheckLauncherUpdate && !IsBusy && !Download.IsBusy && !IsModBusy;
-    public bool CanUseWindowsUpdater => OperatingSystem.IsWindows();
+    public bool CanInstallLauncherUpdate => CanUseWindowsUpdater && HasUpdate && CanCheckLauncherUpdate && !IsBusy && !Download.IsBusy && !IsModBusy;
+    public bool CanUseWindowsUpdater => OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
     private string LauncherUpdatePreferencesPath => Path.Combine(AppPaths.DataDirectory, "launcher-update.json");
     private void InitializeLauncherUpdates()
     {
@@ -27,6 +27,7 @@ public sealed partial class MainViewModel
         DefaultUpdateLocation = LauncherUpdateFeed;
         ShouldCheckLauncherUpdates = () => AutomaticLauncherUpdates;
         LaunchSelfUpdater = StartSingleFileUpdaterAsync;
+        UpdateTargetDirectory=()=>DesktopUpdateLayout.Resolve(Environment.ProcessPath??throw new IOException("无法定位当前程序。")).Target;
         var result = ExperienceFiles.Read<LauncherUpdateResult>(Path.Combine(AppPaths.DataDirectory, "update", "launcher-update-result.json"));
         if(result is { State: "completed" or "failed" }) LauncherUpdatePreviousResult = result.Message;
         if(UpdateText.Length == 0) UpdateText = "可检查启动器新版本，下载前会显示更新说明。";
@@ -62,17 +63,17 @@ public sealed partial class MainViewModel
     }
     private static async Task StartSingleFileUpdaterAsync(UpdateStaging staging, string target, CancellationToken ct)
     {
-        if(!OperatingSystem.IsWindows()) throw new InvalidOperationException("此平台暂请从发布页下载更新。");
         var executable = Environment.ProcessPath ?? throw new IOException("无法定位当前启动器。");
-        if(!executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) throw new IOException("开发运行不支持自替换，请使用发布的单文件 EXE。");
+        var layout=DesktopUpdateLayout.Resolve(executable);
         var helperDirectory = Path.Combine(AppPaths.DataDirectory, "update", "runners", Guid.NewGuid().ToString("N"));
         ExperienceFiles.RejectLinks(helperDirectory); Directory.CreateDirectory(helperDirectory);
-        var helperPath = Path.Combine(helperDirectory, "Fangyu.Update.exe");
+        var helperPath = Path.Combine(helperDirectory, OperatingSystem.IsWindows()?"Fangyu.Update.exe":"Fangyu.Update");
         await Task.Run(() => File.Copy(executable, helperPath), ct);
+        DesktopUpdateLayout.EnsureExecutable(helperPath);
         var resultPath = SingleFileUpdate.ResultPath(staging.Directory);
         if(File.Exists(resultPath)) File.Delete(resultPath);
         var start = new ProcessStartInfo(helperPath) { UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden, CreateNoWindow = true, WorkingDirectory = helperDirectory };
-        foreach(var item in new[] { "--launcher-update", "--staging", staging.Directory, "--target", target, "--entry", Path.GetFileName(executable), "--wait-pid", Environment.ProcessId.ToString() }) start.ArgumentList.Add(item);
+        foreach(var item in new[] { "--launcher-update", "--staging", staging.Directory, "--target", target, "--entry", layout.Entry, "--wait-pid", Environment.ProcessId.ToString() }) start.ArgumentList.Add(item);
         using var process = Process.Start(start) ?? throw new IOException("无法启动更新器。");
         try
         {

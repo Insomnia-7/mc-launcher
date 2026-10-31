@@ -1,0 +1,78 @@
+name: Platform Preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'mc-launcher/src/**'
+      - 'mc-launcher/tests/Platform.Checks/**'
+      - 'mc-launcher/packaging/publish-unix.ps1'
+      - 'mc-launcher/packaging/check-unix-startup.ps1'
+      - '.github/workflows/platform-preview.yml'
+permissions:
+  contents: read
+concurrency:
+  group: platform-preview-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-latest, rid: linux-x64}
+          - {runner: ubuntu-24.04-arm, rid: linux-arm64}
+          - {runner: macos-15-intel, rid: osx-x64}
+          - {runner: macos-15, rid: osx-arm64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Linux desktop and keyring dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-6 libice6 libsm6 libfontconfig1 libglib2.0-0 libsecret-tools gnome-keyring dbus-x11 xvfb fonts-noto-cjk
+      - name: Linux platform, real keyring and official Java checks
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          dbus-run-session -- bash -e -c '
+            printf "isolated-ci-keyring" | gnome-keyring-daemon --unlock --components=secrets
+            dotnet run --project mc-launcher/tests/Platform.Checks -c Release -- "${{ runner.temp }}/platform-checks" --native-credentials --live-java
+          '
+      - name: macOS isolated keychain
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          security create-keychain -p isolated-ci-keyring "$RUNNER_TEMP/fangyu-ci.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/fangyu-ci.keychain-db"
+          security unlock-keychain -p isolated-ci-keyring "$RUNNER_TEMP/fangyu-ci.keychain-db"
+          security set-keychain-settings -lut 3600 "$RUNNER_TEMP/fangyu-ci.keychain-db"
+      - name: macOS platform, real keychain and official Java checks
+        if: runner.os == 'macOS'
+        run: dotnet run --project mc-launcher/tests/Platform.Checks -c Release -- "${{ runner.temp }}/platform-checks" --native-credentials --live-java
+      - name: Publish native portable package
+        shell: pwsh
+        run: ./mc-launcher/packaging/publish-unix.ps1 -Runtime '${{ matrix.rid }}' -OutputDirectory "$PWD/platform-output"
+      - name: Linux actual packaged desktop startup
+        if: runner.os == 'Linux'
+        run: xvfb-run -a pwsh -File mc-launcher/packaging/check-unix-startup.ps1 -Executable platform-output/payload/Fangyu -DataRoot "${{ runner.temp }}/native-startup"
+      - name: macOS actual packaged desktop startup
+        if: runner.os == 'macOS'
+        shell: pwsh
+        run: ./mc-launcher/packaging/check-unix-startup.ps1 -Executable 'platform-output/方隅.app/Contents/MacOS/Fangyu' -DataRoot '${{ runner.temp }}/native-startup'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fangyu-${{ matrix.rid }}
+          path: |
+            platform-output/
+            ${{ runner.temp }}/platform-checks/platform-checks.json
+            ${{ runner.temp }}/native-startup/native-startup.json
+            ${{ runner.temp }}/native-startup/data/logs/
+          retention-days: 7

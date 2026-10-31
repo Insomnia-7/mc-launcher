@@ -42,6 +42,8 @@ public sealed class UpdateClient(HttpClient http, UpdateSignatureVerifier? signa
             return new UpdateCheckResult(null, resolved, $"更新验证失败：{ex.Message}", currentVersion, Failed: true);
         }
 
+        if(manifest.Runtime is {} runtime&&runtime!=DesktopUpdateLayout.CurrentRuntime)
+            return new UpdateCheckResult(null,resolved,"更新包系统或处理器架构不匹配。",currentVersion,Failed:true);
         if (!UpdateVersion.IsNewer(manifest.Version, currentVersion))
             return new UpdateCheckResult(null, resolved, $"已是最新（{currentVersion}）", currentVersion);
 

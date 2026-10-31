@@ -110,7 +110,7 @@
             </StackPanel>
           </Border>
           <TextBlock Text="{Binding LauncherUpdatePreviousResult}" TextWrapping="Wrap"/>
-          <TextBlock Text="Windows 支持自动替换与重启；其他平台请从发布页下载。0.6 及更早版本需先手动升级到此版本，之后可在此接收更新。" Classes="muted" TextWrapping="Wrap"/>
+          <TextBlock Text="Windows、Linux 与 macOS 安装包支持校验后替换并重启。macOS 请先把应用移出磁盘映像或下载临时目录；安装位置需要可写。0.6 及更早版本需先手动升级一次。" Classes="muted" TextWrapping="Wrap"/>
         </StackPanel>
       </ScrollViewer>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
