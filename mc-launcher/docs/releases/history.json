@@ -223,5 +223,20 @@
     "sha256": "10ca469356ca688217a87ddc79a7932d76f651f0181e199a14793cb97008f54d",
     "binaryProductVersion": "0.7.0-preview.1+36371a169491ff3ca0322d77ba4d8da5ab94bb65",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "0.8.0-preview.1",
+    "date": "2026-10-31",
+    "title": "整合包升级版",
+    "tag": "desktop-v0.8.0-preview.1",
+    "sourceCommit": "d5b81469cdefcc7e3f8016c309dde369785518bf",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/d5b81469cdefcc7e3f8016c309dde369785518bf",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.8.0-preview.1",
+    "changes": "整合包封面与介绍、版本升级差异预览、JSON 配置合并、冲突选择、备份恢复、模组依赖检查与下载队列接续。",
+    "platform": "Windows x64",
+    "bytes": 23832245,
+    "sha256": "d40f2b7ac821f2219de90b98764542a8bfcfdc9841ad6a50a28056e23b8f2c42",
+    "binaryProductVersion": "0.8.0-preview.1+d5b81469cdefcc7e3f8016c309dde369785518bf",
+    "buildMetadataMatchesSource": true
   }
 ]

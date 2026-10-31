@@ -12,6 +12,8 @@
 
 使用步骤与范围见 [整合包升级说明](docs/modpack-upgrades.md)。Linux / macOS 尚未完成发行实机验收。
 
+[源码 d5b8146](https://github.com/Insomnia-7/mc-launcher/commit/d5b81469cdefcc7e3f8016c309dde369785518bf)。Windows 单文件 23832245 字节，SHA-256：`d40f2b7ac821f2219de90b98764542a8bfcfdc9841ad6a50a28056e23b8f2c42`。1130 项回归检查通过；另验证 5 项真实 Modrinth 数据、2 次独立成品启动、6 组 0.7 → 0.8 原生更新情形。
+
 ## 0.7.0-preview.1 · 启动器自动更新版
 
 首次接通桌面单文件自动更新：首屏后后台检测、设置中的更新入口与开关、版本 / 大小 / 更新说明、确认下载与取消、签名及 SHA-256 校验、自身临时副本更新、保留当前文件名、旧版备份、新窗口就绪确认及失败回退。补录旧 Release 不触发降级，同版本构建号不触发升级。旧版用户需先手动安装一次。详细行为见 [自动更新说明](docs/launcher-auto-update.md)。
@@ -22,9 +24,9 @@
 
 ---
 
-记录范围为已交付的 0.2.0-preview.1 至 0.7.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
+记录范围为已交付的 0.2.0-preview.1 至 0.8.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
-当前推荐下载：[0.7.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.7.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
+当前推荐下载：[0.8.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.8.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
 
 历史包早于源码提交打包，因此部分旧 EXE 的 ProductVersion 后缀仍指向前一次提交。下列源码提交对应功能版本；原始二进制版本后缀、大小与 SHA-256 均另行保留，不能将两者视为完全一致的构建来源标记。0.4、0.5、0.6 的成品版本后缀与源码提交一致。
 
