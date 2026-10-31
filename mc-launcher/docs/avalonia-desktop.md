@@ -1,5 +1,7 @@
 # Avalonia 桌面界面：第一阶段
 
+1.0 跨平台预览现已补齐 Linux / macOS 系统凭据、Java 自动管理、原生包和签名更新，并通过四平台自动验证。当前范围见 [跨平台预览说明](platform-preview.md)；下文保留各阶段的历史实现与验收记录。
+
 新版入口是 `src/Launcher.Desktop`，使用 Avalonia 12.1.4 和 .NET 10，目标为 Windows、Linux、macOS。旧版 WPF 入口保留。现阶段已交付可运行的首页与共用业务连接，不代表三个操作系统的全部功能均已验收。
 
 ## 运行与构建

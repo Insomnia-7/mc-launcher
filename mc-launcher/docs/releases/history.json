@@ -253,5 +253,43 @@
     "sha256": "04bcc69845d1aa461c9a0551f25666025505da1978d72a294c9444d886a80afa",
     "binaryProductVersion": "0.9.0-preview.1+e62bd34d0ab9e5539ab2495c59772f4d9831d3d6",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "1.0.0-preview.1",
+    "date": "2026-10-31",
+    "title": "跨平台预览版",
+    "tag": "desktop-v1.0.0-preview.1",
+    "sourceCommit": "5e01b4c52efbbcac479d08e3bc4c5cef112925a4",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/5e01b4c52efbbcac479d08e3bc4c5cef112925a4",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1",
+    "changes": "Linux/macOS 系统凭据、按平台 Java 管理、原生应用包、分平台签名更新与四平台真实系统验证。",
+    "platform": "Windows x64",
+    "bytes": 23911658,
+    "sha256": "dfc21c15811246a6ee4bfba5ff8914ba136a81ebfc13b8b83ddab80e8bfdad15",
+    "binaryProductVersion": "1.0.0-preview.1+5e01b4c52efbbcac479d08e3bc4c5cef112925a4",
+    "buildMetadataMatchesSource": true,
+    "additionalPlatforms": [
+      {
+        "archive": "Fangyu-1.0.0-preview.1-linux-arm64.tar.gz",
+        "bytes": 16322863,
+        "sha256": "8627ff51a91de13d252a9dedcf2edd67c9acb85cad888cfbb319db76db5ed0fe"
+      },
+      {
+        "archive": "Fangyu-1.0.0-preview.1-linux-x64.tar.gz",
+        "bytes": 16947526,
+        "sha256": "6477bb1397a722e392e4c3c6c2447f353a12f809c221a70b002836395c2bf4a6"
+      },
+      {
+        "archive": "Fangyu-1.0.0-preview.1-osx-arm64.zip",
+        "bytes": 20188618,
+        "sha256": "e22e295456ff166119fc69c9fdbdafd89024ab2e595aafe6a02ce5dcc1990d34"
+      },
+      {
+        "archive": "Fangyu-1.0.0-preview.1-osx-x64.zip",
+        "bytes": 20701145,
+        "sha256": "49cc15e29cea8169e57083d25863c5bddf3695b6568afc152c6dd1a6e158edca"
+      }
+    ],
+    "verification": "https://github.com/Insomnia-7/mc-launcher/actions/runs/41186982952"
   }
 ]

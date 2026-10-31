@@ -15,7 +15,7 @@ using Launcher.Infrastructure.Java;
 
 internal static class OptimizationChecks
 {
-    public static bool IsJavaFixture(string[] args) => args is ["-version"] && Environment.GetEnvironmentVariable("MCL_CHECK_JAVA_FIXTURE") is not null;
+    public static bool IsJavaFixture(string[] args) => (args is ["-version"] or ["-XshowSettings:properties","-version"]) && Environment.GetEnvironmentVariable("MCL_CHECK_JAVA_FIXTURE") is not null;
 
     public static int RunJavaFixture()
     {

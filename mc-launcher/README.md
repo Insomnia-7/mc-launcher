@@ -1,8 +1,8 @@
 # 方隅 Launcher
 
-Minecraft Java 版桌面启动器，使用 C#、.NET 10 和 Avalonia。当前交付 Windows x64 单文件版，Linux / macOS 保留构建入口，旧 WPF 入口继续保留。
+Minecraft Java 版桌面启动器，使用 C#、.NET 10 和 Avalonia。交付 Windows x64 单文件版，提供 Linux / macOS 的 x64、ARM64 原生预览包；旧 WPF 入口继续保留。
 
-[下载最新版本](https://github.com/Insomnia-7/mc-launcher/releases/latest) · [全部 Release](https://github.com/Insomnia-7/mc-launcher/releases) · [完整版本记录（0.2–0.9）](CHANGELOG.md)
+[下载最新版本](https://github.com/Insomnia-7/mc-launcher/releases/latest) · [全部 Release](https://github.com/Insomnia-7/mc-launcher/releases) · [完整版本记录（0.2–1.0）](CHANGELOG.md)
 
 
 ## Avalonia 新版界面（预览）
@@ -12,6 +12,10 @@ Minecraft Java 版桌面启动器，使用 C#、.NET 10 和 Avalonia。当前交
 新版整合首页布局，仅保留日间白 / 夜间黑两套主题，图标与插画保留原色，提供按钮回弹、页面过渡和昼夜主题开关。跨平台构建入口为 `MinecraftLauncher.Desktop.slnx`；当前已在 Windows 开发机完成构建和离线交互验证，Linux / macOS 尚待实机验收。非 Windows 预览版需要手动安装 Java，系统密钥环接入前暂不开放微软登录持久化。详细范围与运行方法见 [Avalonia 桌面说明](docs/avalonia-desktop.md)。
 
 Windows x64 可用 `pwsh -File packaging/publish-desktop.ps1 -Lean -Compress` 生成自带 .NET 运行环境的单文件 `dist/desktop-win-x64/方隅.exe`，用户下载后双击即可打开启动器。游戏与 Java 按原有流程准备。
+
+### 1.0 跨平台预览
+
+Linux 与 macOS 新增系统密钥环凭据保护、按系统与架构自动管理 Java、原生便携包和各自的签名更新清单。四个平台分别通过真实系统密钥环、官方 Java 下载与执行、应用窗口启动及更新进程成功/回退/拒绝篡改检查。macOS 包使用 ad-hoc 完整性签名，尚未 Apple Developer ID 签名和公证；真实微软授权与 Minecraft 图形运行仍需验收。范围、依赖、安装和更新方法见 [跨平台预览说明](docs/platform-preview.md)。
 
 ### 0.9 游戏设置同步与动效预览
 

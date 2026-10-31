@@ -1,5 +1,19 @@
 # 方隅版本记录
 
+## 1.0.0-preview.1 · 跨平台预览版
+
+2026-10-31。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。
+
+- 新增 Linux x64 / ARM64 便携包、macOS Intel / Apple Silicon 应用包，保留方隅名称与原色图标；Windows 继续交付单 EXE。
+- 接入 Linux Secret Service 与 macOS 钥匙串，账号文件使用 AES-GCM 密文；系统凭据不可用时不回退明文。
+- Java 自动下载按系统和架构选包，支持 tar.gz、macOS Contents/Home、Unix 执行权限，实际探测成功后才提交；修正 ARM64 识别。
+- 签名更新按平台分发，拒绝错误系统或架构；macOS 更新全部应用资源与签名，Unix 备份保存在数据目录，支持重启确认与失败恢复。
+- 新增四平台原生系统检查，覆盖真实密钥环、官方 Java 下载与运行、打包后窗口启动、更新进程成功、失败回退与篡改拒绝。
+
+使用与验收范围见 [跨平台预览说明](docs/platform-preview.md)。macOS 尚未 Developer ID 签名或公证；真实微软授权、Minecraft 图形运行和全部模组组合不在自动验证范围内。
+
+[源码 5e01b4c](https://github.com/Insomnia-7/mc-launcher/commit/5e01b4c52efbbcac479d08e3bc4c5cef112925a4)。Windows 单文件 23911658 字节，SHA-256：`dfc21c15811246a6ee4bfba5ff8914ba136a81ebfc13b8b83ddab80e8bfdad15`。1470 项检查通过：Windows 回归与平台检查 1226 项，四种 Unix 平台各 61 项；另验证 2 次 Windows 成品启动、6 组 0.9 → 1.0 原生更新。[四平台原生系统记录](https://github.com/Insomnia-7/mc-launcher/actions/runs/41186982952)。
+
 ## 0.9.0-preview.1 · 设置同步与动效版
 
 2026-10-31。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.9.0-preview.1)。
@@ -38,9 +52,9 @@
 
 ---
 
-记录范围为已交付的 0.2.0-preview.1 至 0.9.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
+记录范围为已交付的 0.2.0-preview.1 至 1.0.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
-当前推荐下载：[0.9.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v0.9.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
+当前推荐下载：[1.0.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
 
 历史包早于源码提交打包，因此部分旧 EXE 的 ProductVersion 后缀仍指向前一次提交。下列源码提交对应功能版本；原始二进制版本后缀、大小与 SHA-256 均另行保留，不能将两者视为完全一致的构建来源标记。0.4、0.5、0.6 的成品版本后缀与源码提交一致。
 
