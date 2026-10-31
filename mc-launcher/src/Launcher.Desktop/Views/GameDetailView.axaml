@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameDetailView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:local="using:Launcher.Desktop" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameDetailView">
   <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
       <StackPanel Spacing="8">
@@ -111,7 +111,7 @@
         </Border>
       </StackPanel>
     </ScrollViewer>
-    <ContentControl x:Name="DetailTabHost" Grid.Row="2" IsVisible="{Binding !IsOverviewTab}"/>
+    <TransitioningContentControl x:Name="DetailTabHost" Grid.Row="2" IsVisible="{Binding !IsOverviewTab}"><TransitioningContentControl.PageTransition><local:WorldPageTransition/></TransitioningContentControl.PageTransition></TransitioningContentControl>
     <StackPanel Grid.Row="3" Spacing="7">
       <ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3"/>
       <TextBlock Text="{Binding WorkspaceHint}" Classes="optional" TextWrapping="Wrap"/>

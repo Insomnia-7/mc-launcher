@@ -1267,6 +1267,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
 
             if (BeforeLaunchChecks is not null && !await BeforeLaunchChecks(instance.InstanceId, cts.Token)) return;
+            if (PrepareSharedSettings is not null) await PrepareSharedSettings(instance.InstanceId, cts.Token);
 
             // Forge / NeoForge 的版本 json 只有增量，必须沿 inheritsFrom 合并出完整的
             // mainClass / libraries / arguments，否则 classpath 是空的，java 只会报「找不到主类」
@@ -1369,7 +1370,7 @@ public sealed partial class MainViewModel : ObservableObject
             lock (_running) _running[version.Id] = process.Id;
             GameStarted?.Invoke(instance.InstanceId);
 
-            _ = WatchStartupAsync(process, logPath, version.Id);
+            _ = WatchStartupAsync(process, logPath, version.Id, GameRoot, instance.InstanceId);
         }
         catch (Exception ex) when (IsCancellation(ex))
         {
@@ -1417,7 +1418,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// 盯启动结果。参数错 / Java 不对会在两三秒内退出，模组冲突往往十几秒后才炸，
     /// 所以不能只看一眼：每 2 秒轮询一次，跑满 2 分钟就当它起来了。
     /// </summary>
-    private async Task WatchStartupAsync(IGameProcess process, string logPath, string versionId)
+    private async Task WatchStartupAsync(IGameProcess process, string logPath, string versionId, string gameRoot, string instanceId)
     {
         try
         {
@@ -1432,6 +1433,7 @@ public sealed partial class MainViewModel : ObservableObject
                     _running.Remove(versionId);
             }
             RunningGamesChanged?.Invoke();
+            try { if(process.HasExited)GameExited?.Invoke(gameRoot,instanceId); } catch(Exception ex) { _logger.LogWarning(ex,"退出后刷新游戏设置未完成"); }
         }
     }
 

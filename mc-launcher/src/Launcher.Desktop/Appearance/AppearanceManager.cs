@@ -22,7 +22,7 @@ public sealed class AppearanceManager(string directory, IResourceDictionary reso
     public void Apply(ThemeDefinition theme, bool animate)
     {
         var colors=ThemeCatalog.Resolve(theme);
-        var duration=animate && Launcher.Desktop.MotionPreferences.Enabled ? TimeSpan.FromMilliseconds(260) : TimeSpan.Zero;
+        var duration=animate && Launcher.Desktop.MotionPreferences.Enabled ? Launcher.Desktop.MotionTiming.Theme : TimeSpan.Zero;
         foreach(var pair in colors)
         {
             var target=Color.Parse(pair.Value);

@@ -42,6 +42,10 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--settings-sync"))
+{
+    await SettingsSyncChecks.RunAsync(Check);Console.WriteLine($"Settings sync: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--pack-upgrade"))
 {
     await ModpackUpgradeChecks.RunAsync(Check);Console.WriteLine($"Pack upgrade: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
@@ -1923,6 +1927,7 @@ await ModWorkbenchChecks.RunAsync(Check);
 await MaintenanceChecks.RunAsync(Check);
 await LauncherUpdateChecks.RunAsync(Check);
 await ModpackUpgradeChecks.RunAsync(Check);
+await SettingsSyncChecks.RunAsync(Check);
 
 if (failures.Count == 0)
 {

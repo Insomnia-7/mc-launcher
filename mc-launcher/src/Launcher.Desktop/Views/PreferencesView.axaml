@@ -11,7 +11,7 @@
         </Button>
       </Grid>
       <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="4">
-        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+        <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="4">
           <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
             <icons:IconLabel Icon="ActionSettings" Text="外观"/>
           </Button>
@@ -20,6 +20,7 @@
           </Button>
           <Button x:Name="StorageSettingsTab" Grid.Column="2" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Center"/>
           <Button x:Name="LauncherUpdateSettingsTab" Grid.Column="3" Classes="nav" Classes.active="{Binding ShowsLauncherUpdates}" Command="{Binding OpenLauncherUpdatesCommand}" Content="关于与更新" HorizontalContentAlignment="Center"/>
+          <Button x:Name="SettingsSyncTab" Grid.Column="4" Classes="nav" Classes.active="{Binding ShowsSettingsSync}" Command="{Binding OpenSettingsSyncCommand}" Content="游戏同步" HorizontalContentAlignment="Center"/>
         </Grid>
       </Border>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
@@ -126,6 +127,7 @@
           </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
         </StackPanel>
       </ScrollViewer>
+      <ContentControl x:Name="SettingsSyncHost" Grid.Row="2" IsVisible="{Binding ShowsSettingsSync}"/>
     </Grid>
   </Border>
 </UserControl>

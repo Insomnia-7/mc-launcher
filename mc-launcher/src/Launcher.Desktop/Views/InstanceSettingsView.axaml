@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceSettingsView">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
     <Border Classes="card" Margin="0">
+      <Grid RowDefinitions="*,Auto" RowSpacing="14">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
       <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><StackPanel Spacing="4"><TextBlock Text="跨实例共享游戏设置" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="按键、音量可跟随，画面和特殊设置保持独立。" Classes="muted" TextWrapping="Wrap"/></StackPanel><Button Grid.Column="1" Command="{Binding OpenSettingsSyncCommand}" Content="管理游戏同步" VerticalAlignment="Center"/></Grid>
         <Grid ColumnDefinitions="*,16,*">
           <StackPanel Spacing="6">
             <TextBlock Text="内存（MB）" Classes="muted"/>
@@ -32,13 +34,14 @@
           <NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" FormatString="0"/>
           <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" FormatString="0"/>
         </Grid>
-        <Grid ColumnDefinitions="*,Auto">
+      </StackPanel>
+      </ScrollViewer>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
           <TextBlock Text="{Binding SettingsHint}" Classes="muted" TextWrapping="Wrap"/>
           <Button x:Name="SaveSettingsButton" Grid.Column="1" Classes="primary" Command="{Binding SaveSettingsCommand}" AutomationProperties.Name="保存设置">
             <icons:IconLabel Icon="ActionCheck" Text="保存设置" Foreground="{Binding $parent[Button].Foreground}"/>
           </Button>
         </Grid>
-      </StackPanel>
+      </Grid>
     </Border>
-  </ScrollViewer>
 </UserControl>

@@ -37,8 +37,8 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _showsStorage;
     [ObservableProperty] private bool _storageBusy;
     [ObservableProperty] private string _storageHint = "扫描后显示缓存可回收量与游戏占用；扫描可能需要一些时间。";
-    public bool IsNetworkSettings => IsNetworkOpen && !ShowsStorage && !ShowsLauncherUpdates;
-    public bool IsAppearanceSettings => IsAppearanceOpen && !ShowsStorage && !ShowsLauncherUpdates;
+    public bool IsNetworkSettings => IsNetworkOpen && !ShowsStorage && !ShowsLauncherUpdates && !ShowsSettingsSync;
+    public bool IsAppearanceSettings => IsAppearanceOpen && !ShowsStorage && !ShowsLauncherUpdates && !ShowsSettingsSync;
     public bool CanManageStorage => !StorageBusy && CanEditExperience;
     public ObservableCollection<WorldRow> Worlds { get; } = [];
     public ObservableCollection<WorldBackup> WorldBackups { get; } = [];

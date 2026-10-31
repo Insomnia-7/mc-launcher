@@ -66,7 +66,19 @@
       <TransitioningContentControl x:Name="PageHost"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
     </Grid>
     <Border Grid.Row="2" Grid.ColumnSpan="2" Padding="24,8,24,12">
-      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="JAVA EDITION" Classes="eyebrow" FontSize="8" Margin="20,0,0,0" /></Grid>
+      <StackPanel Spacing="6">
+        <icons:RevealPanel x:Name="NoticeReveal" IsOpen="{Binding HasNotice}">
+          <Border CornerRadius="12" Background="{DynamicResource CardBrush}" Padding="12,6" Margin="0,0,0,4" BoxShadow="0 2 10 0 #10000000">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+              <icons:UiIcon Kind="StatusInfo" Width="18" Height="18" VerticalAlignment="Center"/>
+              <TextBlock x:Name="NoticeMessage" Grid.Column="1" Text="{Binding NoticeText}" FontSize="13" VerticalAlignment="Center" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+              <Button Grid.Column="2" Classes="quiet compact" Content="查看" IsVisible="{Binding HasNoticeAction}" Command="{Binding OpenNoticeCommand}" MinHeight="28"/>
+              <Button Grid.Column="3" Classes="quiet compact" Content="×" Command="{Binding DismissNoticeCommand}" MinHeight="28" AutomationProperties.Name="关闭操作提示"/>
+            </Grid>
+          </Border>
+        </icons:RevealPanel>
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="JAVA EDITION" Classes="eyebrow" FontSize="8" Margin="20,0,0,0" /></Grid>
+      </StackPanel>
     </Border>
     <ContentControl x:Name="OverlayHost" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
   </Grid>

@@ -82,6 +82,7 @@ internal static class Program
         try
         {
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
+            if(args.Contains("--settings-sync")){SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("设置同步与动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} settings sync checks passed");return 0;}
             if(args.Contains("--pack-upgrade")){ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);Check("整合包页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} pack upgrade checks passed");return 0;}
             if(args.Contains("--launcher-update")){LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);Check("自动更新页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} launcher update checks passed");return 0;}
             if(args.Contains("--maintenance")){MaintenanceUiChecks.Run(window,Pump,Check,Capture);Check("维护页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} maintenance checks passed");return 0;}
@@ -248,6 +249,7 @@ internal static class Program
             MaintenanceUiChecks.Run(window,Pump,Check,Capture);
             LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);
             ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);
+            SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

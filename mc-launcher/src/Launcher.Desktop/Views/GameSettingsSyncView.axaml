@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameSettingsSyncView">
+  <Grid RowDefinitions="*,Auto" RowSpacing="10">
+    <ScrollViewer x:Name="SyncEditorScroll" IsVisible="{Binding !HasSettingsSyncPlan}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+      <StackPanel Spacing="16">
+        <StackPanel Spacing="6"><TextBlock Text="熟悉的手感，带到每一个世界。" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="本机共享按键、音量等游戏设置；每个实例都能保留自己的例外。" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+        <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Padding="16">
+          <Expander x:Name="SettingsSyncSourceExpander" Header="{Binding SettingsSyncSourceName}" IsExpanded="{Binding SyncSourceEditorOpen}">
+          <StackPanel Spacing="12">
+            <TextBlock Text="共享来源" Classes="muted"/>
+            <ComboBox x:Name="SettingsSyncSourceChoice" ItemsSource="{Binding SyncInstances}" SelectedItem="{Binding SyncSource}" IsEnabled="{Binding CanUseSettingsSync}" PlaceholderText="选择你最常用的游戏实例"/>
+            <WrapPanel IsEnabled="{Binding CanUseSettingsSync}">
+              <CheckBox Content="按键" IsChecked="{Binding ShareKeys}" Margin="0,0,16,4"/><CheckBox Content="音量" IsChecked="{Binding ShareSound}" Margin="0,0,16,4"/><CheckBox Content="画面" IsChecked="{Binding ShareDisplay}" Margin="0,0,16,4"/><CheckBox Content="语言与字幕" IsChecked="{Binding ShareLanguage}" Margin="0,0,16,4"/><CheckBox Content="服务器列表" IsChecked="{Binding ShareServers}" Margin="0,0,0,4"/>
+            </WrapPanel>
+            <TextBlock Text="来源游戏退出后更新共享方案，跟随实例在启动前应用。画面与服务器列表默认不共享；Java、内存、账号和模组配置保留各实例自己的设置。" Classes="muted" TextWrapping="Wrap"/>
+            <Button x:Name="SaveSettingsSyncSourceButton" Command="{Binding SaveSettingsSyncSourceCommand}" IsEnabled="{Binding CanUseSettingsSync}" HorizontalAlignment="Left" Content="保存共享来源"/>
+          </StackPanel>
+          </Expander>
+        </Border>
+        <StackPanel Spacing="12">
+          <TextBlock Text="为实例选择跟随内容" FontSize="17" FontWeight="SemiBold"/>
+          <ComboBox x:Name="SettingsSyncTargetChoice" ItemsSource="{Binding SyncInstances}" SelectedItem="{Binding SyncTarget}" IsEnabled="{Binding CanUseSettingsSync}" PlaceholderText="选择接收共享设置的实例"/>
+          <CheckBox x:Name="SettingsSyncEnabledChoice" Content="此实例使用共享设置" IsChecked="{Binding FollowSettings}" IsEnabled="{Binding CanEditSyncTarget}"/>
+          <WrapPanel IsEnabled="{Binding CanEditSyncTarget}">
+            <CheckBox Content="跟随按键" IsChecked="{Binding FollowKeys}" Margin="0,0,16,4"/><CheckBox Content="跟随音量" IsChecked="{Binding FollowSound}" Margin="0,0,16,4"/><CheckBox Content="跟随画面" IsChecked="{Binding FollowDisplay}" Margin="0,0,16,4"/><CheckBox Content="跟随语言" IsChecked="{Binding FollowLanguage}" Margin="0,0,16,4"/><CheckBox Content="跟随服务器列表" IsChecked="{Binding FollowServers}" Margin="0,0,0,4"/>
+          </WrapPanel>
+          <Expander Header="保留本实例的独立设置" IsEnabled="{Binding CanEditSyncTarget}">
+            <StackPanel Spacing="8"><TextBlock Text="勾选的设置不会被共享方案覆盖。来源中尚未生成的选项不会出现在这里。" Classes="muted" TextWrapping="Wrap"/>
+              <ItemsControl ItemsSource="{Binding SyncIndependentFields}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SyncFieldChoice"><CheckBox IsChecked="{Binding Independent}" Content="{Binding Name}" Margin="0,0,16,6" MinWidth="150"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            </StackPanel>
+          </Expander>
+          <WrapPanel><Button x:Name="SaveSettingsSyncTargetButton" Command="{Binding SaveSettingsSyncTargetCommand}" IsEnabled="{Binding CanEditSyncTarget}" Content="保存实例选项" Margin="0,0,8,6"/><Button x:Name="PreviewSettingsSyncButton" Command="{Binding PreviewSettingsSyncCommand}" IsEnabled="{Binding CanEditSyncTarget}" Content="预览同步差异" Margin="0,0,8,6"/><Button Command="{Binding RestoreSettingsSyncCommand}" IsVisible="{Binding HasSettingsSyncBackup}" IsEnabled="{Binding CanEditSyncTarget}" Content="恢复同步前设置" Margin="0,0,0,6"/></WrapPanel>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+        <Grid IsVisible="{Binding HasSettingsSyncPlan}" RowDefinitions="Auto,*,Auto" RowSpacing="14">
+          <StackPanel Spacing="8"><Button x:Name="CloseSettingsSyncPreviewButton" Command="{Binding CloseSettingsSyncPreviewCommand}" Classes="quiet" Content="‹ 同步选项" HorizontalAlignment="Left" Padding="0"/><TextBlock Text="{Binding SyncTargetName}" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="{Binding SettingsSyncSummary}" FontSize="14" TextWrapping="Wrap"/></StackPanel>
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+          <ItemsControl x:Name="SettingsSyncChanges" ItemsSource="{Binding SyncChanges}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SyncChangeRow">
+            <Border Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="14" Margin="0,0,0,8">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Spacing="5">
+                  <WrapPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="0,0,10,0"/><TextBlock Text="{Binding Kind}" Classes="muted" FontSize="12"/></WrapPanel>
+                  <TextBlock Classes="muted" TextWrapping="Wrap"><Run Text="本地："/><Run Text="{Binding Local}"/><Run Text="   →   共享："/><Run Text="{Binding Shared}"/></TextBlock>
+                  <TextBlock Text="{Binding Reason}" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+                </StackPanel>
+                <CheckBox Grid.Column="1" IsChecked="{Binding Apply}" IsVisible="{Binding CanChoose}" Content="采用共享值" VerticalAlignment="Center" IsEnabled="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CanUseSettingsSync}"/>
+              </Grid>
+            </Border>
+          </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+          </ScrollViewer>
+          <Button Grid.Row="2" x:Name="ApplySettingsSyncButton" Command="{Binding ApplySettingsSyncCommand}" IsEnabled="{Binding CanEditSyncTarget}" Classes="primary" HorizontalAlignment="Left"><TextBlock Text="应用所选差异" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+        </Grid>
+    <StackPanel Grid.Row="1" Spacing="7"><ProgressBar IsVisible="{Binding SettingsSyncBusy}" IsIndeterminate="True" Height="3"/><TextBlock Text="{Binding SettingsSyncHint}" Classes="muted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/></StackPanel>
+  </Grid>
+</UserControl>

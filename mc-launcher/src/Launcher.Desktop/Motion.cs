@@ -10,11 +10,20 @@ using Avalonia.Styling;
 
 namespace Launcher.Desktop;
 
+public static class MotionTiming
+{
+    public static TimeSpan Fast => TimeSpan.FromMilliseconds(120);
+    public static TimeSpan Interaction => TimeSpan.FromMilliseconds(180);
+    public static TimeSpan Page => TimeSpan.FromMilliseconds(220);
+    public static TimeSpan Expand => TimeSpan.FromMilliseconds(200);
+    public static TimeSpan Theme => TimeSpan.FromMilliseconds(260);
+}
+
 public static class MotionPreferences
 {
     private static string _mode = "smooth";
     public static event Action? Changed;
-    public static string Mode { get => _mode; set { _mode = value; Changed?.Invoke(); } }
+    public static string Mode { get => _mode; set { if(_mode==value)return;_mode = value; Changed?.Invoke(); } }
     public static bool Enabled => Mode == "smooth" || (Mode == "system" && SystemAnimationsEnabled());
     private static bool SystemAnimationsEnabled() => !OperatingSystem.IsWindows() || !SystemParametersInfo(0x1042,0,out var enabled,0) || enabled;
     [DllImport("user32.dll", SetLastError=true)]
@@ -29,32 +38,38 @@ public sealed class SoftSpringEasing : Easing
 
 public sealed class WorldPageTransition : IPageTransition
 {
+    private int _revision;
+    private CancellationTokenSource? _active;
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
-        if (from == to) return;
+        var revision=++_revision;_active?.Cancel();
+        using var linked=CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);_active=linked;
+        void Settle()
+        {
+            if(from is not null && from!=to){from.IsVisible=false;from.Opacity=1;from.RenderTransform=TransformOperations.Identity;}
+            if(to is not null){to.IsVisible=true;to.Opacity=1;to.RenderTransform=TransformOperations.Identity;}
+        }
+        if(from==to){Settle();_active=null;return;}
         if (!MotionPreferences.Enabled)
         {
-            if (from is not null) from.IsVisible = false;
-            if (to is not null) { to.IsVisible = true; to.Opacity = 1; }
+            Settle();_active=null;
             return;
         }
+        void Changed(){if(!MotionPreferences.Enabled)linked.Cancel();}
+        MotionPreferences.Changed+=Changed;
         if (to is not null) to.IsVisible = true;
         try
         {
             var tasks = new List<Task>();
-            if (from is Control old) tasks.Add(Motion.Animate(old, 1, 0, 0, forward ? -8 : 8, 150, cancellationToken));
-            if (to is Control next) tasks.Add(Motion.Animate(next, 0, 1, forward ? 12 : -12, 0, 200, cancellationToken));
+            if (from is Control old) tasks.Add(Motion.Animate(old, old.Opacity, 0, 0, forward ? -6 : 6, (int)MotionTiming.Fast.TotalMilliseconds, linked.Token));
+            if (to is Control next) tasks.Add(Motion.Animate(next, 0, 1, forward ? 10 : -10, 0, (int)MotionTiming.Page.TotalMilliseconds, linked.Token));
             await Task.WhenAll(tasks);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested) { }
         finally
         {
-            // A canceled transition must not hide a page reused by a newer navigation.
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                if (from is not null) { from.IsVisible = false; from.Opacity = 1; from.RenderTransform = TransformOperations.Identity; }
-                if (to is not null) { to.Opacity = 1; to.RenderTransform = TransformOperations.Identity; }
-            }
+            MotionPreferences.Changed-=Changed;
+            if(revision==_revision){Settle();_active=null;}
         }
     }
 }
@@ -64,7 +79,11 @@ public sealed class Motion : AvaloniaObject
     private sealed class State { public CancellationTokenSource? Cancellation; }
     private static readonly ConditionalWeakTable<Control, State> States = new();
     public static readonly AttachedProperty<bool> IsOpenProperty = AvaloniaProperty.RegisterAttached<Motion, Control, bool>("IsOpen");
-    static Motion() => IsOpenProperty.Changed.AddClassHandler<Control>((control, e) => SetOpen(control, e.GetNewValue<bool>()));
+    static Motion()
+    {
+        IsOpenProperty.Changed.AddClassHandler<Control>((control,e)=>SetOpen(control,e.GetNewValue<bool>()));
+        MotionPreferences.Changed+=()=>{if(!MotionPreferences.Enabled)foreach(var item in States)SetOpen(item.Key,GetIsOpen(item.Key));};
+    }
     public static bool GetIsOpen(Control control) => control.GetValue(IsOpenProperty);
     public static void SetIsOpen(Control control, bool value) => control.SetValue(IsOpenProperty, value);
 

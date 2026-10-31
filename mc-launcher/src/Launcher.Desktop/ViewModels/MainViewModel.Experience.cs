@@ -91,6 +91,8 @@ public sealed partial class MainViewModel
         AutoContinueDownloads = ExperienceFiles.Read<QueuePreferences>(Path.Combine(AppPaths.DataDirectory,"download-queue.json"))?.AutoContinue ?? true;
         _tasks.AutoContinue = AutoContinueDownloads;
         InitializePackWorkbench();
+        InitializeSettingsSync();
+        foreach(var task in _tasks.List())_noticeTaskStates[task.Id]=task.State;
         _tasks.CleanupRequest = request =>
         {
             if (request.Kind == "pack-update" && request.Arguments.TryGetValue("plan", out var path) && ExperienceFiles.Read<PackUpdatePlan>(path) is {} plan && plan.GameRoot == request.GameRoot && plan.InstanceId == request.InstanceId)
@@ -184,6 +186,7 @@ public sealed partial class MainViewModel
         for(var index=0;index<ordered.Length;index++)
         {
             var task=ordered[index];
+            NotifyTaskFeedback(task);
             var row=DurableTasks.FirstOrDefault(r=>r.Id==task.Id);
             if(row is null)DurableTasks.Insert(index,new(task));
             else { row.Record=task; var current=DurableTasks.IndexOf(row); if(current!=index)DurableTasks.Move(current,index); }
