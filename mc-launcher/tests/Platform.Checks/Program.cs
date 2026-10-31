@@ -88,7 +88,7 @@ using(var rsa=RSA.Create(3072))
         foreach(var scenario in new[]{"success","bad-image","tampered"})
         {
             var caseRoot=Path.Combine(root,"native-update-"+scenario);var caseData=Path.Combine(caseRoot,"data");var stage=Path.Combine(caseData,"update/1.0.1");var installed=Path.Combine(caseRoot,"program");Directory.CreateDirectory(stage);Directory.CreateDirectory(installed);
-            var entries=new List<UpdateFile>();var dotnet=Environment.ProcessPath!;var assembly=typeof(ProbeLocator).Assembly.Location;
+            var entries=new List<UpdateFile>();var dotnet=Environment.GetEnvironmentVariable("DOTNET_HOST_PATH")??"dotnet";var assembly=typeof(ProbeLocator).Assembly.Location;
             string Quote(string value)=>"'"+value.Replace("'","'\\''")+"'";
             foreach(var path in paths)
             {
