@@ -1,4 +1,5 @@
 using System.Formats.Tar;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Security.Cryptography;
@@ -13,6 +14,15 @@ using Launcher.Infrastructure.Java;
 using Launcher.Infrastructure.Security;
 using Launcher.Infrastructure.Update;
 
+if(args.FirstOrDefault()=="--fixture-updater")
+{
+    var spki=File.ReadAllBytes(args[1]);var id=Convert.ToHexStringLower(SHA256.HashData(spki));
+    return await LauncherUpdateRunner.RunAsync(args[2..],new UpdateSignatureVerifier(new Dictionary<string,string>{{id,Convert.ToBase64String(spki)}}));
+}
+if(args.FirstOrDefault()=="--fixture-ready")
+{
+    for(var i=0;i<100;i++){SingleFileUpdate.AcknowledgeStartup(args[1]);if(File.ReadAllText(Path.Combine(args[1],"update/launcher-update-result.json")).Contains("completed"))return 0;await Task.Delay(50);}return 2;
+}
 var root=Path.GetFullPath(args.FirstOrDefault(a=>!a.StartsWith("--"))??Path.Combine(Path.GetTempPath(),"fangyu-platform-"+Guid.NewGuid().ToString("N")));
 Directory.CreateDirectory(root);var passed=0;
 void Check(string name,bool condition){if(!condition)throw new Exception(name);passed++;Console.WriteLine("PASS "+name);}
@@ -72,6 +82,44 @@ using(var rsa=RSA.Create(3072))
     if(!OperatingSystem.IsWindows())Check("更新后可执行文件保留执行位",File.GetUnixFileMode(Path.Combine(target,entry)).HasFlag(UnixFileMode.UserExecute));
     File.AppendAllText(Path.Combine(staging.Directory,paths[^1]),"tampered");Check("任一资源篡改时拒绝整包更新",await Reject(()=>SingleFileUpdate.PrepareAsync(staging.Directory,target,entry,verifier)));
     await UpdateFileTransaction.ApplyAsync(prepared.Files,backup,target,Path.Combine(root,"recovery"));Check("全部应用文件可恢复",paths.All(p=>File.ReadAllText(Path.Combine(target,p))=="old "+p));
+    if(!OperatingSystem.IsWindows())
+    {
+        var keyFile=Path.Combine(root,"test-public-key.der");File.WriteAllBytes(keyFile,publicKey);
+        foreach(var scenario in new[]{"success","bad-image","tampered"})
+        {
+            var caseRoot=Path.Combine(root,"native-update-"+scenario);var caseData=Path.Combine(caseRoot,"data");var stage=Path.Combine(caseData,"update/1.0.1");var installed=Path.Combine(caseRoot,"program");Directory.CreateDirectory(stage);Directory.CreateDirectory(installed);
+            var entries=new List<UpdateFile>();var dotnet=Environment.ProcessPath!;var assembly=typeof(ProbeLocator).Assembly.Location;
+            string Quote(string value)=>"'"+value.Replace("'","'\\''")+"'";
+            foreach(var path in paths)
+            {
+                var source=Path.Combine(stage,path);var destination=Path.Combine(installed,path);Directory.CreateDirectory(Path.GetDirectoryName(source)!);Directory.CreateDirectory(Path.GetDirectoryName(destination)!);File.WriteAllText(destination,"old "+path);
+                var content=path==entry?(scenario=="bad-image"?"invalid native image":"#!/bin/sh\nexec "+Quote(dotnet)+" "+Quote(assembly)+" --fixture-ready "+Quote(caseData)+"\n"):"new "+path;
+                File.WriteAllText(source,content);entries.Add(new(path,path,Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(source))),new FileInfo(source).Length));
+            }
+            var plan=JsonSerializer.SerializeToUtf8Bytes(new{version="1.0.1",entry,runtime=rid,files=entries.Select(f=>new{path=f.Path,url=f.Url,sha256=f.Sha256,size=f.Size})});
+            File.WriteAllBytes(Path.Combine(stage,"update.json"),plan);File.WriteAllBytes(Path.Combine(stage,"update.json.sig"),JsonSerializer.SerializeToUtf8Bytes(new{schema=1,algorithm=UpdateSignatureVerifier.Algorithm,keyId,signature=Convert.ToBase64String(rsa.SignData(plan,HashAlgorithmName.SHA256,RSASignaturePadding.Pss))}));
+            if(scenario=="tampered")File.AppendAllText(Path.Combine(stage,entry),"tampered");
+            using var parent=Process.Start(new ProcessStartInfo("sleep"){ArgumentList={"60"},UseShellExecute=false})!;
+            var start=new ProcessStartInfo(dotnet){UseShellExecute=false};
+            foreach(var value in new[]{assembly,"--fixture-updater",keyFile,"--staging",stage,"--target",installed,"--entry",entry,"--wait-pid",parent.Id.ToString()})start.ArgumentList.Add(value);
+            using var helper=Process.Start(start)!;var statePath=SingleFileUpdate.ResultPath(stage);var timer=Stopwatch.StartNew();
+            try
+            {
+                while(timer.Elapsed<TimeSpan.FromSeconds(15)&&!helper.HasExited&&(!File.Exists(statePath)||!File.ReadAllText(statePath).Contains("ready")))await Task.Delay(50);
+                if(scenario=="tampered")
+                {
+                    await helper.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));Check("原生更新篡改在旧程序退出前拒绝",helper.ExitCode==2&&!parent.HasExited&&File.ReadAllText(Path.Combine(installed,entry))=="old "+entry);
+                }
+                else
+                {
+                    Check("原生更新器先校验并就绪："+scenario,File.Exists(statePath)&&File.ReadAllText(statePath).Contains("ready"));parent.Kill();await parent.WaitForExitAsync();await helper.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(55));
+                    if(scenario=="success")Check("原生更新替换执行并收到新版确认",helper.ExitCode==0&&File.ReadAllText(statePath).Contains("completed")&&paths.All(p=>File.ReadAllText(Path.Combine(installed,p)).StartsWith(p==entry?"#!/bin/sh":"new ")));
+                    else Check("原生新版无法执行时恢复全部旧资源",helper.ExitCode==2&&paths.All(p=>File.ReadAllText(Path.Combine(installed,p))=="old "+p));
+                }
+            }
+            finally{if(!parent.HasExited){parent.Kill();await parent.WaitForExitAsync();}if(!helper.HasExited){helper.Kill();await helper.WaitForExitAsync();}}
+        }
+    }
 }
 if(args.Contains("--native-credentials"))
 {

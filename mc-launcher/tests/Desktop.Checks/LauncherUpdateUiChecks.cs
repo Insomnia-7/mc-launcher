@@ -35,6 +35,7 @@ internal static class LauncherUpdateUiChecks
         using var services = LauncherServices.Create(s => { s.AddSingleton<IUpdateClient>(fixture); var appearance = new AppearanceFixture(); s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearance); s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearance); });
         var model = services.GetRequiredService<MainViewModel>();
         var handoffs = 0; model.LaunchSelfUpdater = (_, _, _) => { handoffs++; return Task.CompletedTask; };
+        model.UpdateTargetDirectory=()=>AppContext.BaseDirectory; // The fixture stages no native apphost.
         try
         {
             window.DataContext = model; pump(150); model.OpenLauncherUpdatesCommand.Execute(null); pump(100);

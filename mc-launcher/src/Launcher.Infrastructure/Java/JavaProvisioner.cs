@@ -237,12 +237,12 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
         if (FindJavaExe(managedDir) is { } managedExe)
         {
             var managed = await locator.ProbeAsync(managedExe, ct).ConfigureAwait(false);
-            if (managed is not null && managed.MajorVersion >= majorVersion) return managed;
+            if (managed is not null && managed.MajorVersion >= majorVersion && MatchesArchitecture(managed)) return managed;
         }
 
         var discovered = await locator.DiscoverAsync(ct).ConfigureAwait(false);
         return discovered
-            .Where(j => j.MajorVersion >= majorVersion)
+            .Where(j => j.MajorVersion >= majorVersion && MatchesArchitecture(j))
             .OrderBy(j => j.MajorVersion)
             .ThenByDescending(j => j.Arch == "x64")
             .FirstOrDefault();
@@ -323,7 +323,7 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
                 ?? throw new IOException(
                     $"Java {package.MajorVersion} 安装包内容异常：找不到 bin/java.exe（{package.Name}）。");
 
-            if(await locator.ProbeAsync(stagedExe,ct).ConfigureAwait(false) is not {} probe || probe.MajorVersion<package.MajorVersion)
+            if(await locator.ProbeAsync(stagedExe,ct).ConfigureAwait(false) is not {} probe || probe.MajorVersion<package.MajorVersion || !MatchesArchitecture(probe))
                 throw new IOException("暂存的 Java 无法运行，原安装保持不变。");
             var home = Path.GetDirectoryName(Path.GetDirectoryName(stagedExe)!)!;
             ReplaceDirectory(home, installDir);
@@ -347,6 +347,8 @@ public sealed class JavaProvisioner(HttpClient http, IDownloader downloader, IJa
         if (Directory.Exists(target)) Directory.Delete(target, recursive: true);
         Directory.Move(source, target);
     }
+
+    private bool MatchesArchitecture(JavaInstall install)=>_runtime.Architecture=="aarch64"?install.Arch is "arm64" or "aarch64":install.Arch=="x64";
 
     /// <summary>两种布局都能认：剥好的（bin/java.exe 直接在根下）和原始 zip 的（外面还套一层 jdk-xxx）。</summary>
     private string? FindJavaExe(string root)

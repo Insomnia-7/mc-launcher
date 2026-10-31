@@ -83,7 +83,7 @@ public static class SingleFileUpdate
 /// <summary>从启动器的临时副本执行，不加载主窗口，不依赖系统安装 .NET。</summary>
 public static class LauncherUpdateRunner
 {
-    public static async Task<int> RunAsync(string[] args)
+    public static async Task<int> RunAsync(string[] args,UpdateSignatureVerifier? verifier=null)
     {
         var options = new Dictionary<string, string>(StringComparer.Ordinal);
         if (args.Length % 2 != 0) return 1;
@@ -95,7 +95,7 @@ public static class LauncherUpdateRunner
         void Save(string state, string message, int? restartPid = null) => ExperienceFiles.Write(resultPath, new LauncherUpdateResult(state, version, message, DateTimeOffset.UtcNow, backup, restartPid));
         try
         {
-            var prepared = await SingleFileUpdate.PrepareAsync(staging, target, entry); version = prepared.Manifest.Version;
+            var prepared = await SingleFileUpdate.PrepareAsync(staging, target, entry,verifier); version = prepared.Manifest.Version;
             // 写权限探测发生在主程序退出前。受保护目录无法更新时，用户仍可继续使用旧版。
             var probe = Path.Combine(target, ".fangyu-write-" + Guid.NewGuid().ToString("N"));
             try { await File.WriteAllTextAsync(probe, ""); } finally { File.Delete(probe); }
@@ -107,7 +107,7 @@ public static class LauncherUpdateRunner
             }
             catch (ArgumentException) { }
             parentExited = true;
-            prepared = await SingleFileUpdate.PrepareAsync(staging, target, entry);
+            prepared = await SingleFileUpdate.PrepareAsync(staging, target, entry,verifier);
             backup = await SingleFileUpdate.ApplyAsync(prepared); applied = true;recovery=prepared;
             Save("restarting", "正在启动新版本。");
             restarted = Process.Start(new ProcessStartInfo(Path.Combine(target, entry)) { WorkingDirectory = target, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden }) ?? throw new IOException("无法启动新版本。");
