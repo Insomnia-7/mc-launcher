@@ -49,6 +49,15 @@ public sealed partial class DownloadViewModel
     private Task LoadMoreResourcesAsync()=>BrowseAsync(append:true);
     private int _browserGeneration;
     private bool _searching;
+    [ObservableProperty] private bool _isSearchingResources;
+    public bool ShowsSearchSkeleton => IsSearchingResources && !IsLoadingMore && Results.Count == 0;
+    public bool ShowsSearchProgress => IsSearchingResources && !IsLoadingMore && Results.Count > 0;
+    public bool CanBrowseCategories => !IsBusy || _searching;
+    public string SearchStateText => !IsSearchingResources && Results.Count == 0 ? Status : "";
+    public int ResultRevision { get; private set; }
+    partial void OnIsSearchingResourcesChanged(bool value)
+    { foreach (var name in new[]{nameof(ShowsSearchSkeleton),nameof(ShowsSearchProgress),nameof(CanBrowseCategories),nameof(SearchStateText),nameof(CanEditSearch)}) OnPropertyChanged(name); }
+
     private ResourceSearchRequest? _lastRequest;
     private ResourceSearchRequest? _installRequest;
     private string? _taxonomyKey;
@@ -66,7 +75,7 @@ public sealed partial class DownloadViewModel
     [ObservableProperty] private int _pageNumber = 1;
     [ObservableProperty] private long _totalResults;
     [ObservableProperty] private string _resultHeading = "热门资源推荐";
-    public bool CanEditSearch => !IsBusy;
+    public bool CanEditSearch => !IsBusy || _searching;
     public bool ShowsLoaderFilter => SelectedCategory?.Category.UsesLoader() == true;
     // CurseForge explicitly limits search to the first 10,000 results.
     private long ReachableResults => SelectedSource == CurseForgeSource ? Math.Min(10000, TotalResults) : TotalResults;
@@ -143,6 +152,7 @@ public sealed partial class DownloadViewModel
     private async Task BrowseAsync(CancellationToken ct = default, bool paging = false, bool append = false)
     {
         if (IsBusy || !IsSearchMode || SelectedCategory is null || append&&!CanLoadMoreResources()) return;
+        var previousRequest = _lastRequest; var previousTotal = TotalResults;
         var category=SelectedCategory.Category;var source=SelectedSource;var generation=_browserGeneration;
         var offset=append?_nextOffset:(PageNumber-1)*PageSize;
         var request=(paging||append)&&_lastRequest is not null ? _lastRequest with {Offset=offset,Limit=PageSize} :
@@ -152,8 +162,8 @@ public sealed partial class DownloadViewModel
         if(source==CurseForgeSource) request=request with {Limit=Math.Min(request.Limit,10000-offset)};
         if(request.Limit<=0) return;
         using var cts=CancellationTokenSource.CreateLinkedTokenSource(ct);
-        _runningCts=cts;_searching=true;IsLoadingMore=append;IsBusy=true;_loadMoreFailed=false;
-        if(!append) {Results.Clear();SelectedResult=null;_lastRequest=null;_installRequest=null;_hasMoreResults=false;}
+        _runningCts=cts;_searching=true;IsLoadingMore=append;IsBusy=true;IsSearchingResources=true;_loadMoreFailed=false;
+        if(!append) {SelectedResult=null;_installRequest=null;_hasMoreResults=false;}
         Status=append?"正在加载更多资源…":$"正在从 {source} 获取资源…";
         ResultHeading=string.IsNullOrWhiteSpace(request.Query)&&request.Sort==ResourceSort.Popularity?"热门资源推荐":"检索结果";
         try
@@ -175,6 +185,7 @@ public sealed partial class DownloadViewModel
                 catch(CurseForgeSearchUnavailableException) when(!append)
                 {
                     _lastRequest=null;TotalResults=0;PageNumber=1;
+                    Results.Clear();
                     await SearchCurseForgeByIdAsync(category,cts.Token);
                     cts.Token.ThrowIfCancellationRequested();if(generation!=_browserGeneration) return;
                     TotalResults=Results.Count;_installRequest=request;_hasMoreResults=false;
@@ -188,6 +199,7 @@ public sealed partial class DownloadViewModel
                 items=response.Hits.Where(h=>MatchesCategory(h,category)).Select(h=>ModrinthItem(h,category)).ToArray();
                 received=response.Hits.Count;total=response.TotalHits;
             }
+            if (!append) Results.Clear();
             var added=new List<DownloadItem>();
             var seen=Results.Select(i=>i.Source+":"+i.Id).ToHashSet(StringComparer.Ordinal);
             foreach(var item in items) if(seen.Add(item.Source+":"+item.Id)) {Results.Add(item);added.Add(item);}
@@ -197,6 +209,7 @@ public sealed partial class DownloadViewModel
             PageNumber=request.Offset/PageSize+1;
             _lastRequest=request;_installRequest=request;
             _=EnrichResultsAsync(added.ToArray(),append);
+            ResultRevision++; OnPropertyChanged(nameof(ResultRevision));
             Status=Results.Count==0?"没有匹配资源，可调整版本、分类或关键词。":$"{source} · {ResultHeading} · 当前 {Results.Count} 项";
         }
         catch(OperationCanceledException)
@@ -204,7 +217,7 @@ public sealed partial class DownloadViewModel
             if(generation==_browserGeneration)
             {
                 if(append) {_loadMoreFailed=true;Status="已取消后续加载，已有结果保留";}
-                else {_lastRequest=null;TotalResults=0;PageNumber=1;Status="已取消";}
+                else { _lastRequest=paging?previousRequest:null; TotalResults=paging?previousTotal:0; PageNumber=paging&&previousRequest is not null?previousRequest.Offset/PageSize+1:1; Status="已取消搜索，已有结果保留。"; }
             }
         }
         catch(Exception ex)
@@ -212,14 +225,15 @@ public sealed partial class DownloadViewModel
             if(generation==_browserGeneration)
             {
                 if(append) {_loadMoreFailed=true;Status="后续加载失败，点击加载更多重试："+ErrorText.Describe(ex);}
-                else {TotalResults=0;_lastRequest=null;Status="检索失败："+ErrorText.Describe(ex);}
+                else { TotalResults=paging?previousTotal:0; _lastRequest=paging?previousRequest:null; if(paging&&previousRequest is not null)PageNumber=previousRequest.Offset/PageSize+1; Status="检索失败，已有结果保留："+ErrorText.Describe(ex); }
             }
             _logger.LogWarning(ex,"资源检索失败");
         }
         finally
         {
             _searching=false;if(ReferenceEquals(_runningCts,cts)) _runningCts=null;
-            IsLoadingMore=false;IsBusy=false;NotifyPaging();
+            IsLoadingMore=false;IsBusy=false;IsSearchingResources=false;NotifyPaging();
+            OnPropertyChanged(nameof(SearchStateText));
             if(generation!=_browserGeneration&&IsSearchMode&&_autoLoadEnabled) _=BrowseAsync();
         }
     }

@@ -57,7 +57,7 @@ public sealed partial class MainViewModel
                     _repairRoot = _repairInstance = null; RepairFiles.Clear(); HasRepairFiles = false;
                     RepairHint = "检查游戏本体、依赖库和资源文件，只补下载缺失或校验不符的文件。";
                 }
-                if (e.PropertyName == nameof(GameRoot)) { StorageAreas.Clear(); StorageHint = "游戏目录已切换，请重新扫描存储占用。"; }
+                if (e.PropertyName == nameof(GameRoot)) { _storageScanCts?.Cancel(); OnPropertyChanged(nameof(LocationSummary)); StorageAreas.Clear(); StorageHint = "游戏目录已切换，请重新扫描存储占用。"; }
             }
             if (e.PropertyName is nameof(IsAppearanceOpen) or nameof(IsNetworkOpen))
             { ShowsStorage = false; ShowsLauncherUpdates = false; OnPropertyChanged(nameof(IsNetworkSettings)); OnPropertyChanged(nameof(IsAppearanceSettings)); }
@@ -135,7 +135,7 @@ public sealed partial class MainViewModel
                 _ = RefreshWorldsAsync();
             }
             catch (Exception ex) { WorldHint = ex.Message; }
-        });
+        }, danger: true);
     }
     [RelayCommand] private void OpenWorldFolder()
     {
@@ -176,19 +176,22 @@ public sealed partial class MainViewModel
     }
     [RelayCommand] private async Task OpenStorageSettingsAsync()
     { OpenNetwork(); ShowsStorage = true; await ScanStorageAsync(); }
+    private CancellationTokenSource? _storageScanCts;
+    [RelayCommand] private void CancelStorageScan() => _storageScanCts?.Cancel();
     [RelayCommand] private async Task ScanStorageAsync()
     {
         if (!CanManageStorage) return;
-        var root = GameRoot; StorageBusy = true; StorageHint = "正在统计文件占用…";
+        var root = GameRoot; using var cts = _storageScanCts = new(); StorageBusy = true; StorageHint = "正在统计文件占用…";
         try
         {
-            var areas = await Task.Run(() => new StorageCatalog(AppPaths.DataDirectory, root).Scan());
-            if (root != GameRoot) return;
+            var areas = await Task.Run(() => new StorageCatalog(AppPaths.DataDirectory, root).Scan(cts.Token, new Progress<string>(name => { if (root == GameRoot && !cts.IsCancellationRequested) StorageHint = "正在统计：" + name; })));
+            if (root != GameRoot || cts.IsCancellationRequested) return;
             StorageAreas.Clear(); foreach (var area in areas) StorageAreas.Add(area);
-            StorageHint = $"可回收缓存 {areas.Where(a => a.CanClean).Sum(a => a.Bytes) / 1048576d:F1} MB。缓存分类显示可清理部分；Java 总量包含安装包缓存，请勿重复相加。";
+            StorageHint = $"可回收 {areas.Sum(a => a.ReclaimableBytes) / 1048576d:F1} MB · 跳过 {areas.Sum(a => a.Skipped)} 项（链接或无法读取的文件）。各分类显示实际路径；链接目标未被访问。";
         }
-        catch (Exception ex) { StorageHint = ex.Message; }
-        finally { StorageBusy = false; }
+        catch (OperationCanceledException) { if (root == GameRoot) StorageHint = "扫描已取消，已有统计保留。"; }
+        catch (Exception ex) { if (root == GameRoot) StorageHint = ex.Message; }
+        finally { if (_storageScanCts == cts) { _storageScanCts = null; StorageBusy = false; } }
     }
     [RelayCommand] private void CleanStorage(StorageArea? area)
     {
@@ -198,7 +201,7 @@ public sealed partial class MainViewModel
     private async Task CleanStorageCoreAsync(string key, string root)
     {
         if (!CanManageStorage || root != GameRoot) return;
-        if (_tasks.List().Any(t => t.CanResume || t.CanPause)) { StorageHint = "存在未完成的任务，请先完成或取消任务，再清理缓存。"; return; }
+        if (_tasks.ConflictsWithCleanup(new StorageCatalog(AppPaths.DataDirectory, root).AreaPath(key))) { StorageHint = "此缓存正被未完成任务使用，请先完成或取消相关任务。"; return; }
         using var operation = GameOperationCoordinator.Shared.TryEnter(root, "清理缓存");
         if (operation is null) { StorageHint = GameOperationCoordinator.Shared.BusyMessage(root); return; }
         StorageBusy = true; IsBusy = true;

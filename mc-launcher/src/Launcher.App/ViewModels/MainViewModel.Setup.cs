@@ -111,6 +111,7 @@ public sealed partial class MainViewModel
     [RelayCommand(CanExecute = nameof(CanInstallSetup))]
     private async Task InstallSetupAsync()
     {
+        if (!RefreshGameRootHealth()) { SetupError = GameRootProblem; if (!AppPaths.IsGameRootConfirmed) await ChooseGameRootAsync(); return; }
         if(PersistentSetup is not null){await PersistentSetup(SetupVersion?.Id??"",int.TryParse(SetupMemoryText,out var setupMemory)?setupMemory:0,SetupLaunchAfterInstall);return;}
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "安装游戏");
         if (operation is null) { SetupError = StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }

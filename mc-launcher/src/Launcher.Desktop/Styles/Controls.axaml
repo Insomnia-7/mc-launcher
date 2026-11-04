@@ -13,6 +13,9 @@
     <SolidColorBrush x:Key="SelectedBrush" Color="#12000000" />
     <SolidColorBrush x:Key="OverlayBrush" Color="#990D0D0D" />
     <SolidColorBrush x:Key="DangerBrush" Color="#191919" />
+    <!-- 实心危险按钮：删除这类不可挽回的动作，红底白字。DangerBrush 本身会跟着主题变成文字色，不能拿它当底色 -->
+    <SolidColorBrush x:Key="DangerFillBrush" Color="#D93A3F" />
+    <SolidColorBrush x:Key="DangerFillHoverBrush" Color="#C22F35" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#191919" />
     <SolidColorBrush x:Key="GlassEdgeBrush" Color="#30FFFFFF" />
     <SolidColorBrush x:Key="WallpaperTintBrush" Color="#45FFFFFF" />
@@ -28,7 +31,8 @@
   </Style>
   <Style Selector="Window">
     <Setter Property="FontFamily" Value="Microsoft YaHei UI, Noto Sans CJK SC, PingFang SC, Segoe UI, sans-serif" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="UseLayoutRounding" Value="True" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
@@ -63,9 +67,9 @@
       </Border>
     </Grid></ControlTemplate></Setter>
   </Style>
-  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.005)" /></Style>
+  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px)" /></Style>
   <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.98)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px)" /><Setter Property="Opacity" Value="0.98" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
   <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
   <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
@@ -84,9 +88,13 @@
   <Style Selector="Button.nav.active"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
   <Style Selector="Button.nav.active /template/ Border#AmbientShadow"><Setter Property="IsVisible" Value="True" /><Setter Property="BoxShadow" Value="0 3 10 0 #16000000" /></Style>
   <Style Selector="Button.nav:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px)"/></Style>
-  <Style Selector="Button.nav:pressed"><Setter Property="RenderTransform" Value="translate(0px,0px) scale(0.995)"/></Style>
+  <Style Selector="Button.nav:pressed"><Setter Property="RenderTransform" Value="translate(0px,0px)"/></Style>
   <Style Selector="Button.quiet /template/ Border#TopHighlight, Button.nav /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False" /></Style>
   <Style Selector="Button.danger"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}" /></Style>
+  <Style Selector="Button.danger-solid"><Setter Property="Background" Value="{DynamicResource DangerFillBrush}" /><Setter Property="Foreground" Value="White" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+  <Style Selector="Button.danger-solid:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+  <Style Selector="Button.danger-solid:pressed /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+  <Style Selector="Button.danger-solid:pointerover /template/ Border#AmbientShadow"><Setter Property="BoxShadow" Value="0 4 12 0 #29000000" /></Style>
   <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
   <Style Selector="ListBoxItem"><Setter Property="Padding" Value="12" /><Setter Property="Margin" Value="0,3" /><Setter Property="CornerRadius" Value="12" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   <Style Selector="ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
@@ -108,7 +116,7 @@
     <Setter Property="Template"><ControlTemplate>
       <Border Name="ExpandSurface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" Padding="16,10">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-          <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
+          <ContentPresenter Name="HeaderContent" Background="Transparent" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
           <Path Name="Chevron" Grid.Column="1" Data="M 0,0 L 5,5 10,0" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.5" Width="10" Height="6" Stretch="Fill" VerticalAlignment="Center" RenderTransformOrigin="50%,50%" RenderTransform="rotate(0deg)">
             <Path.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Interaction}" Easing="CubicEaseOut"/></Transitions></Path.Transitions>
           </Path>

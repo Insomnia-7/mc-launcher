@@ -28,11 +28,13 @@ public sealed partial class DurableTaskRow(DurableTaskRecord record):ObservableO
     public string StateText=>Record.StateText;
     public string Detail=>Record.Detail;
     public double Percent=>Record.Percent;
+    public bool IsHistory=>Record.IsHistory;
+    public string ContextText => $"{Record.CreatedAt.LocalDateTime:yyyy-MM-dd HH:mm} · {Record.Request.InstanceId ?? "游戏库"} · {Record.Request.GameRoot}";
     public bool CanResume=>Record.CanResume;
     public bool CanPause=>Record.CanPause;
     public bool CanCancel=>Record.CanCancel;
     partial void OnRecordChanged(DurableTaskRecord value)
-    {foreach(var property in new[]{nameof(Title),nameof(StateText),nameof(Detail),nameof(Percent),nameof(CanResume),nameof(CanPause),nameof(CanCancel),nameof(CanReorder)})OnPropertyChanged(property);}
+    {foreach(var property in new[]{nameof(Title),nameof(StateText),nameof(Detail),nameof(Percent),nameof(CanResume),nameof(CanPause),nameof(CanCancel),nameof(CanReorder),nameof(IsHistory),nameof(ContextText)})OnPropertyChanged(property);}
 }
 public sealed partial class MainViewModel
 {
@@ -68,7 +70,25 @@ public sealed partial class MainViewModel
     public ObservableCollection<InstanceSnapshot> Snapshots {get;}=[];
     public ObservableCollection<SettingsPreset> Presets {get;}=[];
     public ObservableCollection<DurableTaskRow> DurableTasks {get;}=[];
-    public bool HasDurableTasks=>DurableTasks.Count>0;
+    public ObservableCollection<DurableTaskRow> VisibleDurableTasks { get; } = [];
+    public bool HasDurableTasks=>VisibleDurableTasks.Count>0;
+    [ObservableProperty] private bool _showsTaskHistory;
+    public string TaskListHint => ShowsTaskHistory ? "历史记录仅保留结果；移除记录不删除游戏、备份或共享资源。" : "进行中包含等待、暂停和失败任务。完成或取消后进入历史记录。";
+    partial void OnShowsTaskHistoryChanged(bool value) { OnPropertyChanged(nameof(TaskListHint)); RefreshTaskRows(); }
+    [RelayCommand] private void ShowActiveTasks() => ShowsTaskHistory = false;
+    [RelayCommand] private void ShowTaskHistory() => ShowsTaskHistory = true;
+    [RelayCommand] private void RemoveTaskHistory(DurableTaskRow? row)
+    { try { if (!IsBusy && row is not null) _tasks.RemoveHistory(row.Id); } catch(Exception ex) { ExperienceHint = ex.Message; } }
+    [RelayCommand] private void OpenTaskResult(DurableTaskRow? row)
+    {
+        if (row is null || !row.IsHistory) return;
+        var kind = row.Record.Request.Kind;
+        var path = kind == "world-backup" ? Path.Combine(AppPaths.DataDirectory,"world-backups") : row.Record.Request.GameRoot;
+        try { if (!Directory.Exists(path)) { ExperienceHint = "目标位置暂不可用："+path; return; } System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path){UseShellExecute=true}); }
+        catch(Exception ex) { ExperienceHint = ex.Message; }
+    }
+    [RelayCommand] private void ClearTaskHistory()
+    { if (IsBusy) return; try { var count = _tasks.ClearHistory(); ExperienceHint = $"已清除 {count} 条历史记录，游戏与备份保持原状。"; } catch(Exception ex) { ExperienceHint = ex.Message; } }
     public ObservableCollection<InspectionIssue> InspectionIssues {get;}=[];
     public ObservableCollection<string> LockedModFiles {get;}=[];
     public string[] UpdateChannels {get;}=["正式版","测试版","开发版"];
@@ -183,6 +203,9 @@ public sealed partial class MainViewModel
         if(!_experienceInitialized)return;
         var ordered = _tasks.List().OrderBy(t=>t.State==DurableTaskState.Running?0:t.State==DurableTaskState.Ready?1:2)
             .ThenBy(t=>t.State==DurableTaskState.Ready?(t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder):-t.CreatedAt.UtcTicks).ToArray();
+        foreach (var task in ordered) NotifyTaskFeedback(task);
+        var ids = ordered.Select(t => t.Id).ToHashSet();
+        foreach (var old in DurableTasks.Where(t => !ids.Contains(t.Id)).ToArray()) DurableTasks.Remove(old);
         for(var index=0;index<ordered.Length;index++)
         {
             var task=ordered[index];
@@ -190,6 +213,13 @@ public sealed partial class MainViewModel
             var row=DurableTasks.FirstOrDefault(r=>r.Id==task.Id);
             if(row is null)DurableTasks.Insert(index,new(task));
             else { row.Record=task; var current=DurableTasks.IndexOf(row); if(current!=index)DurableTasks.Move(current,index); }
+        }
+        var visible = DurableTasks.Where(t => t.IsHistory == ShowsTaskHistory).ToArray();
+        foreach (var old in VisibleDurableTasks.Where(t => !visible.Contains(t)).ToArray()) VisibleDurableTasks.Remove(old);
+        for (var i = 0; i < visible.Length; i++)
+        {
+            var current = VisibleDurableTasks.IndexOf(visible[i]);
+            if (current < 0) VisibleDurableTasks.Insert(i,visible[i]); else if (current != i) VisibleDurableTasks.Move(current,i);
         }
         OnPropertyChanged(nameof(CanEditExperience));
         OnPropertyChanged(nameof(HasDurableTasks));
@@ -339,7 +369,7 @@ public sealed partial class MainViewModel
         AskConfirm("恢复实例快照",RestoreScope==0?"将恢复模组和配置，保留当前存档。":"将恢复选定范围；选中存档恢复时，会替换当前存档。",snapshot.Name+"\n"+snapshot.Summary,"确认恢复",()=>_ = RestoreSnapshotCoreAsync(snapshot,(SnapshotRestoreScope)RestoreScope));
     }
     private async Task RestoreSnapshotCoreAsync(InstanceSnapshot snapshot,SnapshotRestoreScope scope)=>await ExperienceActionAsync(async ct=>{await CurrentSnapshots.CaptureAsync("恢复前自动备份",scope!=SnapshotRestoreScope.Configuration,ct);await CurrentSnapshots.RestoreAsync(snapshot,scope,ct);RefreshInstances();await RefreshModsAsync();ExperienceHint="快照已恢复；恢复前状态已另存为快照。";});
-    [RelayCommand] private void DeleteSnapshot(){if(SelectedSnapshot is not {} snapshot)return;AskConfirm("删除快照","仅删除这份备份，当前游戏数据不变。",snapshot.Name,"删除快照",()=>{CurrentSnapshots.Delete(snapshot);ReloadExperienceLists();});}
+    [RelayCommand] private void DeleteSnapshot(){if(SelectedSnapshot is not {} snapshot)return;AskConfirm("删除快照","仅删除这份备份，当前游戏数据不变。",snapshot.Name,"删除快照",()=>{CurrentSnapshots.Delete(snapshot);ReloadExperienceLists();},danger:true);}
     [RelayCommand] private async Task SavePresetAsync()=>await ExperienceActionAsync(_=>{var instance=SelectedInstance??throw new InvalidOperationException("请选择实例。");new SettingsPresets(AppPaths.DataDirectory).Capture(GameRoot,instance.InstanceId,PresetName,IncludeModConfigs);ExperienceHint="设置预设已保存，不包含账号和本机 Java 路径。";return Task.CompletedTask;});
     [RelayCommand] private async Task ApplyPresetAsync()=>await ExperienceActionAsync(async ct=>{var preset=SelectedPreset??throw new InvalidOperationException("请选择预设。");var instance=SelectedInstance??throw new InvalidOperationException("请选择实例。");var count=await new SettingsPresets(AppPaths.DataDirectory).ApplyAsync(preset,GameRoot,instance.InstanceId,IncludeModConfigs,ct);LoadSettings(instance.InstanceId);ExperienceHint=$"预设已应用，共 {count} 项游戏设置；原配置已自动备份。";});
     [RelayCommand] private void DeletePreset(){if(SelectedPreset is not {} preset)return;new SettingsPresets(AppPaths.DataDirectory).Delete(preset);ReloadExperienceLists();}
@@ -377,6 +407,9 @@ public sealed partial class MainViewModel
     private async Task<DurableTaskRecord?> QueueExperienceTaskAsync(DurableTaskRequest request)
     {
         if(ExperienceBusy){ExperienceHint="请等待实例管理完成。";return null;}
+        if (request.Kind is not ("world-backup" or "world-restore" or "repair") && !RefreshGameRootHealth())
+        { ExperienceHint = Download.Status = GameRootProblem; if (!AppPaths.IsGameRootConfirmed) await ChooseGameRootAsync(); return null; }
+        if (DataRestartRequired) { ExperienceHint = "数据位置已更改，请退出并重新打开启动器后继续。"; return null; }
         var task=_tasks.Add(request);ExperienceHint="已保存任务："+request.Title;
         if(_tasks.ActiveId is null&&!IsBusy&&!Download.IsBusy)
         {
@@ -384,8 +417,8 @@ public sealed partial class MainViewModel
             var result=_tasks.List().Single(t=>t.Id==task.Id);
             StatusText=Download.Status=result.State switch
             {
-                DurableTaskState.Completed=>request.Kind=="import"||request.Arguments.GetValueOrDefault("category")==DownloadCategory.Modpack.ToString()?"「"+request.Title+"」导入完成":request.Kind=="resource"?"「"+request.Title+"」已装到实例":"安装完成 · "+request.Title,
-                DurableTaskState.Failed=>"安装失败："+result.Detail,
+                DurableTaskState.Completed=>request.Kind=="import"||request.Arguments.GetValueOrDefault("category")==DownloadCategory.Modpack.ToString()?"「"+request.Title+"」导入完成":request.Kind=="resource"?"「"+request.Title+"」已装到实例":result.Detail+" · "+request.Title,
+                DurableTaskState.Failed=>"任务失败："+result.Detail,
                 DurableTaskState.Canceled=>"已取消",
                 _=>"已暂停，断点与任务清单已保存。"
             };
@@ -395,6 +428,7 @@ public sealed partial class MainViewModel
     }
     [RelayCommand] private async Task ResumeDurableTaskAsync(DurableTaskRow? task)
     {
+        if (DataRestartRequired) return;
         if(task is null||!task.CanResume)return;
         try{if(IsBusy||Download.IsBusy||ExperienceBusy)throw new InvalidOperationException("请先等待或暂停当前操作。");await _tasks.RunAsync(task.Id);}catch(Exception ex){ExperienceHint=ErrorText.Describe(ex);}
     }

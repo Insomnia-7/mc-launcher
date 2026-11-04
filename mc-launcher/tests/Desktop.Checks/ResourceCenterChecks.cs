@@ -21,6 +21,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public string? LastQuery;
     public int CatalogCount, LastLimit, LastOffset;
     public bool FailPage;
+    public TaskCompletionSource<ModrinthSearchResponse>? PendingSearch;
     public TaskCompletionSource<IReadOnlyList<ModrinthVersion>>? PendingVersions;
     public TaskCompletionSource<DownloadSummary>? PendingDownload;
     public TaskCompletionSource<ModrinthProjectInfo?>? PendingDependency;
@@ -41,6 +42,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public Task<ModrinthSearchResponse> SearchAsync(string q,DownloadCategory category,string? game=null,string? loader=null,int limit=20,int offset=0,CancellationToken ct=default)
     {
         LastQuery=q;LastLimit=limit;LastOffset=offset;
+        if(PendingSearch is {} pending) {PendingSearch=null;return pending.Task.WaitAsync(ct);}
         if(FailPage) {FailPage=false;throw new HttpRequestException("page failure");}
         var project=new ModrinthProject(category==DownloadCategory.Modpack?"pack":"sodium",category==DownloadCategory.Modpack?"fixture-pack":"sodium",category==DownloadCategory.Modpack?"Fixture Pack":"Sodium","fixture original description","Fixture Author","https://fixture.invalid/icon.png",253000000,10,["fabric","neoforge","optimization"],["1.21.4","1.20.1"]){ProjectType=category.ModrinthProjectType(),AllProjectTypes=[category.ModrinthProjectType()!],DateModified=DateTimeOffset.Parse("2026-10-20T00:00:00Z")};
         return Task.FromResult(CatalogCount>0 ? new ModrinthSearchResponse(Enumerable.Range(offset,Math.Min(limit,Math.Max(0,CatalogCount-offset))).Select(i=>project with{ProjectId="catalog-"+i,Title="Project "+i}).ToArray(),CatalogCount,offset,limit) : new ModrinthSearchResponse([project],1,offset,limit));

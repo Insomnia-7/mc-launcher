@@ -7,13 +7,22 @@ namespace Launcher.App;
 public static class AppPaths
 {
     /// <summary>
-    /// 数据根目录。优先级：MCLAUNCHER_HOME &gt; %APPDATA%\MCLauncher。
+    /// 数据根目录：环境覆盖、便携位置记录、既有用户位置、新用户程序旁目录。
     /// 可通过环境变量覆盖默认数据目录。
     /// </summary>
-    public static string DataDirectory { get; } =
-        Environment.GetEnvironmentVariable("MCLAUNCHER_HOME") is { Length: > 0 } home
-            ? home
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MCLauncher");
+    public static string DataRootSettingsFile => Path.Combine(AppContext.BaseDirectory, "fangyu-data-root.txt");
+    public static string DataDirectory { get; } = ResolveDataDirectory();
+    private static string ResolveDataDirectory()
+    {
+        if (Environment.GetEnvironmentVariable("MCLAUNCHER_HOME") is { Length: > 0 } home) return Path.GetFullPath(home);
+        if (File.Exists(DataRootSettingsFile)) return Path.GetFullPath(File.ReadAllText(DataRootSettingsFile).Trim());
+        var legacy = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MCLauncher");
+        // Preserve existing users. A fresh portable download keeps its data beside the EXE.
+        if (Directory.Exists(legacy) && Directory.EnumerateFileSystemEntries(legacy).Any()) return legacy;
+        return OperatingSystem.IsMacOS() ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Fangyu") : Path.Combine(AppContext.BaseDirectory, "FangyuData");
+    }
+    public static bool IsGameRootConfirmed => Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 } || SavedGameRootReadable;
+    private static bool SavedGameRootReadable;
 
     public static string LogsDirectory { get; } = Path.Combine(DataDirectory, "logs");
     public static string InstancesDirectory { get; } = Path.Combine(DataDirectory, "instances");
@@ -29,7 +38,7 @@ public static class AppPaths
 
     /// <summary>
     /// 上次记住的游戏目录这次不可用时，这里放一句给用户看的中文说明（正常时是 null）。
-    /// 界面上会把它当作「游戏目录有问题」的提示，并且目录已经回退到默认位置。
+    /// 保留原目录，不自动另建游戏库。
     /// </summary>
     public static string? GameRootFallbackNotice { get; private set; }
 
@@ -44,6 +53,7 @@ public static class AppPaths
         {
             if (File.Exists(GameRootOverrideFile))
                 saved = File.ReadAllText(GameRootOverrideFile).Trim();
+            SavedGameRootReadable = !string.IsNullOrWhiteSpace(saved);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -53,40 +63,30 @@ public static class AppPaths
 
         if (string.IsNullOrEmpty(saved)) return fallback;
 
-        // 上次选的目录这次用不了（U 盘拔了、盘符变了、路径被文件占住）：不能每次都把
-        // 用户卡在一个空列表上，先回退到默认目录，把原因留在界面上，文件另存一份不直接删。
-        var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(saved);
-        if (problem is null) return saved;
-
-        GameRootFallbackNotice = $"上次用的游戏目录现在打不开：{saved}\n{problem}\n已临时改用默认目录 {fallback}；可以用下面的按钮重新选一个。";
-        Serilog.Log.Warning("记住的游戏目录不可用，回退到默认目录：{Saved} -> {Fallback}", saved, fallback);
-        try
-        {
-            File.Move(GameRootOverrideFile, Path.Combine(DataDirectory, "game-root.broken.txt"), overwrite: true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Serilog.Log.Warning(ex, "备份失效的游戏目录设置失败：{File}", GameRootOverrideFile);
-        }
-        return fallback;
+        if (!Directory.Exists(saved)) GameRootFallbackNotice = $"游戏目录暂不可用：{saved}。请重新连接磁盘或选择目录；不会自动切换到其他位置。";
+        return saved;
     }
 
     /// <summary>把用户选的目录记下来并立即生效；环境变量优先的情况下返回 false。</summary>
     public static bool TrySetGameRoot(string path)
     {
-        if (Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 }) return false;
+        if (Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT") is { Length: > 0 } configured) return string.Equals(Path.GetFullPath(configured),Path.GetFullPath(path),OperatingSystem.IsWindows()?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal);
 
-        GameRoot = path;
+        var full = Path.GetFullPath(path);
         try
         {
             Directory.CreateDirectory(DataDirectory);
-            File.WriteAllText(GameRootOverrideFile, path);
+            var temp = GameRootOverrideFile + ".tmp";
+            File.WriteAllText(temp, full);
+            File.Move(temp, GameRootOverrideFile, true);
+            GameRoot = full; SavedGameRootReadable = true; GameRootFallbackNotice = null;
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Serilog.Log.Warning(ex, "保存游戏目录设置失败：{File}", GameRootOverrideFile);
+            Log.Warning(ex, "保存游戏目录设置失败：{File}", GameRootOverrideFile);
+            return false;
         }
-        return true;
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public static class AppPaths
         CreateQuietly(LogsDirectory);
         CreateQuietly(InstancesDirectory);
         CreateQuietly(CacheDirectory);
-        CreateQuietly(GameRoot);
+        // Game libraries are created only after an explicit location choice.
     }
 
     private static void CreateQuietly(string path)

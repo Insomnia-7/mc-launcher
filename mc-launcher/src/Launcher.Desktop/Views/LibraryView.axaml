@@ -23,7 +23,7 @@
             <TextBlock Text="{Binding WorldDisplayName}" Classes="muted" TextTrimming="CharacterEllipsis" FontSize="16" IsVisible="{Binding HasWorldDisplayName}"/>
             <TextBlock Text="{Binding WorldKind}" Classes="muted"/>
           </StackPanel>
-          <Grid Grid.Column="1" Width="160" Height="110" IsHitTestVisible="False">
+          <Grid Grid.Column="1" Width="190" Height="132" IsHitTestVisible="False">
             <Border CornerRadius="12" ClipToBounds="True" IsVisible="{Binding HasGameCover}">
               <Image Source="{Binding SelectedGameCover}" Stretch="UniformToFill"/>
             </Border>
@@ -101,10 +101,10 @@
               <StackPanel Spacing="12">
                 <Button Classes="quiet" Padding="0" HorizontalContentAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}">
                   <StackPanel Spacing="12" Width="214">
-                    <Border Height="102" CornerRadius="12" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+                    <Border Height="118" CornerRadius="12" Background="Transparent" ClipToBounds="True">
                       <Grid>
                         <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
-                        <icons:UiIcon Kind="{Binding Icon}" Width="92" Height="92" IsVisible="{Binding !HasCover}"/>
+                        <icons:WorldArt Margin="8,0" IsVisible="{Binding !HasCover}"/>
                       </Grid>
                     </Border>
                     <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis"/>
@@ -128,7 +128,7 @@
               <Border Width="48" Height="48" CornerRadius="10" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
                 <Grid>
                   <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
-                  <icons:UiIcon Kind="{Binding Icon}" Width="38" Height="38" IsVisible="{Binding !HasCover}"/>
+                  <icons:WorldArt Margin="2" IsVisible="{Binding !HasCover}"/>
                 </Grid>
               </Border>
               <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">

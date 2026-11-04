@@ -137,7 +137,7 @@ public sealed partial class MainViewModel
             var files=await SelectedModFilesAsync();var plan=await _modPlans.PrepareLocalAsync(root,instance.InstanceId,action,files);
             if(root!=GameRoot||SelectedInstance?.InstanceId!=instance.InstanceId)return;
             if(action==ModBatchAction.Delete)
-                AskConfirm("删除选中的模组",$"将删除 {plan.Changes.Count} 个模组。执行前保存实例快照，可在存档与备份中恢复。",string.Join("\n",plan.Removals.Take(12)),"备份并删除",()=>_ = QueueLocalPlanConfirmedAsync(plan));
+                AskConfirm("删除选中的模组",$"将删除 {plan.Changes.Count} 个模组。执行前保存实例快照，可在存档与备份中恢复。",string.Join("\n",plan.Removals.Take(12)),"备份并删除",()=>_ = QueueLocalPlanConfirmedAsync(plan),danger:true);
             else await QueueModPlanAsync(plan,false);
         }
         catch(Exception ex){ExperienceHint=Launcher.Application.Diagnostics.ErrorText.Describe(ex);}

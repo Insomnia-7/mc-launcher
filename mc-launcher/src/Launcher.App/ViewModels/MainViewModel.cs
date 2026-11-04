@@ -110,7 +110,7 @@ public sealed partial class MainViewModel : ObservableObject
         _offlineName = _library.OfflineIdentity.Name;
 
         GameRoot = AppPaths.GameRoot;
-        GameRootProblem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot) ?? string.Empty;
+        GameRootProblem = AppPaths.IsGameRootConfirmed ? (Directory.Exists(GameRoot) ? Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot) ?? string.Empty : "游戏目录暂不可用，请重新定位。") : "下载前请先选择游戏保存位置。";
         GameRootNotice = AppPaths.GameRootFallbackNotice ?? string.Empty;
 
         Download = new DownloadViewModel(
@@ -158,13 +158,19 @@ public sealed partial class MainViewModel : ObservableObject
         error = null;
         if (string.IsNullOrWhiteSpace(path)) { error = "没有选择目录。"; return false; }
 
+        string full;
+        try { full = Path.GetFullPath(path!); }
+        catch (Exception ex) when (Launcher.Application.Diagnostics.GameRootProbe.IsExpected(ex)) { error = ErrorText.Describe(ex); return false; }
+        if (Directory.Exists(Path.Combine(full,"versions")) && !GameLibraryDiscovery.IsFangyuLibrary(full) &&
+            !string.Equals(full,GameRoot,OperatingSystem.IsWindows()?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal))
+        { error = "这是外部游戏库，请先核对原运行目录并复制导入。"; return false; }
         var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(path);
         if (problem is not null) { error = problem; return false; }
 
-        var full = Path.GetFullPath(path!);
-        GameRoot = full;
         if (!AppPaths.TrySetGameRoot(full))
-            _logger.LogInformation("游戏目录由环境变量指定，本次切换只在当前进程内生效");
+        { error = "无法保存游戏目录。请检查写入权限；环境变量指定的位置需要在外部修改。"; return false; }
+        GameRoot = full;
+        try { File.WriteAllText(Path.Combine(full,".fangyu-library"),"1"); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _logger.LogWarning(ex,"无法写入游戏库标识"); }
 
         GameRootProblem = string.Empty;
         GameRootNotice = string.Empty;
@@ -185,6 +191,10 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public bool RefreshGameRootHealth()
     {
+        if (!AppPaths.IsGameRootConfirmed) { StatusText = GameRootProblem = "下载前请先选择游戏保存位置。"; return false; }
+        if (!Directory.Exists(GameRoot)) { StatusText = GameRootProblem = "游戏目录暂不可用，请重新连接磁盘或选择目录；未创建其他游戏库。"; return false; }
+        if (!GameLibraryDiscovery.IsFangyuLibrary(GameRoot) && (Directory.Exists(Path.Combine(GameRoot,"saves")) || Directory.Exists(Path.Combine(GameRoot,"mods"))))
+        { StatusText = GameRootProblem = "当前为外部游戏库，请在存储页核对原运行目录并复制导入，保留存档和模组。"; return false; }
         var problem = Launcher.Application.Diagnostics.GameRootProbe.Describe(GameRoot);
         GameRootProblem = problem ?? string.Empty;
         if (problem is null) return true;
@@ -197,12 +207,15 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ChooseGameRootAsync()
     {
-        var folder = await PlatformUi.PickFolderAsync("选择游戏目录", Directory.Exists(GameRoot) ? GameRoot : AppPaths.DataDirectory);
+        if (IsBusy || Download.IsBusy) { StatusText = "请先完成或暂停当前操作。"; return; }
+        var folder = await PlatformUi.PickFolderAsync("选择游戏目录（切换位置不会搬移旧文件）", Directory.Exists(GameRoot) ? GameRoot : AppPaths.DataDirectory);
         if (folder is null) return;
-        if (TryUseGameRoot(folder, out var error)) return;
-
-        StatusText = error ?? "这个目录不能用。";
-        DiagnosisText = error ?? string.Empty;
+        if (Directory.Exists(Path.Combine(folder, "versions")) && !Launcher.Application.Instances.GameLibraryDiscovery.IsFangyuLibrary(folder))
+        { StatusText = "检测到外部游戏库，请在设置的存储页查找并复制导入，保留原有存档和模组。"; return; }
+        AskConfirm("切换游戏目录", "立即保存此位置；旧目录和其中的文件保持原状。", folder + (Launcher.Application.Diagnostics.DiskSpaceProbe.FreeBytes(folder) is {} free ? $"\n可用空间：{free/1073741824d:F1} GB" : ""), "使用此目录", () =>
+        {
+            if (!TryUseGameRoot(folder, out var failure)) StatusText = DiagnosisText = failure ?? "无法使用此目录。";
+        });
     }
 
     // ── 自更新 ───────────────────────────────────────────────────────────
@@ -511,17 +524,21 @@ public sealed partial class MainViewModel : ObservableObject
     private Action? _confirmAction;
     [ObservableProperty] private bool _confirmShowCancel = true;
 
+    /// <summary>确认按钮是不是「删除」这类不可挽回的动作——是的话按钮画成红底白字。</summary>
+    [ObservableProperty] private bool _confirmIsDanger;
+
     public bool HasConfirmDetail => ConfirmDetail.Length > 0;
 
     partial void OnConfirmDetailChanged(string value) => OnPropertyChanged(nameof(HasConfirmDetail));
 
-    private void AskConfirm(string title, string message, string detail, string okText, Action? action = null, bool showCancel = true)
+    private void AskConfirm(string title, string message, string detail, string okText, Action? action = null, bool showCancel = true, bool danger = false)
     {
         ConfirmTitle = title;
         ConfirmMessage = message;
         ConfirmDetail = detail;
         ConfirmOkText = okText;
         ConfirmShowCancel = showCancel;
+        ConfirmIsDanger = danger;
         _confirmAction = action;
         IsConfirmOpen = true;
         _logger.LogInformation("确认气泡：{Title}，IsConfirmOpen={Open}，Detail 长度 {Length}",
@@ -1505,7 +1522,8 @@ public sealed partial class MainViewModel : ObservableObject
             "mods、config、存档都会一起删掉，删完找不回来。共享的 libraries 和 assets 会保留。",
             instancePath + Environment.NewLine + versionPath,
             "删除",
-            () => DeleteInstanceCore(instance, instancePath, versionPath));
+            () => DeleteInstanceCore(instance, instancePath, versionPath),
+            danger: true);
     }
 
     private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath)
@@ -1717,6 +1735,7 @@ public sealed partial class MainViewModel : ObservableObject
         // 重建列表会换掉版本对象，尽量把用户原来的选择留住
         var previousId = SelectedInstance?.InstanceId;
         Instances.Clear();
+        if (!AppPaths.IsGameRootConfirmed || !Directory.Exists(GameRoot)) return;
 
         // 实例列表以 instances/index.json 为准（旧数据 LoadOrMigrate 会顺手补建）。
         // 注意：实例目录名不一定等于版本目录名——同一个加载器版本可以被多个整合包共用
@@ -1726,7 +1745,7 @@ public sealed partial class MainViewModel : ObservableObject
         InstanceRegistry registry;
         try
         {
-            registry = InstanceRegistry.LoadOrMigrate(GameRoot);
+            registry = InstanceRegistry.Load(GameRoot);
         }
         catch (Exception ex) when (Launcher.Application.Diagnostics.GameRootProbe.IsExpected(ex))
         {

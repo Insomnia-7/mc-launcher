@@ -13,7 +13,8 @@ public sealed record DurableTaskRecord(string Id,DurableTaskRequest Request,Dura
     public string StateText=>State switch {DurableTaskState.Ready=>"待开始",DurableTaskState.Running=>"进行中",DurableTaskState.Paused=>"已暂停，可恢复",DurableTaskState.Completed=>"已完成",DurableTaskState.Failed=>"失败，可重试",_=>"已取消"};
     public bool CanResume=>State is DurableTaskState.Ready or DurableTaskState.Paused or DurableTaskState.Failed;
     public bool CanPause=>State==DurableTaskState.Running;
-    public bool CanCancel=>State is not (DurableTaskState.Completed or DurableTaskState.Canceled);
+    public bool CanCancel=>State != DurableTaskState.Completed && (State != DurableTaskState.Canceled || Partials.Count > 0);
+    public bool IsHistory => State == DurableTaskState.Completed || State == DurableTaskState.Canceled && Partials.Count == 0;
 }
 public sealed record TaskProgress(double Percent,string Detail);
 
@@ -47,6 +48,33 @@ public sealed class PersistentTasks
     public event Action? Changed;
     public string? ActiveId {get{lock(_sync)return _active;}}
     public IReadOnlyList<DurableTaskRecord> List() {lock(_sync)return _tasks.OrderByDescending(t=>t.CreatedAt).ToArray();}
+    public bool RemoveHistory(string id)
+    {
+        lock (_sync)
+        {
+            var record = _tasks.FirstOrDefault(t => t.Id == id);
+            if (record is null || !record.IsHistory || _active == id) return false;
+            var file = ExperienceFiles.Child(_root, id + ".json");
+            ExperienceFiles.RejectLinks(file); File.Delete(file); _tasks.Remove(record);
+        }
+        Changed?.Invoke(); return true;
+    }
+    public int ClearHistory()
+    {
+        var count = 0;
+        foreach (var task in List().Where(t => t.IsHistory)) if (RemoveHistory(task.Id)) count++;
+        return count;
+    }
+    public bool ConflictsWithCleanup(string path)
+    {
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var target = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return List().Any(t => t.CanPause || t.CanResume &&
+            (target.StartsWith(Path.GetFullPath(t.Request.GameRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, comparison) ||
+             t.Partials.Any(p => ReferencesPath(p, target, comparison))));
+    }
+    private static bool ReferencesPath(string path, string target, StringComparison comparison)
+    { try { return Path.GetFullPath(path).StartsWith(target, comparison); } catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return false; } }
     public PersistentTasks(string dataDirectory)
     {
         _root=Path.Combine(dataDirectory,"task-center");
@@ -77,7 +105,7 @@ public sealed class PersistentTasks
             await RunOneAsync(id,ct).ConfigureAwait(false);
             lock(_sync)
             {
-                if(epoch!=_queueEpoch||!AutoContinue||ct.IsCancellationRequested||_tasks.Single(t=>t.Id==id).State!=DurableTaskState.Completed||_active is not null)return;
+                if(epoch!=_queueEpoch||!AutoContinue||ct.IsCancellationRequested||_tasks.FirstOrDefault(t=>t.Id==id)?.State!=DurableTaskState.Completed||_active is not null)return;
                 var next=_tasks.Where(t=>t.State==DurableTaskState.Ready).OrderBy(t=>t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder).FirstOrDefault();
                 if(next is null)return;
                 id=next.Id;
@@ -121,7 +149,7 @@ public sealed class PersistentTasks
                 last=now;Update(id,t=>t.State==DurableTaskState.Running?t with{Percent=Math.Clamp(p.Percent,0,100),Detail=p.Detail,Partials=execution.Partials.Keys.ToArray()}:t);
             }),cancellation.Token).ConfigureAwait(false);
             if(!execution.Committed)cancellation.Token.ThrowIfCancellationRequested();
-            Update(id,t=>t with{State=DurableTaskState.Completed,Percent=100,Detail="安装完成",Partials=[]});
+            Update(id,t=>t with{State=DurableTaskState.Completed,Percent=100,Detail=item.Request.Kind switch { "world-backup" => "世界备份已完成", "world-restore" or "pack-restore" => "恢复已完成", "repair" => "文件修复已完成", "clone" => "游戏副本已创建", "update" or "pack-update" or "mod-batch" => "更新已完成", _ => "安装完成" },Partials=[]});
             ExperienceFiles.DeleteTree(execution.Directory,_root);
         }
         catch(OperationCanceledException)

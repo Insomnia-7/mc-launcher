@@ -61,13 +61,7 @@ internal static class MaintenanceUiChecks
             Wait(model.OpenStorageSettingsCommand.ExecuteAsync(null)); model.OpenAppearanceCommand.Execute(null); check("存储切回外观只展示外观内容", model.IsAppearanceSettings && !model.ShowsStorage);
             Wait(model.OpenStorageSettingsCommand.ExecuteAsync(null));
             model.CleanStorageCommand.Execute(model.StorageAreas.Single(a => a.Key == "cache/meta")); check("清理缓存先显示分类确认", model.IsConfirmOpen && File.Exists(cache)); model.ConfirmOkCommand.Execute(null);
-            if (model.DurableTasks.Any(t => t.CanResume))
-            {
-                check("存在未完成任务时阻止缓存清理", File.Exists(cache) && model.StorageHint.Contains("未完成"));
-                foreach (var task in model.DurableTasks.Where(t => t.CanResume).ToArray()) model.CancelDurableTaskCommand.Execute(task);
-                model.CleanStorageCommand.Execute(model.StorageAreas.Single(a => a.Key == "cache/meta")); model.ConfirmOkCommand.Execute(null);
-            }
-            Until(() => !model.StorageBusy); check("确认清理只删除陈旧缓存", !File.Exists(cache) && Directory.Exists(world));
+            Until(() => !model.StorageBusy); check("无关旧任务不阻止清理且仅删除陈旧缓存", !File.Exists(cache) && Directory.Exists(world));
             model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); Wait(model.ScanStorageCommand.ExecuteAsync(null)); capture("storage-dark", true);
             window.Width = 900; window.Height = 640; pump(100); capture("storage-compact", true);
             check("最小窗口保留存储扫描按钮", Find<Button>("ScanStorageButton").TranslatePoint(default, window) is { X: >= 0, Y: >= 0 } point && point.X + Find<Button>("ScanStorageButton").Bounds.Width <= window.ClientSize.Width);

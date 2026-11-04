@@ -28,6 +28,13 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if(args.Contains("--path-probe"))
+        {
+            AppPaths.EnsureCreated();
+            var saved = Environment.GetEnvironmentVariable("FANGYU_PROBE_SAVE");
+            bool? accepted = saved is null ? null : AppPaths.TrySetGameRoot(saved);
+            Console.WriteLine(JsonSerializer.Serialize(new { AppPaths.GameRoot, AppPaths.IsGameRootConfirmed, GameCreated=Directory.Exists(AppPaths.GameRoot), Accepted=accepted })); return 0;
+        }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
         if(args.Contains("--gpu-native"))return GpuPreviewChecks.Start(root);
@@ -81,6 +88,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--library-storage")){LibraryStorageUiChecks.Run(model,window,Pump,Check,Capture,root,resourceFixture);Check("目录存储页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} library storage UI checks passed");return 0;}
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
             if(args.Contains("--settings-sync")){SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("设置同步与动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} settings sync checks passed");return 0;}
             if(args.Contains("--pack-upgrade")){ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);Check("整合包页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} pack upgrade checks passed");return 0;}
@@ -201,7 +209,7 @@ internal static class Program
             model.CloseAccountsCommand.Execute(null); Pump(250);
             var feedback=Find<Button>("AccountEntry"); var point=feedback.TranslatePoint(new Point(feedback.Bounds.Width/2,feedback.Bounds.Height/2),window)!.Value;
             window.MouseMove(point); window.MouseDown(point,MouseButton.Left); Pump(140);
-            Check("按下具有缩放反馈", feedback.IsPressed && feedback.RenderTransform!.Value.M11<1);
+            Check("按下有位移反馈且文字保持原尺寸", feedback.IsPressed && Math.Abs(feedback.RenderTransform!.Value.M11-1)<0.001 && feedback.RenderTransform.Value.M32>0);
             window.MouseUp(point,MouseButton.Left); Pump(350); model.CloseAccountsCommand.Execute(null); Pump(180);
             Check("松开后恢复正常尺寸", feedback.RenderTransform!.Value.M11>=0.99);
             var launchButton=Find<Button>("LaunchButton");
@@ -250,6 +258,19 @@ internal static class Program
             LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);
             ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);
             SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);
+            // 删除确认：危险动作的确认按钮要红底白字，其他确认维持主色
+            model.SelectedInstance = model.Instances.First(); Pump(80);
+            model.DeleteInstanceCommand.Execute(null); Pump(150);
+            var dangerOk = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("danger-solid"));
+            Check("删除版本的确认框弹出且确认按钮带危险样式", model.IsConfirmOpen && dangerOk is not null && dangerOk.Content as string == "删除");
+            Check("删除确认按钮红底白字",
+                dangerOk!.Background is ISolidColorBrush redFill && redFill.Color == Color.Parse("#D93A3F")
+                && dangerOk.Foreground is ISolidColorBrush whiteText && whiteText.Color == Colors.White);
+            Capture("confirm-delete-danger");
+            model.ConfirmCancelCommand.Execute(null); Pump(120);
+            Check("取消删除后实例仍在且弹窗关闭", model.Instances.Count >= 3 && !model.IsConfirmOpen
+                && !window.GetVisualDescendants().OfType<Button>().Any(b => b.Classes.Contains("danger-solid") && b.IsEffectivelyVisible));
+            Check("普通确认按钮不带危险样式", window.GetVisualDescendants().OfType<Button>().Any(b => b.Classes.Contains("primary")));
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {

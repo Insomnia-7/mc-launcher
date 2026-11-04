@@ -15,7 +15,7 @@ public sealed partial class MainViewModel
         }
     }
     public bool HasInstances => Instances.Count > 0;
-    public string InstanceCountText => $"{Instances.Count:00} 个世界";
+    public string InstanceCountText => $"{Instances.Count} 个游戏实例";
     public string WorldVersion => SelectedInstance?.BaseVersion ?? "添加你的第一个世界";
     public string WorldDisplayName => SelectedGameName;
     public bool IsModpackSelection => SelectedInstance?.IsModpack == true;
@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
     public string JavaText => SelectedJava is { ExecutablePath: not null } java ? java.Title : "自动选择";
     public string LaunchTitle => IsBusy ? "正在准备…" : "启动游戏";
     public string WorldCaption => HasInstances ? "你的世界，随时出发。" : "从一个新世界开始。";
-    public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsConfirmOpen;
+    public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsConfirmOpen || DataRestartRequired;
     public bool IsPreferencesOpen => IsAppearanceOpen || IsNetworkOpen;
     partial void OnIsNetworkOpenChanged(bool value)
     {

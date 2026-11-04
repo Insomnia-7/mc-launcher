@@ -51,9 +51,12 @@ internal static class WorkspaceUiChecks
         }
         var originalRoot=model.GameRoot;var otherRoot=Path.Combine(root,"other-game-root");var version=Path.Combine(otherRoot,"versions","1.21.4");Directory.CreateDirectory(version);
         foreach(var suffix in new[]{".json",".jar"})File.Copy(Path.Combine(originalRoot,"versions","1.21.4","1.21.4"+suffix),Path.Combine(version,"1.21.4"+suffix));
+        File.WriteAllText(Path.Combine(otherRoot,".fangyu-library"),"1");
+        Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT",null);
         check("可切换到另一测试游戏目录",model.TryUseGameRoot(otherRoot,out _));pump(120);
         check("不同根目录不串用显示名称与收藏",model.LibraryEntries.Count==1&&model.LibraryEntries[0].Name!="方块远行"&&!model.LibraryEntries[0].Favorite&&!model.LibraryCompact);
         check("可切回原游戏目录",model.TryUseGameRoot(originalRoot,out _));pump(120);
+        Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT",originalRoot);
         check("切回根目录恢复对应游戏库偏好",model.LibraryCompact&&model.LibraryEntries.Single(e=>e.Instance.InstanceId==instance.InstanceId).Name=="方块远行");
         model.DiagnosisText="另一游戏的启动错误";model.InspectionIssues.Add(new("另一游戏的体检结果","旧实例","旧建议"));
         model.SelectedInstance=model.Instances.First(i=>i.InstanceId!=instance.InstanceId);

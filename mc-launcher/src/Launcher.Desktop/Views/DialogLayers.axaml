@@ -7,6 +7,7 @@
             <TextBlock Text="开始你的 Minecraft" Classes="heading"/>
             <TextBlock Text="选好版本与身份，其余交给启动器。" Classes="muted"/>
             <StackPanel Spacing="7" IsEnabled="{Binding CanEditSetup}">
+              <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap"/>
               <TextBlock Text="游戏版本"/>
               <ComboBox ItemsSource="{Binding SetupVersions}" SelectedItem="{Binding SetupVersion}">
                 <ComboBox.ItemTemplate>
@@ -116,9 +117,14 @@
             <Button Command="{Binding ConfirmCancelCommand}" IsVisible="{Binding ConfirmShowCancel}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
               <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
             </Button>
-            <Button Grid.Column="1" Content="{Binding ConfirmOkText}" Command="{Binding ConfirmOkCommand}" Classes="primary"/>
+            <Button Grid.Column="1" Content="{Binding ConfirmOkText}" Command="{Binding ConfirmOkCommand}" Classes="primary" Classes.danger-solid="{Binding ConfirmIsDanger}"/>
           </Grid>
         </StackPanel>
+      </Border>
+    </Grid>
+    <Grid Classes="modal" motion:Motion.IsOpen="{Binding DataRestartRequired}">
+      <Border Classes="modal-surface" Width="560">
+        <StackPanel Spacing="18"><TextBlock Text="数据已迁移，请重新打开方隅" Classes="heading"/><TextBlock Text="{Binding DataMoveHint}" TextWrapping="Wrap"/><Button Classes="primary" Command="{Binding RestartForDataMoveCommand}" Content="退出方隅（请重新打开）"/></StackPanel>
       </Border>
     </Grid>
   </Grid>

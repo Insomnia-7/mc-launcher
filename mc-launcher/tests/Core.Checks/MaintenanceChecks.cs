@@ -51,7 +51,7 @@ internal static class MaintenanceChecks
             string Seed(string relative, bool old = true) { var file = ExperienceFiles.Child(data, relative); Directory.CreateDirectory(Path.GetDirectoryName(file)!); File.WriteAllText(file, "cache"); if (old) File.SetLastWriteTimeUtc(file, DateTime.UtcNow.AddDays(-8)); return file; }
             var stale = Seed("cache/meta/old.json"); var fresh = Seed("cache/meta/fresh.json", false); var partial = Seed("cache/meta/download.part"); var temporary = Seed("cache/meta/index.tmp"); var runtime = Seed("java/runtime/bin/java.exe"); var package = Seed("java/.cache/runtime.zip");
             var storage = new StorageCatalog(data, game); var areas = storage.Scan();
-            Check("缓存扫描仅统计可回收文件", areas.Single(a => a.Key == "cache/meta").Files == 1);
+            Check("缓存同时统计总量与可回收量", areas.Single(a => a.Key == "cache/meta") is { Files: 4, Bytes: 20, ReclaimableBytes: 5 });
             Check("存储展示备份和游戏占用", areas.Single(a => a.Key == "world-backups").Bytes > 0 && areas.Single(a => a.Key == "game").Bytes > 0);
             Check("缓存清理不删除新缓存与断点文件", storage.Clean("cache/meta") == 5 && !File.Exists(stale) && File.Exists(fresh) && File.Exists(partial) && File.Exists(temporary));
             storage.Clean("java/.cache"); Check("清理安装包保留已安装 Java", !File.Exists(package) && File.Exists(runtime));

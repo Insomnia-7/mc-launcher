@@ -1,0 +1,10 @@
+# 溪流草甸 v2 素材记录
+
+文件：`src/Launcher.Desktop/Assets/Brand/world-meadow-v2.png`。
+来源：2026-11-04 使用内置 image_gen（imagegen 技能）生成，透明 PNG，1374×1145，RGBA，alpha 范围 0–255。未直接提取或打包 Mojang 游戏纹理。参考方向为 Minecraft 原版方块的像素纹理与体积。用户先选溪流草甸，随后要求替换过于简陋的几何版本。
+
+最终生成提示词：
+
+Create a polished production raster asset for Fangyu Minecraft Java launcher: ONE isolated isometric Minecraft vanilla-style grassy creek terrain diorama on a genuinely transparent alpha background. No labels, text, logo, UI, frame, colored background, pedestal, or gradient backdrop. Precisely emulate the visual language of actual original Minecraft BLOCKS: each full-size voxel has authentic-looking crisp low resolution 16x16-style pixel texel patterns, mottled grass top, a jagged green grass fringe along the upper side, granular brown dirt containing stone pixels, grey stone and cobblestone with game-like pixel patterns. Hard cubical edges, coherent aligned voxel grid, no rounded blocks and no flat vector shapes, no smooth untextured polygons. A compact substantial stepped chunk about 6 by 5 blocks with several exposed layers of dirt and stone; rich green grass on top. A narrow naturally inset blue creek runs through the meadow, a short waterfall spills one block down a visible edge. Some taller grass tufts, two small red poppies and a few grey rocks add restrained detail. Do not include a tree, house, tent, characters, items, giant floating separated blocks, or excessive particles. Attractive coherent game-render lighting from upper left and subtle ambient occlusion to show the block volume, readable silhouettes at 160 pixels wide. Warm natural Minecraft plains green, earthy brown, slate grey and blue water; not pale mint. Center the complete terrain with clean transparent margins, all block edges visible. Professional launcher illustration, high resolution rendering while preserving sharp pixel texture samples. Object occupies 85 percent of canvas. Transparent background, optional very light soft contact shadow, no checkerboard painted in.
+
+实现：嵌入已有 AvaloniaResource。WorldArt 使用共享 Lazy Bitmap，仅在首次使用时解码至 640 像素宽。保留 PNG 透明度，不在列表中重复解码原始大图。

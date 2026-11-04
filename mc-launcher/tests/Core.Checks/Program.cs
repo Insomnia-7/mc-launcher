@@ -58,6 +58,10 @@ if(args.Contains("--maintenance"))
 {
     await MaintenanceChecks.RunAsync(Check);Console.WriteLine($"Maintenance: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
 }
+if(args.Contains("--library-storage"))
+{
+    await LibraryStorageChecks.RunAsync(Check); Console.WriteLine($"Library storage: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--launcher-update"))
 {
     await LauncherUpdateChecks.RunAsync(Check);Console.WriteLine($"Launcher update: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
@@ -190,6 +194,39 @@ Console.WriteLine("== 5. argfile 转义 ==");
     Check("反斜杠转成正斜杠", content.Contains("C:/Users/me/mc") && !content.Contains(@"C:\Users"));
     Check("含空格参数加引号", content.Contains("\"C:/Users/me/我的 游戏\""));
     Check("mainClass 单独一行", content.Contains("net.minecraft.client.main.Main\n") || content.Contains("net.minecraft.client.main.Main\r\n"));
+}
+
+Console.WriteLine("== 5b. 启动参数直传还是 @argfile ==");
+{
+    static LaunchPlan Plan(string classPath) => new(
+        @"C:\Program Files\Microsoft\jdk-25\bin\java.exe",
+        "net.minecraft.client.main.Main",
+        ["-Xmx7G", "-cp", classPath],
+        ["--gameDir", @"D:\HBJ启动器\instances\26.3\.minecraft"],
+        @"D:\HBJ启动器\instances\26.3\.minecraft");
+
+    var vanilla = Plan(string.Join(';', Enumerable.Range(0, 75).Select(i => $@"D:\HBJ启动器\libraries\org\example\lib{i}\1.0\lib{i}-1.0.jar")));
+    var arguments = Launcher.Infrastructure.Processes.WinProcessLauncher.DirectArguments(vanilla);
+    Check("参数顺序是 JVM → 主类 → 游戏参数",
+        arguments[0] == "-Xmx7G" && arguments[3] == "net.minecraft.client.main.Main" && arguments[4] == "--gameDir");
+    Check("原版长度的命令行直传，不落 argfile",
+        !Launcher.Infrastructure.Processes.WinProcessLauncher.NeedsArgFile(vanilla.JavaPath, arguments),
+        Launcher.Infrastructure.Processes.WinProcessLauncher.EstimateCommandLineLength(vanilla.JavaPath, arguments).ToString());
+
+    var heavy = Plan(string.Join(';', Enumerable.Range(0, 800).Select(i => $@"D:\HBJ启动器\libraries\org\example\lib{i}\1.0\lib{i}-1.0.jar")));
+    Check("几百个模组的超长命令行才落 argfile",
+        Launcher.Infrastructure.Processes.WinProcessLauncher.NeedsArgFile(
+            heavy.JavaPath, Launcher.Infrastructure.Processes.WinProcessLauncher.DirectArguments(heavy)));
+
+    if (OperatingSystem.IsWindows())
+    {
+        // JVM 在 Windows 上按系统 ANSI 代码页读 @argfile。写成 UTF-8 时，classpath 里带中文的条目
+        // 会变成乱码 → ClassNotFoundException: net.minecraft.client.main.Main。
+        var ansi = Launcher.Infrastructure.Processes.ArgFileEncoding.TryEncodeAnsi(vanilla.ToArgFileContent());
+        Check("中文路径能按系统 ANSI 代码页写进 argfile", ansi is not null);
+        Check("argfile 字节就是 ANSI 编码，不是 UTF-8",
+            ansi is not null && Launcher.Infrastructure.Processes.WinProcessLauncher.ArgFileBytes(vanilla).SequenceEqual(ansi));
+    }
 }
 
 Console.WriteLine("== 6. 离线 UUID ==");

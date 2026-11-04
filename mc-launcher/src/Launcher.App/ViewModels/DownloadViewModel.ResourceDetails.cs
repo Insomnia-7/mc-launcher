@@ -33,6 +33,8 @@ public sealed partial class DownloadViewModel
     public bool IsResourceList=>IsSearchMode && !IsResourceDetail;
     public bool ShowsDiscoverHeading=>IsVersionMode;
     public bool ShowsDownloadFooter=>!IsResourceList;
+    partial void OnStatusChanged(string value) { OnPropertyChanged(nameof(FooterStatus)); OnPropertyChanged(nameof(SearchStateText)); }
+    public string FooterStatus => IsVersionMode ? (IsBusy ? Status : "选择游戏版本，再配置加载器与安装位置。") : Status;
     public bool ShowsResourceLoaderFilter=>OpenedResource?.Category.UsesLoader()==true;
     public bool ShowsResourceDependencies=>IsResourceDetail && OpenedResource?.Category==DownloadCategory.Mod;
     public string ResourceInstallButtonText=>SelectedResourceRelease is {ReleaseChannel:not "未标注类型"} release?"安装"+release.ReleaseChannel:"安装所选版本";

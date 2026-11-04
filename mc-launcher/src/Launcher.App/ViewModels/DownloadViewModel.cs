@@ -319,6 +319,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     partial void OnSelectedCategoryChanged(CategoryItem? value)
     {
         OnPropertyChanged(nameof(IsVersionMode));
+        OnPropertyChanged(nameof(FooterStatus));
         OnPropertyChanged(nameof(IsVersionList));
         OnPropertyChanged(nameof(IsVersionConfiguration));
         OnPropertyChanged(nameof(InstallGameVersion));
@@ -389,6 +390,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         InstallVersionCommand.NotifyCanExecuteChanged();
         CanCancel = value;
         OnPropertyChanged(nameof(CanEditSearch));
+        OnPropertyChanged(nameof(CanBrowseCategories));
         OnPropertyChanged(nameof(CanConfigureVersion));
         RefreshResourceCompatibility();
         BackToVersionsCommand.NotifyCanExecuteChanged();

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.PreferencesView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:instances="using:Launcher.Application.Instances" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.PreferencesView">
   <Border x:Name="PreferencesSurface" Classes="card" Padding="24">
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
       <Grid ColumnDefinitions="*,Auto">
@@ -66,9 +66,6 @@
       </ScrollViewer>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding IsNetworkSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <StackPanel Spacing="16">
-          <TextBlock Text="游戏存储" FontSize="18" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap"/>
-          <Button Command="{Binding ChooseGameRootCommand}" Content="更换游戏目录" HorizontalAlignment="Left"/>
           <TextBlock Text="连接方式" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap"/>
           <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}"/>
@@ -116,12 +113,45 @@
       <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <StackPanel Spacing="16">
           <Grid ColumnDefinitions="*,Auto"><TextBlock Text="存储管理" FontSize="20" FontWeight="SemiBold"/><Button x:Name="ScanStorageButton" Grid.Column="1" Command="{Binding ScanStorageCommand}" Content="重新扫描" IsEnabled="{Binding CanManageStorage}"/></Grid>
+          <ProgressBar IsVisible="{Binding StorageBusy}" IsIndeterminate="True" Height="3"/>
+          <Button Command="{Binding CancelStorageScanCommand}" Content="停止扫描" IsVisible="{Binding StorageBusy}" HorizontalAlignment="Left"/>
+          <TextBlock Text="{Binding LocationSummary}" TextWrapping="Wrap"/>
+          <WrapPanel IsEnabled="{Binding !IsBusy}">
+            <Button Command="{Binding ChooseGameRootCommand}" Content="选择游戏位置" Margin="0,0,8,8"/>
+            <Button Command="{Binding UsePortableGameRootCommand}" Content="使用程序旁的游戏库" Margin="0,0,8,8"/>
+            <Button Command="{Binding CopyCurrentLibraryCommand}" Content="迁移当前游戏库…" Margin="0,0,8,8"/>
+            <Button Command="{Binding MoveLauncherDataCommand}" Content="迁移启动器数据…" Margin="0,0,8,8"/>
+            <Button Command="{Binding ManageStoredGamesCommand}" Content="管理游戏版本" Margin="0,0,8,8"/>
+          </WrapPanel>
+          <TextBlock Text="切换游戏位置不会搬移文件。迁移启动器数据包含 Java、缓存、账号配置与备份，游戏库的位置单独保留。" Classes="muted" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding DataMoveHint}" Classes="optional" TextWrapping="Wrap"/>
+          <Button Command="{Binding RestartForDataMoveCommand}" Content="退出并重新打开方隅" IsVisible="{Binding DataRestartRequired}" HorizontalAlignment="Left"/>
+          <WrapPanel>
+            <Button Command="{Binding AutoDetectGameRootCommand}" Content="查找已有游戏库" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}"/>
+            <Button Command="{Binding SearchLibraryFolderCommand}" Content="选择文件夹查找…" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}"/>
+            <Button Command="{Binding CancelLibrarySearchCommand}" Content="停止查找" Margin="0,0,8,8" IsVisible="{Binding IsToolBusy}"/>
+            <Button Command="{Binding CancelLocationCopyCommand}" Content="取消复制并清理" IsVisible="{Binding IsBusy}"/>
+          </WrapPanel>
+          <StackPanel IsVisible="{Binding ShowsLibraryDiscovery}" Spacing="10">
+            <TextBlock Text="{Binding LibraryDiscoveryHint}" TextWrapping="Wrap"/>
+            <ComboBox ItemsSource="{Binding LibraryCandidates}" SelectedItem="{Binding SelectedLibraryCandidate}" IsEnabled="{Binding !IsBusy}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="instances:GameLibraryCandidate"><StackPanel Spacing="4"><TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Summary}" Classes="muted"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="要复制的版本与原运行目录（请先打开核对存档和模组）" Classes="muted" TextWrapping="Wrap"/>
+            <ComboBox ItemsSource="{Binding ExternalVersions}" SelectedItem="{Binding ExternalVersion}" IsEnabled="{Binding !IsBusy}"/>
+            <ComboBox ItemsSource="{Binding ExternalRuntimes}" SelectedItem="{Binding ExternalRuntime}" PlaceholderText="请选择原运行目录" IsEnabled="{Binding !IsBusy}"/>
+            <WrapPanel IsEnabled="{Binding !IsBusy}">
+              <Button Command="{Binding OpenExternalRuntimeCommand}" Content="打开原运行目录" Margin="0,0,8,8"/>
+              <Button Command="{Binding CopyExternalLibraryCommand}" Content="复制导入到空文件夹…" IsEnabled="{Binding CanCopyExternalLibrary}" Margin="0,0,8,8"/>
+              <Button Command="{Binding UseFoundLibraryCommand}" Content="切换方隅游戏库" IsEnabled="{Binding CanUseFoundLibrary}" Margin="0,0,8,8"/>
+            </WrapPanel>
+          </StackPanel>
           <TextBlock Text="{Binding StorageHint}" TextWrapping="Wrap"/>
           <ItemsControl ItemsSource="{Binding StorageAreas}" IsEnabled="{Binding CanManageStorage}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="experience:StorageArea">
             <Border Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,10">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                <StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}"/><TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel>
-                <Button Grid.Column="1" Content="清理…" VerticalAlignment="Center" IsVisible="{Binding CanClean}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CleanStorageCommand}" CommandParameter="{Binding}"/>
+                <StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}"/><TextBlock Text="{Binding Path}" Classes="muted" TextWrapping="Wrap"/><TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"/><Expander Header="跳过项详情（最多显示 50 项）" IsVisible="{Binding ShowsSkipped}"><ItemsControl ItemsSource="{Binding SkippedPaths}"/></Expander></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center"><Button Content="打开目录" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenStorageAreaCommand}" CommandParameter="{Binding}"/><Button Content="清理…" VerticalAlignment="Center" IsVisible="{Binding CanClean}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CleanStorageCommand}" CommandParameter="{Binding}"/></StackPanel>
               </Grid>
             </Border>
           </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
