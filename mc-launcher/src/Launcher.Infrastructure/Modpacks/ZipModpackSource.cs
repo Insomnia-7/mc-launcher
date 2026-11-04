@@ -27,6 +27,9 @@ public sealed class ZipModpackSource : IModpackSource
 
     public ModrinthPack Pack { get; }
 
+    public Task<byte[]?> ReadIconAsync(CancellationToken ct = default) =>
+        PackIconReader.FromArchiveAsync(_archive, "modrinth.index.json", "overrides", ct);
+
     public static ZipModpackSource Open(string path)
     {
         if (!File.Exists(path)) throw new FileNotFoundException("整合包文件不存在", path);

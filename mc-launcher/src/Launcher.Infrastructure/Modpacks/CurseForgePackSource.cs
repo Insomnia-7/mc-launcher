@@ -44,6 +44,9 @@ public sealed class CurseForgePackSource : IModpackSource
 
     public ModrinthPack Pack { get; }
 
+    public Task<byte[]?> ReadIconAsync(CancellationToken ct = default) =>
+        PackIconReader.FromArchiveAsync(_archive, "manifest.json", _manifest.OverridesDirectory, ct);
+
     public static CurseForgePackSource Open(string path, ICurseForgeClient client)
     {
         if (!File.Exists(path)) throw new FileNotFoundException("整合包文件不存在", path);

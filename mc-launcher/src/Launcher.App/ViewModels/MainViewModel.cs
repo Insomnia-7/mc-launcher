@@ -1730,6 +1730,26 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private static string? DetectInstanceLoader(JsonElement version)
+    {
+        var names = new List<string>();
+        if (version.TryGetProperty("libraries",out var libraries) && libraries.ValueKind == JsonValueKind.Array)
+            foreach (var library in libraries.EnumerateArray())
+                if (library.TryGetProperty("name",out var name) && name.ValueKind == JsonValueKind.String) names.Add(name.GetString()!);
+        bool Has(string prefix) => names.Any(n=>n.StartsWith(prefix,StringComparison.OrdinalIgnoreCase));
+        if (Has("net.neoforged:neoforge:") || Has("net.neoforged.fancymodloader:loader:")) return "NeoForge";
+        if (Has("org.quiltmc:quilt-loader:")) return "Quilt";
+        if (Has("net.fabricmc:fabric-loader:")) return "Fabric";
+        if (Has("net.minecraftforge:forge:") || Has("net.minecraftforge:fmlloader:")) return "Forge";
+        if (Has("optifine:OptiFine:")) return "OptiFine";
+        if (version.TryGetProperty("mainClass",out var main) && main.ValueKind == JsonValueKind.String)
+        {
+            if (main.GetString()!.Contains("org.quiltmc",StringComparison.OrdinalIgnoreCase)) return "Quilt";
+            if (main.GetString()!.Contains("net.fabricmc",StringComparison.OrdinalIgnoreCase)) return "Fabric";
+        }
+        return null;
+    }
+
     private void RefreshInstances()
     {
         // 重建列表会换掉版本对象，尽量把用户原来的选择留住
@@ -1770,10 +1790,12 @@ public sealed partial class MainViewModel : ObservableObject
             }
 
             var jarVersion = versionId;
+            string? detectedLoader = null;
             try
             {
                 using var stream = File.OpenRead(Path.Combine(GameRoot, "versions", versionId, versionId + ".json"));
                 using var document = JsonDocument.Parse(stream);
+                detectedLoader = DetectInstanceLoader(document.RootElement);
                 if (document.RootElement.TryGetProperty("x-launcher-parent", out var parent))
                     jarVersion = parent.GetString() ?? versionId;
                 else if (document.RootElement.TryGetProperty("inheritsFrom", out var inherits))
@@ -1807,7 +1829,7 @@ public sealed partial class MainViewModel : ObservableObject
                 subtitle = "原版";
             }
 
-            Instances.Add(new InstanceCard(id, versionId, title, subtitle, jarVersion, metadata?.IsModpack==true));
+            Instances.Add(new InstanceCard(id, versionId, title, subtitle, jarVersion, metadata?.IsModpack==true) { LoaderName = detectedLoader ?? metadata?.Loader ?? parsed.Loader });
         }
 
         // 选择优先级：上次选的 → 整合包（有 instance.json 的）→ 第一个
@@ -1832,6 +1854,7 @@ public sealed class InstanceCard(
     /// <summary>版本目录名（versions/&lt;VersionId&gt;）。多个实例可以共用同一个。</summary>
     public string VersionId { get; } = versionId;
 
+    public string? LoaderName { get; init; }
     public string BaseVersion { get; } = baseVersion;
     public string DisplayName { get; } = displayName;
     public string Subtitle { get; } = subtitle;

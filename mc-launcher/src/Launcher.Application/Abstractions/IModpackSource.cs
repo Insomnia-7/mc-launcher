@@ -18,6 +18,9 @@ public interface IModpackSource : IAsyncDisposable
     /// <summary>解析好的 modrinth.index.json。</summary>
     ModrinthPack Pack { get; }
 
+    /// <summary>Optional bundled instance icon. Missing artwork must not prevent installation.</summary>
+    Task<byte[]?> ReadIconAsync(CancellationToken ct = default) => Task.FromResult<byte[]?>(null);
+
     /// <summary>把 overrides/ 下的内容按相对路径解到 targetDirectory，返回解出的文件数。</summary>
     Task<int> ExtractOverridesAsync(
         string targetDirectory,

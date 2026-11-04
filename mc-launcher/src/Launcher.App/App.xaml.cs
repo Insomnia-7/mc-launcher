@@ -181,7 +181,8 @@ base.OnStartup(e);
             sp.GetRequiredService<IModrinthClient>(),
             sp.GetRequiredService<ICurseForgeClient>(),
             sp.GetRequiredService<IModpackSourceFactory>(),
-            sp.GetRequiredService<ModpackInstaller>()));
+            sp.GetRequiredService<ModpackInstaller>(),
+            sp.GetRequiredService<IResourcePresentationClient>()));
         services.AddSingleton<ModUpdateService>(sp => new ModUpdateService(
             sp.GetRequiredService<IModrinthClient>(),
             sp.GetRequiredService<ICurseForgeClient>()));

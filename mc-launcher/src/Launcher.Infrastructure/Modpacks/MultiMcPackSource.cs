@@ -59,6 +59,10 @@ public sealed class MultiMcPackSource : IModpackSource
 
     public ModrinthPack Pack { get; }
 
+    public Task<byte[]?> ReadIconAsync(CancellationToken ct = default) =>
+        PackIconReader.FromDirectoryAsync(SourcePath,
+            ParseInstanceConfig(FindFile(SourcePath, InstanceConfigName)).GetValueOrDefault("iconKey"), ct);
+
     /// <summary>判断这个路径是不是 MultiMC / Prism 实例文件夹（含 mmc-pack.json）。路径无效一律 false。</summary>
     public static bool IsMultiMcInstance(string? path)
     {

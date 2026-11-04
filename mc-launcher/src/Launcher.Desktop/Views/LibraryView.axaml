@@ -25,7 +25,7 @@
           </StackPanel>
           <Grid Grid.Column="1" Width="190" Height="132" IsHitTestVisible="False">
             <Border CornerRadius="12" ClipToBounds="True" IsVisible="{Binding HasGameCover}">
-              <Image Source="{Binding SelectedGameCover}" Stretch="UniformToFill"/>
+              <Image Source="{Binding SelectedGameCover}" Stretch="{Binding SelectedGameCoverStretch}"/>
             </Border>
             <icons:WorldArt IsVisible="{Binding !HasGameCover}"/>
           </Grid>
@@ -103,8 +103,8 @@
                   <StackPanel Spacing="12" Width="214">
                     <Border Height="118" CornerRadius="12" Background="Transparent" ClipToBounds="True">
                       <Grid>
-                        <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
-                        <icons:WorldArt Margin="8,0" IsVisible="{Binding !HasCover}"/>
+                        <Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/>
+                        <icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="100" Height="100" IsVisible="{Binding !HasCover}" AutomationProperties.Name="{Binding Meta}"/>
                       </Grid>
                     </Border>
                     <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis"/>
@@ -127,8 +127,8 @@
             <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="14">
               <Border Width="48" Height="48" CornerRadius="10" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
                 <Grid>
-                  <Image Source="{Binding Cover}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
-                  <icons:WorldArt Margin="2" IsVisible="{Binding !HasCover}"/>
+                  <Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/>
+                  <icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="40" Height="40" IsVisible="{Binding !HasCover}" AutomationProperties.Name="{Binding Meta}"/>
                 </Grid>
               </Border>
               <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">

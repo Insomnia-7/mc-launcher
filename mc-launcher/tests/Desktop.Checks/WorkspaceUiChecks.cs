@@ -10,6 +10,8 @@ internal static class WorkspaceUiChecks
 {
     public static void Run(MainViewModel model,Window window,Action<int> pump,Action<string,bool> check,Action<string,bool> capture,Action<Control> click,string root)
     {
+        // This fixture represents a managed Fangyu library, including when switching back to it.
+        File.WriteAllText(Path.Combine(model.GameRoot,".fangyu-library"),"1");
         T Find<T>(string name)where T:Control=>window.GetVisualDescendants().OfType<T>().Single(c=>c.Name==name);
         model.ShowInstancesCommand.Execute(null);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");window.Width=1180;window.Height=800;pump(120);
         check("主导航分为游戏库资源角色任务设置",new[]{"LibraryNav","DiscoverNav","WardrobeEntry","TaskCenterEntry","SettingsEntry"}.All(n=>Find<Button>(n).IsEffectivelyVisible)&&model.IsLibraryPage);

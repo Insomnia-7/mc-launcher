@@ -19,7 +19,8 @@ public sealed class ModpackDownloadService(
     IModrinthClient modrinth,
     ICurseForgeClient curseForge,
     IModpackSourceFactory sourceFactory,
-    ModpackInstaller modpackInstaller)
+    ModpackInstaller modpackInstaller,
+    IResourcePresentationClient? presentation = null)
 {
     public async Task<IReadOnlyList<ModpackRelease>> GetReleasesAsync(ModpackOrigin origin, CancellationToken ct = default)
     {
@@ -108,7 +109,12 @@ public sealed class ModpackDownloadService(
         }
 
         await using var source = sourceFactory.Open(localPath);
-        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("Modrinth", version.ProjectId, version.Id)).ConfigureAwait(false);
+        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("Modrinth", version.ProjectId, version.Id), async token =>
+        {
+            if (presentation is null) return null;
+            var project = await modrinth.GetProjectAsync(version.ProjectId, token).ConfigureAwait(false);
+            return project?.IconUrl is {Length:>0} url ? await presentation.GetIconAsync(url, token).ConfigureAwait(false) : null;
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -160,7 +166,13 @@ public sealed class ModpackDownloadService(
         }
 
         await using var source = sourceFactory.Open(localPath);
-        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("CurseForge", modId.ToString(), file.Id.ToString())).ConfigureAwait(false);
+        return await modpackInstaller.ImportAsync(source, gameRoot, progress, ct, new("CurseForge", modId.ToString(), file.Id.ToString()), async token =>
+        {
+            if (presentation is null) return null;
+            var project = await curseForge.GetModAsync(modId, token).ConfigureAwait(false);
+            var url = project?.Logo?.Url ?? project?.Logo?.ThumbnailUrl;
+            return url is {Length:>0} ? await presentation.GetIconAsync(url, token).ConfigureAwait(false) : null;
+        }).ConfigureAwait(false);
     }
 
     private sealed class DownloadProgressAdapter(IProgress<ModpackImportProgress> outer, string stage)

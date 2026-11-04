@@ -67,7 +67,8 @@ public sealed class ModpackInstaller(
         IModpackSource source,
         string gameRoot,
         IProgress<ModpackImportProgress>? progress = null,
-        CancellationToken ct = default, ModpackOrigin? origin = null)
+        CancellationToken ct = default, ModpackOrigin? origin = null,
+        Func<CancellationToken, Task<byte[]?>>? fallbackIcon = null)
     {
         var pack = source.Pack;
         var minecraft = pack.MinecraftVersion
@@ -152,6 +153,18 @@ public sealed class ModpackInstaller(
             // ④ overrides：整包内嵌的配置、资源、地图等
             progress?.Report(ModpackImportProgress.Of("解压 overrides", 0));
             var overrideFiles = await source.ExtractOverridesAsync(stagedDirectory, progress, ct).ConfigureAwait(false);
+
+            byte[]? icon = null;
+            try { icon = await source.ReadIconAsync(ct).ConfigureAwait(false); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { }
+            if (!ModpackIcon.IsImage(icon) && fallbackIcon is not null)
+            {
+                try { icon = await fallbackIcon(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+            }
+            if (ModpackIcon.IsImage(icon))
+                await File.WriteAllBytesAsync(Path.Combine(staging.InstanceRoot, ModpackIcon.FileName), icon!, ct).ConfigureAwait(false);
 
             var baseline = await ModpackBaseline.CaptureAsync(stagedDirectory, pack.Name, pack.VersionId, pack.SourceLabel, origin, ct).ConfigureAwait(false);
             Launcher.Application.Experience.ExperienceFiles.Write(Path.Combine(staging.InstanceRoot, ModpackBaseline.FileName), baseline);

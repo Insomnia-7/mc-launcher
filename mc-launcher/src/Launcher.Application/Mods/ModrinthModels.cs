@@ -33,6 +33,7 @@ public sealed record ModrinthProjectInfo(
     [property:JsonPropertyName("title")] string Title,
     [property:JsonPropertyName("description")] string Description)
 {
+    [JsonPropertyName("icon_url")] public string? IconUrl { get; init; }
     [JsonPropertyName("body")] public string? Body { get; init; }
     [JsonPropertyName("gallery")] public IReadOnlyList<ModrinthGalleryImage>? Gallery { get; init; }
 }

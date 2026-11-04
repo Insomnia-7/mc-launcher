@@ -42,6 +42,10 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--pack-icons"))
+{
+    await PackIconChecks.RunAsync(Check);Console.WriteLine($"Pack icons: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--settings-sync"))
 {
     await SettingsSyncChecks.RunAsync(Check);Console.WriteLine($"Settings sync: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
@@ -2318,6 +2322,8 @@ sealed class FakeProtector(byte key) : ISecretProtector
 /// <summary>假 Modrinth 客户端：版本表由用例给定，顺便记录最大并发和收到的查询条件。</summary>
 sealed class StubModrinthClient : IModrinthClient
 {
+    public Dictionary<string,ModrinthProjectInfo> Projects {get;init;}=[];
+    public Task<ModrinthProjectInfo?> GetProjectAsync(string id,CancellationToken ct=default)=>Task.FromResult(Projects.GetValueOrDefault(id));
     private readonly object _gate = new();
     private int _concurrent;
 
@@ -2388,6 +2394,7 @@ sealed class StubModrinthClient : IModrinthClient
 /// <summary>假 CurseForge 客户端：按项目 ID 给文件表；没给的 ID 返回空（模拟 404）。</summary>
 sealed class StubCurseForgeClient : ICurseForgeClient
 {
+    public Dictionary<int,CfMod> Projects {get;init;}=[];
     public bool IsConfigured { get; init; } = true;
 
     public Dictionary<int, IReadOnlyList<CfFile>> Files { get; init; } = [];
@@ -2401,7 +2408,7 @@ sealed class StubCurseForgeClient : ICurseForgeClient
         int index = 0,
         CancellationToken ct = default) => throw new NotSupportedException("更新检查不该走搜索");
 
-    public Task<CfMod?> GetModAsync(int modId, CancellationToken ct = default) => Task.FromResult<CfMod?>(null);
+    public Task<CfMod?> GetModAsync(int modId, CancellationToken ct = default) => Task.FromResult(Projects.GetValueOrDefault(modId));
 
     public Task<IReadOnlyList<CfFile>> GetFilesAsync(
         int modId,

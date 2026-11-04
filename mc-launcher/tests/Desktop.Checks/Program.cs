@@ -88,6 +88,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--instance-icons")){InstanceIconUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例图标页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} instance icon checks passed");return 0;}
             if(args.Contains("--library-storage")){LibraryStorageUiChecks.Run(model,window,Pump,Check,Capture,root,resourceFixture);Check("目录存储页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} library storage UI checks passed");return 0;}
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}
             if(args.Contains("--settings-sync")){SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("设置同步与动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} settings sync checks passed");return 0;}

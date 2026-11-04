@@ -75,7 +75,7 @@
             <StackPanel Grid.Column="1" Spacing="10">
               <Border Height="160" CornerRadius="16" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
                 <Grid>
-                  <Image Source="{Binding SelectedGameCover}" Stretch="UniformToFill" IsVisible="{Binding HasGameCover}"/>
+                  <Image Source="{Binding SelectedGameCover}" Stretch="{Binding SelectedGameCoverStretch}" IsVisible="{Binding HasGameCover}"/>
                   <icons:WorldArt Width="170" Height="150" IsVisible="{Binding !HasGameCover}"/>
                 </Grid>
               </Border>

@@ -12,7 +12,7 @@ namespace Launcher.App.ViewModels;
 public sealed record LibraryGamePreferences(string Name="",string Group="",bool Favorite=false,string? CoverFile=null,DateTimeOffset? LastPlayed=null);
 public sealed record LibraryPreferences(bool Compact,Dictionary<string,LibraryGamePreferences> Games);
 
-public sealed partial class LibraryEntry(InstanceCard instance,LibraryGamePreferences preferences,string status,Bitmap? cover):ObservableObject
+public sealed partial class LibraryEntry(InstanceCard instance,LibraryGamePreferences preferences,string status,Bitmap? cover,bool coverIsIcon=false):ObservableObject
 {
     public InstanceCard Instance {get;}=instance;
     public string Name=>string.IsNullOrWhiteSpace(preferences.Name)?Instance.DisplayName:preferences.Name;
@@ -21,15 +21,17 @@ public sealed partial class LibraryEntry(InstanceCard instance,LibraryGamePrefer
     {
         if(instance.IsModpack)return instance.Subtitle.Contains(instance.BaseVersion,StringComparison.OrdinalIgnoreCase)?instance.Subtitle:instance.BaseVersion+" · "+instance.Subtitle;
         var parsed=Launcher.Domain.Versions.VersionIdParser.Parse(instance.VersionId,instance.BaseVersion);
-        return instance.BaseVersion+" · "+parsed.Title("原版");
+        return instance.BaseVersion+" · "+(instance.LoaderName is {Length:>0} loader && parsed.Loader is null ? loader : parsed.Title("原版"));
     }
     public string Group=>preferences.Group;
     public bool Favorite=>preferences.Favorite;
     public string FavoriteText=>Favorite?"★":"☆";
     public DateTimeOffset? LastPlayed=>preferences.LastPlayed;
     public string Icon=>new Launcher.Desktop.Controls.InstanceIconConverter().Convert(Instance,typeof(string),null,System.Globalization.CultureInfo.InvariantCulture)?.ToString()??"Tile.LoaderVanilla";
+    public string TypeIcon => Launcher.Desktop.Controls.InstanceTypeIcon.KeyFor(Instance);
     public Bitmap? Cover {get;}=cover;
     public bool HasCover=>Cover is not null;
+    public Avalonia.Media.Stretch CoverStretch=>coverIsIcon?Avalonia.Media.Stretch.Uniform:Avalonia.Media.Stretch.UniformToFill;
     [ObservableProperty] private string _status=status;
 }
 
@@ -75,6 +77,7 @@ public sealed partial class MainViewModel
     public string SelectedGameMeta=>SelectedInstance is {} instance?LibraryEntry.Describe(instance):"";
     public Bitmap? SelectedGameCover=>_allLibraryEntries.FirstOrDefault(e=>e.Instance.InstanceId==SelectedInstance?.InstanceId)?.Cover;
     public bool HasGameCover=>SelectedGameCover is not null;
+    public Avalonia.Media.Stretch SelectedGameCoverStretch=>_allLibraryEntries.FirstOrDefault(e=>e.Instance.InstanceId==SelectedInstance?.InstanceId)?.CoverStretch??Avalonia.Media.Stretch.Uniform;
     public bool HasWorldDisplayName=>SelectedInstance is not null&&SelectedGameName!=WorldVersion;
     private string LibrarySettingsPath=>Path.Combine(AppPaths.DataDirectory,"library",RootKey()+".json");
     private string RootKey()
@@ -115,7 +118,7 @@ public sealed partial class MainViewModel
     }
     private void NotifySelectedGame()
     {
-        foreach(var property in new[]{nameof(SelectedGameName),nameof(SelectedGameMeta),nameof(SelectedGameStatus),nameof(SelectedGameCover),nameof(HasGameCover),nameof(WorldDisplayName),nameof(HasWorldDisplayName)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(SelectedGameName),nameof(SelectedGameMeta),nameof(SelectedGameStatus),nameof(SelectedGameCover),nameof(SelectedGameCoverStretch),nameof(HasGameCover),nameof(WorldDisplayName),nameof(HasWorldDisplayName)})OnPropertyChanged(property);
     }
     private void QueueLibraryRefresh()
     {
@@ -139,7 +142,25 @@ public sealed partial class MainViewModel
             var preferences=PreferencesFor(instance.InstanceId);Bitmap? cover=null;
             try{if(preferences.CoverFile is {} file&&File.Exists(ExperienceFiles.Child(AppPaths.DataDirectory,file)))using(var stream=File.OpenRead(ExperienceFiles.Child(AppPaths.DataDirectory,file)))cover=DecodeLibraryCover(stream,480);}
             catch(Exception ex)when(ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException){ }
-            _allLibraryEntries.Add(new(instance,preferences,GameStatus(instance),cover));
+            var coverIsIcon=false;
+            if(cover is null&&instance.IsModpack)
+            {
+                // Pack art lives beside instance.json; explicit user artwork always wins.
+                var instanceRoot=ExperienceFiles.Child(Path.Combine(GameRoot,"instances"),instance.InstanceId);
+                foreach(var relative in new[]{Launcher.Application.Install.ModpackIcon.FileName,"icon.png",".minecraft/pack.png",".minecraft/icon.png"})
+                {
+                    try
+                    {
+                        var icon=ExperienceFiles.Child(instanceRoot,relative);
+                        if(!File.Exists(icon))continue;
+                        ExperienceFiles.RejectLinks(icon);
+                        if(new FileInfo(icon).Length>Launcher.Application.Install.ModpackIcon.MaxBytes)continue;
+                        using var stream=File.OpenRead(icon);cover=DecodeLibraryCover(stream,480);coverIsIcon=true;break;
+                    }
+                    catch(Exception ex)when(ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException){ }
+                }
+            }
+            _allLibraryEntries.Add(new(instance,preferences,GameStatus(instance),cover,coverIsIcon));
         }
         var group=LibraryGroup;LibraryGroups.Clear();LibraryGroups.Add("全部分组");LibraryGroups.Add("未分组");
         foreach(var name in _allLibraryEntries.Select(e=>e.Group).Where(g=>g.Length>0).Distinct().Order())LibraryGroups.Add(name);
