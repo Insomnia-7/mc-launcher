@@ -1,5 +1,30 @@
 # 方隅版本记录
 
+## 1.0.0-preview.4 · 实例图标与整合包标志
+
+2026-11-04。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.4)。包含下方 preview.3 的全部目录、任务与界面修复。
+
+- 原版、Forge、Fabric、NeoForge、Quilt 使用各自原始图标；根据版本依赖和实例元数据识别加载器，自定义名称不再影响识别。
+- 显示顺序为手动封面 → 整合包自带图标 → 平台项目图标 → 加载器标志 → 原版草方块。
+- 导入读取包根目录、overrides 与 MultiMC/Prism 本地图标；在线安装缺少自带图标时保存 Modrinth/CurseForge 项目标志。重启后无需联网补图。
+- 包图标完整等比显示，保留原色和透明通道；移除手动封面后恢复包图标。取消导入时清理暂存图标，原有实例不受影响。
+
+[源码 b8b0b3e](https://github.com/Insomnia-7/mc-launcher/commit/b8b0b3e95822438fe76fad431393a61f2296f311)。Windows 单文件 25682420 字节，SHA-256：`0380d985ad64aaab867dcb08f51a55158e51e453db664fdf6a2ceae2b8021d12`。相关 96 项检查通过，实际 EXE 启动验证通过。见 [图标说明](docs/instance-artwork.md)。
+
+## 1.0.0-preview.3 · 目录、任务与界面修复
+
+2026-11-04。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.3)。补发先前仅本地交付的原始程序。
+
+- 安装前由玩家确认游戏位置，不再自动创建替代游戏库；设置集中提供位置选择、游戏库及启动器数据的复制迁移。
+- 查找已有游戏库先展示候选，外部库经核对运行目录后复制导入，保留来源与存档。
+- 存储扫描遇到链接或读取异常时保留其他分类结果；展示占用、可回收量和跳过项，支持取消与已知缓存清理。
+- 下载任务区分进行中和历史记录；支持单条移除与清空已完成记录，清除记录不会删除游戏。
+- 统一中文字号与控件排版，优化搜索占位、翻页过渡、错误恢复与迟到请求处理；调整默认插画。
+
+[源码 ace029e](https://github.com/Insomnia-7/mc-launcher/commit/ace029ebd9f2e498b345c37228ad765867f08d10)。Windows 单文件 25633179 字节，SHA-256：`205ca331629942e3bd1fca04304fd81ccf3f62659c92d17856738ff852e38368`。既有回归与专项共 1208 项检查通过，另通过架构和原生启动检查。见 [处理及验收说明](docs/preview3-remediation.md)。
+
+以上两版更新 Windows x64。Linux/macOS 原生发行包仍为 1.0.0-preview.1，最新发行页保留其原始签名更新清单和下载链接；未将旧平台程序改标为新版本。后续每批改动按 [发布约定](docs/release-policy.md) 同步源码与 Release。
+
 ## 1.0.0-preview.1 · 跨平台预览版
 
 2026-10-31。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。
@@ -52,9 +77,9 @@
 
 ---
 
-记录范围为已交付的 0.2.0-preview.1 至 1.0.0-preview.1。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
+记录包含已交付的 0.2.0-preview.1 至 1.0.0-preview.4。以下历史 Release 补录使用当时保留的原始 Windows EXE，并核对原验证记录或使用说明中的哈希；没有使用新版程序替代历史版本。
 
-当前推荐下载：[1.0.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
+当前 Windows 推荐下载：[1.0.0-preview.4](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.4)。Linux/macOS 见 [1.0.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。机器可读记录见 [history.json](docs/releases/history.json)。
 
 历史包早于源码提交打包，因此部分旧 EXE 的 ProductVersion 后缀仍指向前一次提交。下列源码提交对应功能版本；原始二进制版本后缀、大小与 SHA-256 均另行保留，不能将两者视为完全一致的构建来源标记。0.4、0.5、0.6 的成品版本后缀与源码提交一致。
 

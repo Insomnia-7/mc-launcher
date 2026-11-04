@@ -291,5 +291,35 @@
       }
     ],
     "verification": "https://github.com/Insomnia-7/mc-launcher/actions/runs/41186982952"
+  },
+  {
+    "version": "1.0.0-preview.3",
+    "date": "2026-11-04",
+    "title": "目录、任务与界面修复",
+    "tag": "desktop-v1.0.0-preview.3",
+    "sourceCommit": "ace029ebd9f2e498b345c37228ad765867f08d10",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/ace029ebd9f2e498b345c37228ad765867f08d10",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.3",
+    "changes": "可选择和迁移游戏保存位置、外部游戏库复制导入、存储扫描容错与缓存清理、任务历史清除、搜索过渡及中文排版。",
+    "platform": "Windows x64",
+    "bytes": 25633179,
+    "sha256": "205ca331629942e3bd1fca04304fd81ccf3f62659c92d17856738ff852e38368",
+    "binaryProductVersion": "1.0.0-preview.3+ace029ebd9f2e498b345c37228ad765867f08d10",
+    "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "1.0.0-preview.4",
+    "date": "2026-11-04",
+    "title": "实例图标与整合包标志",
+    "tag": "desktop-v1.0.0-preview.4",
+    "sourceCommit": "b8b0b3e95822438fe76fad431393a61f2296f311",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/b8b0b3e95822438fe76fad431393a61f2296f311",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.4",
+    "changes": "原版及加载器使用对应原始图标；整合包自带图标优先，缺失时保存平台图标；保留手动封面优先级、完整比例、重启离线显示和取消清理。",
+    "platform": "Windows x64",
+    "bytes": 25682420,
+    "sha256": "0380d985ad64aaab867dcb08f51a55158e51e453db664fdf6a2ceae2b8021d12",
+    "binaryProductVersion": "1.0.0-preview.4+b8b0b3e95822438fe76fad431393a61f2296f311",
+    "buildMetadataMatchesSource": true
   }
 ]

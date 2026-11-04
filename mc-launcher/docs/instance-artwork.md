@@ -33,4 +33,4 @@ Forge 在绘制时仅显示原始字标左侧铁砧，随明暗主题选择官�
 
 2026-11-04 验证：图标核心 15 项、整合包升级回归 34 项、图标界面 16 项、工作区回归 31 项，共 96 项通过。已查看卡片及明暗主题列表截图。
 
-本版本先交付本地单文件 EXE 验收，不发布 GitHub Release。
+发布位置：[1.0.0-preview.4](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.4)。按用户最新要求，后续改动完成后同步源码、单文件 EXE 与签名更新清单；见 [发布约定](release-policy.md)。

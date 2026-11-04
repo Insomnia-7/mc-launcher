@@ -13,6 +13,10 @@ Minecraft Java 版桌面启动器，主界面基于 C# / .NET 10 / Avalonia，�
 
 源代码和解决方案位于 **[mc-launcher/](mc-launcher/)**。
 
+最新 Windows 版本：[1.0.0-preview.4](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.4)。Linux / macOS 当前原生发行包仍为 [1.0.0-preview.1](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.1)。
+
+每批功能或修复完成并验证后，同步源码与 GitHub Release，包含可下载程序、更新说明和签名更新清单。详细规则见 [发布约定](mc-launcher/docs/release-policy.md)。
+
 ## 开始使用
 
 用户下载发布包中的 `方隅.exe` 即可运行，无需另装 .NET。开发构建需要 .NET 10 SDK，在仓库根目录执行：

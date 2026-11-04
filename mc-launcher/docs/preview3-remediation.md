@@ -31,4 +31,4 @@
 
 打开“设置 → 存储”。“选择游戏位置”只切换路径；“迁移当前游戏库”复制并校验游戏及存档后切换；“迁移启动器数据”复制 Java、缓存和备份等，退出后重新打开生效。两种迁移均保留原副本，本轮没有替用户迁移或清理真实游戏文件。
 
-当前交付供用户验收，尚未创建 GitHub Release。确认体验后再发布。
+发布位置：[1.0.0-preview.3](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.3)。后续图标改进见 [preview.4](instance-artwork.md)。用户已要求每次完成更新均同步 GitHub 并发布，详见 [发布约定](release-policy.md)。
