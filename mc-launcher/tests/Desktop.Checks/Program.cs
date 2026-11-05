@@ -57,6 +57,7 @@ internal static class Program
         var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
+            if(args.Contains("--multiplayer")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -88,6 +89,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--multiplayer")){MultiplayerUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture);Check("联机页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} multiplayer UI checks passed");return 0;}
             if(args.Contains("--instance-icons")){InstanceIconUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例图标页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} instance icon checks passed");return 0;}
             if(args.Contains("--library-storage")){LibraryStorageUiChecks.Run(model,window,Pump,Check,Capture,root,resourceFixture);Check("目录存储页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} library storage UI checks passed");return 0;}
             if(args.Contains("--skin-preview")){SkinPreviewChecks.Run(root,Check,Pump);return 0;}

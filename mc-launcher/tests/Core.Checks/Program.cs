@@ -42,6 +42,10 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--multiplayer")||args.Contains("--multiplayer-engine")||args.Contains("--multiplayer-public"))
+{
+    await MultiplayerChecks.RunAsync(Check,args.Contains("--multiplayer-engine")||args.Contains("--multiplayer-public"),args.Contains("--multiplayer-public"));Console.WriteLine($"Multiplayer: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--pack-icons"))
 {
     await PackIconChecks.RunAsync(Check);Console.WriteLine($"Pack icons: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;

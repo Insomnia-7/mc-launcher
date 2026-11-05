@@ -56,7 +56,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<string> LibraryGroups {get;}=["全部分组","未分组"];
     public string LibraryResultText=>$"{LibraryEntries.Count} / {Instances.Count}";
     public bool LibraryHasNoResults=>LibraryEntries.Count==0&&HasInstances;
-    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsDetailOpen&&SelectedInstance is not null?"detail":IsInstanceSection?"library":"discover";
+    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsInstanceSection?"library":"discover";
     public bool IsLibraryPage=>ShellPage is "library" or "detail";
     public bool IsDiscoverPage=>ShellPage=="discover";
     public bool IsRolePage=>ShellPage=="experience"&&IsWardrobeTab;
@@ -89,7 +89,7 @@ public sealed partial class MainViewModel
     private LibraryGamePreferences PreferencesFor(string id)=>_libraryPreferences.Games.GetValueOrDefault(id)??new();
     private void InitializeWorkspace()
     {
-        BeforeMainNavigation=()=>{IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;WorkspaceHint="";};
+        BeforeMainNavigation=()=>{IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
         GameStarted=id=>
         {
             var preferences=PreferencesFor(id) with {LastPlayed=DateTimeOffset.UtcNow};
@@ -113,7 +113,7 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()

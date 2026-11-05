@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:net="using:Launcher.Application.Multiplayer" xmlns:icons="using:Launcher.Desktop.Controls" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.MultiplayerView">
+  <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="16" Margin="0,0,0,16">
+      <StackPanel Spacing="6"><TextBlock Text="一起游玩" FontSize="28" FontWeight="SemiBold"/><TextBlock Text="发现附近的世界，或邀请远方的朋友。" Classes="muted"/></StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="LanModeTab" Classes="nav" Classes.active="{Binding Multiplayer.IsLanTab}" Content="局域网" Command="{Binding Multiplayer.ShowLanCommand}"/>
+        <Button x:Name="RoomModeTab" Classes="nav" Classes.active="{Binding Multiplayer.IsRoomTab}" Content="跨网络房间" Command="{Binding Multiplayer.ShowRoomsCommand}"/>
+      </StackPanel>
+      <StackPanel Spacing="14" IsVisible="{Binding Multiplayer.IsLanTab}">
+        <Border Classes="card" Padding="20">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><StackPanel Spacing="5"><TextBlock Text="附近的世界" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="房主先在游戏中选择“对局域网开放”。" Classes="muted" TextWrapping="Wrap"/></StackPanel><Button x:Name="ScanLanButton" Grid.Column="1" Command="{Binding Multiplayer.ScanCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><icons:IconLabel Icon="ActionRefresh" Text="扫描世界" Foreground="{Binding $parent[Button].Foreground}"/></Button></Grid>
+            <TextBlock Text="暂未发现世界。扫描后在这里选择，也可以在下方直接输入地址。" Classes="muted" IsVisible="{Binding !Multiplayer.HasWorlds}" TextWrapping="Wrap" Margin="0,12"/>
+            <ItemsControl x:Name="LanWorldList" ItemsSource="{Binding Multiplayer.Worlds}">
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="net:LanWorld">
+                <Border CornerRadius="12" Background="{DynamicResource FieldBrush}" Padding="12" Margin="0,4">
+                  <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                    <icons:InstanceTypeIcon Kind="vanilla" Width="40" Height="40"/>
+                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock Text="{Binding CleanMotd}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Endpoint}" Classes="muted" FontSize="13"/></StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <Button Content="使用地址" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).Multiplayer.SelectWorldCommand}" CommandParameter="{Binding}"/>
+                      <Button Content="共享本机世界" IsVisible="{Binding IsLocal}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).Multiplayer.ShareWorldCommand}" CommandParameter="{Binding}"/>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <StackPanel Spacing="14" IsVisible="{Binding Multiplayer.IsRoomTab}">
+        <Border Classes="card" Padding="18">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14"><StackPanel Spacing="5"><TextBlock Text="{Binding Multiplayer.EngineState}" FontWeight="SemiBold"/><TextBlock Text="{Binding Multiplayer.EngineDescription}" Classes="muted" FontSize="13" TextWrapping="Wrap"/></StackPanel><Button x:Name="InstallRoomEngineButton" Grid.Column="1" Content="下载 / 修复组件" Command="{Binding Multiplayer.InstallEngineCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"/></Grid>
+            <ProgressBar Minimum="0" Maximum="100" Height="4" Value="{Binding Multiplayer.DownloadPercent}" IsVisible="{Binding Multiplayer.IsBusy}"/>
+            <TextBlock Text="房主需填写一个可用的公共或自有 EasyTier 节点，朋友通过邀请使用同一节点。公共节点由第三方提供，连接表现取决于双方网络和节点线路。" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+            <Button Content="查找社区公共节点 ↗" Command="{Binding Multiplayer.NodeGuideCommand}" HorizontalAlignment="Left"/>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="20" IsVisible="{Binding !Multiplayer.HasSession}">
+          <StackPanel Spacing="12">
+            <TextBlock Text="创建私密房间" FontSize="19" FontWeight="SemiBold"/>
+            <TextBlock Text="先进入单人世界并开放局域网，再填写游戏显示的端口。" Classes="muted" TextWrapping="Wrap"/>
+            <Grid ColumnDefinitions="*,150" ColumnSpacing="10"><TextBox x:Name="RoomNameInput" Text="{Binding Multiplayer.RoomName}" PlaceholderText="房间名称" MaxLength="60"/><TextBox x:Name="HostPortInput" Grid.Column="1" Text="{Binding Multiplayer.HostPort}" PlaceholderText="游戏端口" MaxLength="5"/></Grid>
+            <TextBox x:Name="RoomPeerInput" Text="{Binding Multiplayer.PeerAddress}" PlaceholderText="节点地址，例如 tcp://主机:端口" MaxLength="300"/>
+            <Button x:Name="CreateRoomButton" Classes="primary" HorizontalAlignment="Right" Command="{Binding Multiplayer.CreateRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><TextBlock Text="创建房间" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="20" IsVisible="{Binding !Multiplayer.HasSession}">
+          <StackPanel Spacing="12"><TextBlock Text="加入朋友的房间" FontSize="19" FontWeight="SemiBold"/><TextBox x:Name="RoomInvitationInput" Text="{Binding Multiplayer.InviteToJoin}" PlaceholderText="粘贴朋友分享的 fangyu-room:// 邀请信息" AcceptsReturn="True" TextWrapping="Wrap" Height="72" MaxLength="4096"/><Button x:Name="JoinRoomButton" Content="连接房间" HorizontalAlignment="Right" Command="{Binding Multiplayer.JoinRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"/></StackPanel>
+        </Border>
+        <Border Classes="card" Padding="20" IsVisible="{Binding Multiplayer.HasSession}">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="{Binding Multiplayer.SessionTitle}" FontSize="20" FontWeight="SemiBold"/><Button x:Name="DisconnectRoomButton" Grid.Column="1" Content="断开房间" Command="{Binding Multiplayer.DisconnectCommand}"/></Grid>
+            <TextBlock x:Name="RoomConnectionState" Text="{Binding Multiplayer.SessionState}" Classes="muted" TextWrapping="Wrap"/>
+            <StackPanel Spacing="8" IsVisible="{Binding Multiplayer.IsHost}"><TextBox Text="{Binding Multiplayer.InvitationText}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="90"/><Grid ColumnDefinitions="*,Auto" ColumnSpacing="10"><TextBlock Text="邀请有效期 12 小时，仅分享给信任的朋友。" Classes="muted" FontSize="13" TextWrapping="Wrap"/><Button Grid.Column="1" Content="复制邀请信息" Command="{Binding Multiplayer.CopyInvitationCommand}"/></Grid></StackPanel>
+            <TextBlock Text="联机期间请保持方隅运行。房主关闭世界后，该世界将无法继续连接。" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock x:Name="MultiplayerHint" Text="{Binding Multiplayer.Hint}" Classes="muted" TextWrapping="Wrap"/><Button Grid.Column="1" Content="取消" Command="{Binding Multiplayer.CancelCommand}" IsVisible="{Binding Multiplayer.IsBusy}"/></Grid>
+      <Border Classes="card" Padding="20">
+        <StackPanel Spacing="12">
+          <TextBlock Text="进入游戏" FontSize="19" FontWeight="SemiBold"/>
+          <ComboBox x:Name="MultiplayerInstancePicker" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" PlaceholderText="选择已安装的游戏实例" HorizontalAlignment="Stretch"><ComboBox.ItemTemplate><DataTemplate x:DataType="vm:InstanceCard"><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"><TextBox x:Name="MultiplayerAddressInput" Text="{Binding Multiplayer.ConnectAddress}" PlaceholderText="游戏地址，例如 192.168.1.8:25565" MaxLength="300"/><Button Grid.Column="1" Content="检测连接" Command="{Binding Multiplayer.CheckConnectionCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"/><Button Grid.Column="2" Content="复制地址" Command="{Binding Multiplayer.CopyAddressCommand}"/></Grid>
+          <TextBlock x:Name="GameConnectionHint" Text="{Binding Multiplayer.ConnectionHint}" Classes="muted" TextWrapping="Wrap" FontSize="13"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="已运行的游戏可在“多人游戏”中使用此地址；启动连接会按游戏版本适配。" Classes="muted" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center"/><Button x:Name="LaunchMultiplayerButton" Grid.Column="1" Classes="primary" Command="{Binding Multiplayer.LaunchGameCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><icons:IconLabel Icon="ActionPlay" Text="启动并连接" Foreground="{Binding $parent[Button].Foreground}"/></Button></Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

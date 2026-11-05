@@ -92,7 +92,7 @@ internal static class VersionInstallChecks
         fixture.FailQuery=false; Wait(vm.ReloadLoaderVersionsCommand.ExecuteAsync(null));
         check("查询重试恢复选择和安装",vm.InstallVersionCommand.CanExecute(null) && vm.SelectedInstallLoaderVersion=="9.2.0");
         fixture.FailInstall=true; Wait(vm.InstallVersionCommand.ExecuteAsync(null));
-        check("加载器失败不误报本体安装为全部成功",vm.Status.Contains("安装失败") && !vm.IsBusy); fixture.FailInstall=false;
+        check("加载器失败不误报本体安装为全部成功",vm.Status.Contains("失败") && vm.Status.Contains("fixture loader failure") && !vm.IsBusy); fixture.FailInstall=false;
         fixture.CancelInstall=true; Wait(vm.InstallVersionCommand.ExecuteAsync(null));
         check("加载器取消后恢复安装入口",vm.Status=="已取消" && vm.InstallVersionCommand.CanExecute(null)); fixture.CancelInstall=false;
         var pending=new TaskCompletionSource<IReadOnlyList<string>>(); fixture.Pending=pending;

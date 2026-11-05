@@ -1,0 +1,38 @@
+[
+  {
+    "Runtime": "linux-arm64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-linux-aarch64-v2.6.4.zip",
+    "Size": 20487230,
+    "Sha256": "f533ec25a7ea714e09f645615012200278058525795cc3bb690ff011aec1a70f"
+  },
+  {
+    "Runtime": "linux-x64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-linux-x86_64-v2.6.4.zip",
+    "Size": 25506523,
+    "Sha256": "61b659eaedba658fa66fe47d17e1426cdd77e5d02fa15fed447bb4357c09dfd6"
+  },
+  {
+    "Runtime": "osx-arm64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-macos-aarch64-v2.6.4.zip",
+    "Size": 30174017,
+    "Sha256": "4be1882d1aa36d31c1d6ba0596f2cf8a097e371f8da124212324b2e0f8df7e4b"
+  },
+  {
+    "Runtime": "osx-x64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-macos-x86_64-v2.6.4.zip",
+    "Size": 33733545,
+    "Sha256": "89fc28a6e6995259d76ce3f11775220e8a21c760e94df91a6a9db30a69b6982e"
+  },
+  {
+    "Runtime": "win-arm64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-windows-arm64-v2.6.4.zip",
+    "Size": 30136892,
+    "Sha256": "37023f8a3451c9234b17ee2089a03dc344ce90d803b5b359cb6c46682b0549b4"
+  },
+  {
+    "Runtime": "win-x64",
+    "Url": "https://github.com/EasyTier/EasyTier/releases/download/v2.6.4/easytier-windows-x86_64-v2.6.4.zip",
+    "Size": 32657720,
+    "Sha256": "27af91e270e554709b048bd32327fefd2dfce5062ae1e8701af7550c6f525f84"
+  }
+]

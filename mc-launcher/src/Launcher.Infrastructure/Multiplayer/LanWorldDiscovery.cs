@@ -1,15 +1,10 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using Launcher.Application.Multiplayer;
 
 namespace Launcher.Infrastructure.Multiplayer;
-
-public interface ILanWorldDiscovery
-{
-    /// <summary>在给定时间内收集局域网广播，按 主机:端口 去重（保留最后一次广播）。</summary>
-    Task<IReadOnlyList<LanWorld>> DiscoverAsync(TimeSpan window, CancellationToken cancellationToken = default);
-}
 
 /// <summary>
 /// 监听 Minecraft「对局域网开放」的 UDP 广播（默认 4445）。
@@ -26,11 +21,16 @@ public sealed class LanWorldDiscovery(int port = 4445) : ILanWorldDiscovery
         var found = new ConcurrentDictionary<string, LanWorld>(StringComparer.OrdinalIgnoreCase);
 
         using var client = new UdpClient(AddressFamily.InterNetwork);
+        client.ExclusiveAddressUse=false;
         client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        var addresses=NetworkInterface.GetAllNetworkInterfaces().Where(n=>n.OperationalStatus==OperationalStatus.Up)
+            .SelectMany(n=>n.GetIPProperties().UnicastAddresses).Where(a=>a.Address.AddressFamily==AddressFamily.InterNetwork).Select(a=>a.Address).Distinct().ToArray();
 
         try
         {
             client.Client.Bind(new IPEndPoint(IPAddress.Any, port));
+            foreach(var address in addresses)
+                try{client.JoinMulticastGroup(IPAddress.Parse("224.0.2.60"),address);}catch(SocketException){ }
         }
         catch (SocketException ex)
         {
@@ -46,11 +46,12 @@ public sealed class LanWorldDiscovery(int port = 4445) : ILanWorldDiscovery
             while (!deadline.IsCancellationRequested)
             {
                 var received = await client.ReceiveAsync(deadline.Token).ConfigureAwait(false);
+                if(received.Buffer.Length>4096)continue;
                 var payload = System.Text.Encoding.UTF8.GetString(received.Buffer);
                 var world = LanWorld.TryParse(payload, received.RemoteEndPoint.Address.ToString(), DateTimeOffset.Now);
                 if (world is null) continue;
 
-                found[world.Endpoint] = world; // 同一端点重复广播时以最新时间为准
+                found[world.Endpoint] = world with{IsLocal=IPAddress.IsLoopback(received.RemoteEndPoint.Address)||addresses.Contains(received.RemoteEndPoint.Address)};
             }
         }
         catch (OperationCanceledException)
@@ -61,6 +62,8 @@ public sealed class LanWorldDiscovery(int port = 4445) : ILanWorldDiscovery
         {
             client.Close();
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         return found.Values
             .OrderBy(world => world.CleanMotd, StringComparer.CurrentCulture)

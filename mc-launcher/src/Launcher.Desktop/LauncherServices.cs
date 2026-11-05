@@ -14,6 +14,8 @@ using Launcher.Application.Install;
 using Launcher.Application.Mods;
 using Launcher.Application.Update;
 using Launcher.Application.Versions;
+using Launcher.Application.Multiplayer;
+using Launcher.Infrastructure.Multiplayer;
 using Launcher.Infrastructure;
 using Launcher.Infrastructure.CurseForge;
 using Launcher.Infrastructure.Http;
@@ -107,6 +109,9 @@ internal static class LauncherServices
             sp.GetRequiredService<IDownloader>()));
         services.AddSingleton<IPlayerAppearanceClient>(sp=>new MinecraftAppearanceClient(sp.GetRequiredService<HttpClient>()));
         services.AddSingleton<ModChangePlans>();
+        services.AddSingleton<ILanWorldDiscovery,LanWorldDiscovery>();
+        services.AddSingleton<IGameServerStatusClient,GameServerStatusClient>();
+        services.AddSingleton<IRoomNetwork>(_=>new EasyTierRoomNetwork(HttpClientFactory.Create("Fangyu-Multiplayer/1.0",TimeSpan.FromMinutes(10)),AppPaths.DataDirectory));
         services.AddSingleton(sp => {var model=new MainViewModel(
             sp.GetRequiredService<ILogger<MainViewModel>>(), sp.GetRequiredService<ILogger<DownloadViewModel>>(),
             sp.GetRequiredService<GameInstaller>(), sp.GetRequiredService<ModpackInstaller>(), sp.GetRequiredService<IModpackSourceFactory>(),
@@ -118,7 +123,8 @@ internal static class LauncherServices
             sp.GetRequiredService<InstanceExportService>(), sp.GetRequiredService<ModUpdateInstaller>(), sp.GetRequiredService<ISkinService>(), sp.GetRequiredService<ILoaderMetaClient>(),
             sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>(), sp.GetRequiredService<IResourcePresentationClient>());
             model.InitializeExperience(sp.GetRequiredService<IPlayerAppearanceClient>());
-            model.InitializeModWorkbench(sp.GetRequiredService<ModChangePlans>());return model;});
+            model.InitializeModWorkbench(sp.GetRequiredService<ModChangePlans>());
+            model.InitializeMultiplayer(sp.GetRequiredService<ILanWorldDiscovery>(),sp.GetRequiredService<IGameServerStatusClient>(),sp.GetRequiredService<IRoomNetwork>());return model;});
 
         // Modrinth / CurseForge 各用独立的 HttpClient：它们的 BaseAddress 不同，
         // 不能共用一个注册项，否则后注册的会顶掉前面的。

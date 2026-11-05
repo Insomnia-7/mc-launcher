@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
     private ExperienceView? _experience;
     private PreferencesView? _preferences;
     private GameDetailView? _detail;
+    private MultiplayerView? _multiplayer;
     private MainViewModel? _model;
     private bool _closingAfterPause;
     public MainWindow()
@@ -49,13 +50,18 @@ public sealed partial class MainWindow : Window
             if (_experience is not null) _experience.DataContext=_model;
             if (_preferences is not null) _preferences.DataContext=_model;
             if (_detail is not null) _detail.DataContext=_model;
+            if (_multiplayer is not null) _multiplayer.DataContext=_model;
             if (_model is not null) _model.PropertyChanged += ModelChanged;
             UpdatePage();
             UpdateOverlay();
         };
         MotionPreferences.Changed += UpdateMotion;
         UpdateMotion();
-        Closing += async (_,e)=>{if(!_closingAfterPause&&_model?.HasActivePersistentTask==true){e.Cancel=true;await _model.PauseTasksForShutdownAsync();_closingAfterPause=true;Close();}};
+        Closing += async (_,e)=>
+        {
+            if(_model?.Multiplayer?.HasSession==true){e.Cancel=true;_model.ConfirmMultiplayerClose(Close);return;}
+            if(!_closingAfterPause&&_model?.HasActivePersistentTask==true){e.Cancel=true;await _model.PauseTasksForShutdownAsync();_closingAfterPause=true;Close();}
+        };
         Closed += (_, _) => { if (_model is not null) _model.PropertyChanged -= ModelChanged; MotionPreferences.Changed -= UpdateMotion; };
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
@@ -86,6 +92,7 @@ public sealed partial class MainWindow : Window
             "experience"=>_experience??=new ExperienceView{DataContext=_model},
             "settings"=>_preferences??=new PreferencesView{DataContext=_model},
             "detail"=>_detail??=new GameDetailView{DataContext=_model},
+            "multiplayer"=>_multiplayer??=new MultiplayerView{DataContext=_model},
             _=>_library
         };
     }

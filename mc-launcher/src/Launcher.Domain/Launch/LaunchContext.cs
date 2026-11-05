@@ -26,7 +26,8 @@ public sealed record LaunchContext(
     // natives 的实际落盘目录。默认 null = 沿用 versions/<id>/natives；
     // 填了就以它为准（调用方用 NativesProvisioner 解压到 <gameRoot>/natives/<versionId>/<指纹>/ 再传进来）。
     // 带默认值，所以 App / CLI / 测试里那些按命名参数构造的调用点都不用改。
-    string? NativesDirectory = null)
+    string? NativesDirectory = null,
+    ServerAddress? MultiplayerServer = null)
 {
     /// <summary>离线账户的 UUID：MD5("OfflinePlayer:"+name) 按 UUID v3 改写版本位。</summary>
     public static string OfflineUuid(string playerName)

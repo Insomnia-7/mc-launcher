@@ -48,6 +48,7 @@
           <StackPanel Spacing="7">
             <Button x:Name="LibraryNav" Classes="nav" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏库"><icons:IconLabel Icon="NavVersions" Text="游戏库" /></Button>
             <Button x:Name="DiscoverNav" Classes="nav" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源"><icons:IconLabel Icon="NavDownload" Text="发现资源" /></Button>
+            <Button x:Name="MultiplayerNav" Classes="nav" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机"><icons:IconLabel Icon="ActionGlobe" Text="联机" /></Button>
             <Button x:Name="WardrobeEntry" Classes="nav" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色"><icons:IconLabel Icon="ActionLogin" Text="角色" /></Button>
             <Button x:Name="TaskCenterEntry" Classes="nav" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载任务"><icons:IconLabel Icon="ActionCloudDownload" Text="下载任务" /></Button>
             <Button x:Name="SettingsEntry" Classes="nav" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>

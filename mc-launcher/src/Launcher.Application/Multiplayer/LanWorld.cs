@@ -8,6 +8,7 @@ namespace Launcher.Application.Multiplayer;
 /// </summary>
 public sealed record LanWorld(string Motd, string Host, int Port, DateTimeOffset SeenAt)
 {
+    public bool IsLocal {get;init;}
     public string Endpoint => $"{Host}:{Port}";
 
     /// <summary>去掉 §a 这类格式码，只留可读文字。</summary>

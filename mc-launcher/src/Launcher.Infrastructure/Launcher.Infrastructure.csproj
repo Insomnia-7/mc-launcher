@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Multiplayer/EasyTierPackages.json" LogicalName="Launcher.EasyTierPackages.json" />
     <ProjectReference Include="..\Launcher.Application\Launcher.Application.csproj" />
     <ProjectReference Include="..\Launcher.Domain\Launcher.Domain.csproj" />
   </ItemGroup>

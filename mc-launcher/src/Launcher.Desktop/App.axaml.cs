@@ -53,6 +53,7 @@ public sealed partial class App : Avalonia.Application
             desktop.Exit += (_, _) =>
             {
                 model.FlushAppearance();
+                model.Multiplayer?.Dispose();
                 model.WallpaperImage?.Dispose();
                 _services?.Dispose();
                 Log.CloseAndFlush();

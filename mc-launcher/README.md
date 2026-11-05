@@ -15,6 +15,8 @@ Windows x64 可用 `pwsh -File packaging/publish-desktop.ps1 -Lean -Compress` �
 
 ### 1.0 跨平台预览
 
+Windows preview.5 新增「联机」：局域网发现、手动服务器连接、可选 EasyTier 跨网络私密房间及一次性启动连接。组件按需下载，免虚拟网卡；房主需填写可用公共或自有节点。真实本机转发已验证，异地双机仍需试验，见 [联机使用说明](docs/multiplayer.md)。
+
 Linux 与 macOS 新增系统密钥环凭据保护、按系统与架构自动管理 Java、原生便携包和各自的签名更新清单。四个平台分别通过真实系统密钥环、官方 Java 下载与执行、应用窗口启动及更新进程成功/回退/拒绝篡改检查。macOS 包使用 ad-hoc 完整性签名，尚未 Apple Developer ID 签名和公证；真实微软授权与 Minecraft 图形运行仍需验收。范围、依赖、安装和更新方法见 [跨平台预览说明](docs/platform-preview.md)。
 
 ### 0.9 游戏设置同步与动效预览

@@ -1247,10 +1247,20 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool CanLaunch() => !IsBusy && !IsLoggingIn && SelectedInstance is not null;
 
+    private Launcher.Domain.Launch.ServerAddress? _launchServer;
+    public async Task LaunchIntoServerAsync(Launcher.Domain.Launch.ServerAddress address)
+    {
+        if(!CanLaunch())return;
+        address=Launcher.Domain.Launch.ServerAddress.Parse(address.Endpoint);
+        _launchServer=address;
+        try{await LaunchAsync();}finally{_launchServer=null;}
+    }
+
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync()
     {
         if (!CanLaunch()) return;
+        var multiplayerTarget=_launchServer;
         if (!RefreshGameRootHealth()) return;
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "准备游戏启动");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
@@ -1342,7 +1352,8 @@ public sealed partial class MainViewModel : ObservableObject
                 ExtraGameArgs: settings.ExtraGameArgs,
                 WindowWidth: settings.WindowWidth,
                 WindowHeight: settings.WindowHeight,
-                FullScreen: settings.FullScreen);
+                FullScreen: settings.FullScreen,
+                MultiplayerServer: multiplayerTarget);
 
             // 先把 classpath 算好、natives 解到稳定目录（同指纹直接复用），
             // 再拿这份「准备好的上下文」去体检与拼参数，三处用的目录必须一致。
