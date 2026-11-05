@@ -321,5 +321,20 @@
     "sha256": "0380d985ad64aaab867dcb08f51a55158e51e453db664fdf6a2ceae2b8021d12",
     "binaryProductVersion": "1.0.0-preview.4+b8b0b3e95822438fe76fad431393a61f2296f311",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "1.0.0-preview.5",
+    "date": "2026-11-05",
+    "title": "局域网与跨网络私密房间",
+    "tag": "desktop-v1.0.0-preview.5",
+    "sourceCommit": "3535467a0dfb23d867c8680bd8db12207a734095",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/3535467a0dfb23d867c8680bd8db12207a734095",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.5",
+    "changes": "新增局域网世界发现、游戏连接检测与一次性启动连接；按需安装 EasyTier 组件，创建或加入跨网络私密房间，支持邀请、断开清理和退出确认。跨网络需可用节点，异地双机仍待试验。",
+    "platform": "Windows x64",
+    "bytes": 25719525,
+    "sha256": "9011a4b769bed2e745a5015ca9b6b4e609a569f7941d137d25e81422c47cce0a",
+    "binaryProductVersion": "1.0.0-preview.5+3535467a0dfb23d867c8680bd8db12207a734095",
+    "buildMetadataMatchesSource": true
   }
 ]

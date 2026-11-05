@@ -2,7 +2,9 @@
 
 ## 1.0.0-preview.5 · 局域网与跨网络私密房间
 
-2026-11-05。
+2026-11-05。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.5)。
+
+[源码 3535467](https://github.com/Insomnia-7/mc-launcher/commit/3535467a0dfb23d867c8680bd8db12207a734095)。Windows 单文件 25719525 字节，SHA-256：`9011a4b769bed2e745a5015ca9b6b4e609a569f7941d137d25e81422c47cce0a`。1216 项回归与联机检查通过，另通过架构和实际 EXE 启动检查。
 
 - 新增联机页面：按需发现局域网世界，选择实例，检测游戏连接、复制地址并启动连接。
 - 本机世界可创建 EasyTier 私密房间，通过有时限的邀请连接；支持自行选择公共或自有节点、退出确认与断开清理。
