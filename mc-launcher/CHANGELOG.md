@@ -4,7 +4,7 @@
 
 2026-11-14。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.6)。
 
-[源码 72dc112](https://github.com/Insomnia-7/mc-launcher/commit/72dc112ff754704e89983fa02a861e2ea7029269)。Windows 单文件 25728725 字节，SHA-256：`20e77c438cfe9df30dc1b6ad50970c862a3b1511c9abf44855e43ac7105dba00`。880 项核心、333 项桌面、31 项联机界面检查通过，另通过架构检查与打包 EXE 的实际窗口启动检查。
+[源码 72dc112](https://github.com/Insomnia-7/mc-launcher/commit/72dc112ff754704e89983fa02a861e2ea7029269)。Windows 单文件 25720303 字节，SHA-256：`b3e51e87890c7cf413c9ecac1f99b493eabc4c2804723777c1cd70f9bd6317f9`。880 项核心、333 项桌面、31 项联机界面检查通过，另通过架构检查与打包 EXE 的实际窗口启动检查。
 
 - 删除版本成功后回到游戏库主页面并提示结果；失败保留当前页面并显示原因，界面收尾异常不再把成功改写成失败。
 - 新增 hidden-versions / hidden-instances 墓碑：依赖保留的父版本与半删目录不会被重新扫成实例，删除共用同一版本的实例不会误隐藏其它实例；重装同版本自动清除墓碑并回收已删净的版本墓碑。

@@ -347,8 +347,8 @@
     "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.6",
     "changes": "删除版本后回到游戏库并清理偏好与封面，新增删除墓碑避免依赖保留的父版本或半删目录被重新扫成实例，删除前拦截运行中版本与排队任务；侧栏可收起展开（72/236px，状态记忆、纵向不重叠、透明折叠按钮），导航改用共享蓝色指示条；外观只保留日间白；首页移除联机横幅；首启不再自动弹安装向导；按钮加入 Material 3 水波纹与按下缩放；联机房间操作状态机与会话地址展示；资源版本抽屉默认收起，检索增加 25 秒超时保护。",
     "platform": "Windows x64",
-    "bytes": 25728725,
-    "sha256": "20e77c438cfe9df30dc1b6ad50970c862a3b1511c9abf44855e43ac7105dba00",
+    "bytes": 25720303,
+    "sha256": "b3e51e87890c7cf413c9ecac1f99b493eabc4c2804723777c1cd70f9bd6317f9",
     "binaryProductVersion": "1.0.0-preview.6+72dc112ff754704e89983fa02a861e2ea7029269",
     "buildMetadataMatchesSource": true
   }
