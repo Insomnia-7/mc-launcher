@@ -28,7 +28,14 @@ public sealed partial class App : Avalonia.Application
             _mutex = new Mutex(false, OperatingSystem.IsWindows() ? @"Local\MCLauncher.SingleInstance" : "MCLauncher.SingleInstance");
             try { _ownsMutex = _mutex.WaitOne(TimeSpan.Zero); }
             catch (AbandonedMutexException) { _ownsMutex = true; }
-            if (!_ownsMutex) { desktop.Shutdown(); return; }
+            // 已有实例在跑：安静退出。这里不能调 desktop.Shutdown() —— 框架之后仍会进入已经关掉的
+            // 消息循环，表现为 0xE0434352 崩溃（事件日志：Dispatcher shut down）。
+            // 无头检查与多开调试用 FANGYU_ALLOW_MULTI_INSTANCE=1 跳过这层。
+            if (!_ownsMutex && Environment.GetEnvironmentVariable("FANGYU_ALLOW_MULTI_INSTANCE") != "1")
+            {
+                _mutex.Dispose();
+                Environment.Exit(0);
+            }
 
             AppPaths.EnsureCreated();
             // FlClash/M3 式按压反馈：类级注册一次，之后所有 Button 都带水波纹。

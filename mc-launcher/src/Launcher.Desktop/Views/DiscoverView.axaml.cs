@@ -28,17 +28,6 @@ public sealed partial class DiscoverView : UserControl
     private void CategoryChanged(object? sender,System.ComponentModel.PropertyChangedEventArgs e)
     {
         if(e.PropertyName==nameof(DownloadViewModel.SelectedCategory))Dispatcher.UIThread.Post(()=>CategoryHighlight.Follow(CategoryTabs),DispatcherPriority.Loaded);
-        if(e.PropertyName==nameof(DownloadViewModel.ResultRevision)) _ = FadeResultsAsync();
-    }
-    private async Task FadeResultsAsync()
-    {
-        _resultFade?.Cancel(); _resultFade?.Dispose();
-        _resultFade = null;
-        if (!MotionPreferences.Enabled) { ResourceResults.Opacity = 1; return; }
-        using var cts = _resultFade = new();
-        try { await Motion.Animate(ResourceResults, 0.45, 1, 0, 0, 160, cts.Token); }
-        catch (OperationCanceledException) { }
-        finally { if (_resultFade == cts) { ResourceResults.Opacity = 1; _resultFade = null; } }
     }
     private void TryLoadMore()
     {

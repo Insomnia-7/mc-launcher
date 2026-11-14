@@ -32,7 +32,7 @@
     <Grid Grid.Row="3">
       <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <ItemsControl x:Name="ResourceResults" ItemsSource="{Binding Download.Results}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:DownloadItem">
-          <Button Classes="nav" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
+          <Button Classes="nav tile" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
             <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
               <Border Width="60" Height="60" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
               <StackPanel Grid.Column="1" Spacing="3">
@@ -52,7 +52,7 @@
         <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.3"/>
       </StackPanel>
       <Border IsVisible="{Binding Download.IsSearchingResources}" Background="{DynamicResource CardBrush}" CornerRadius="12" Padding="14" VerticalAlignment="Bottom" Margin="8" BoxShadow="0 4 18 0 #18000000">
-        <StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Download.MoreResourcesText}" IsVisible="{Binding Download.IsLoadingMore}" VerticalAlignment="Center"/><TextBlock Text="正在搜索资源… 最多等待 25 秒" IsVisible="{Binding !Download.IsLoadingMore}" VerticalAlignment="Center"/><Button Grid.Column="1" Classes="quiet compact" Content="取消" Command="{Binding Download.CancelCommand}"/></Grid><ProgressBar IsIndeterminate="True" Height="3"/></StackPanel>
+        <StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Download.MoreResourcesText}" IsVisible="{Binding Download.IsLoadingMore}" VerticalAlignment="Center"/><TextBlock Text="正在搜索资源…" IsVisible="{Binding !Download.IsLoadingMore}" VerticalAlignment="Center"/><Button Grid.Column="1" Classes="quiet compact" Content="取消" Command="{Binding Download.CancelCommand}"/></Grid><ProgressBar IsIndeterminate="True" Height="3"/></StackPanel>
       </Border>
       <TextBlock Text="{Binding Download.SearchStateText}" IsVisible="{Binding Download.IsResourceList}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="480" IsHitTestVisible="False"/>
       <Grid IsVisible="{Binding Download.IsResourceDetail}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">

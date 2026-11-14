@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 using System.ComponentModel;
 using Launcher.App.ViewModels;
 namespace Launcher.Desktop.Views;
@@ -16,6 +17,9 @@ public sealed partial class PreferencesView:UserControl
             LoadSyncPage();
         };
     }
-    private void Changed(object? sender,PropertyChangedEventArgs e){if(e.PropertyName==nameof(MainViewModel.ShowsSettingsSync))LoadSyncPage();}
+    private void Changed(object? sender,PropertyChangedEventArgs e)
+    {
+        if(e.PropertyName==nameof(MainViewModel.ShowsSettingsSync))LoadSyncPage();
+    }
     private void LoadSyncPage(){if(_model?.ShowsSettingsSync==true)SettingsSyncHost.Content??=new GameSettingsSyncView();}
 }

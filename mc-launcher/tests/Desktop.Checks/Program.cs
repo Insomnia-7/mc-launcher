@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Controls.Primitives;
@@ -28,6 +29,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        // 无头检查不参与单实例互斥：用户开着启动器时，检查进程不能被单实例逻辑直接退掉。
+        Environment.SetEnvironmentVariable("FANGYU_ALLOW_MULTI_INSTANCE","1");
         if(args.Contains("--path-probe"))
         {
             AppPaths.EnsureCreated();
@@ -216,13 +219,37 @@ internal static class Program
             for(var i=0;i<8;i++) { model.IsInstanceSection=!model.IsInstanceSection; Pump(12); }
             model.IsInstanceSection=true; Pump(350);
             Check("开启动画时快速往返切页仍显示当前页面", Find<Button>("LaunchButton").IsEffectivelyVisible && Find<Button>("LaunchButton").IsEffectivelyEnabled);
+            // 切页是瞬时换内容：任何时候内容区只能挂着当前页，不允许残留上一页或叠页。
+            {
+                var host = Find<ContentControl>("PageHost");
+                var pageTypes = new[] { "LibraryView", "DiscoverView", "ExperienceView", "PreferencesView", "GameDetailView", "MultiplayerView" };
+                int AttachedPageCount() => window.GetVisualDescendants().OfType<Control>()
+                    .Count(c => pageTypes.Contains(c.GetType().Name));
+                model.ShowInstancesCommand.Execute(null); Pump(300);
+                for (var i = 0; i < 12; i++)
+                {
+                    (i % 2 == 0 ? (Action)(() => model.OpenAppearanceCommand.Execute(null)) : () => model.ShowInstancesCommand.Execute(null))();
+                    Pump(12);
+                }
+                model.ShowInstancesCommand.Execute(null); Pump(300);
+                var attached = AttachedPageCount();
+                Check($"快速连续切页后只挂当前页（页面实例 {attached} 个）",
+                    attached == 1 && host.Content is Launcher.Desktop.Views.LibraryView && Math.Abs(host.Opacity - 1) < 0.01);
+                Check("切页容器不参与透明度动画", host.Opacity >= 0.99);
+
+                model.OpenAppearanceCommand.Execute(null); Pump(80);
+                Check("切到设置后立刻只挂设置页", AttachedPageCount() == 1 && host.Content is Launcher.Desktop.Views.PreferencesView);
+                model.ShowInstancesCommand.Execute(null); Pump(80);
+                Check("切回游戏库后立刻只挂游戏库", AttachedPageCount() == 1 && host.Content is Launcher.Desktop.Views.LibraryView);
+            }
+
             model.OpenAppearanceCommand.Execute(null); model.CloseAppearanceCommand.Execute(null); model.OpenAccountsCommand.Execute(null); Pump(250);
             Check("快速切换弹窗后可继续操作", model.IsAccountsOpen && !model.IsAppearanceOpen);
             model.CloseAccountsCommand.Execute(null); Pump(250);
             var feedback=Find<Button>("AccountEntry"); var point=feedback.TranslatePoint(new Point(feedback.Bounds.Width/2,feedback.Bounds.Height/2),window)!.Value;
             window.MouseMove(point); window.MouseDown(point,MouseButton.Left); Pump(140);
-            // 改版后按下是「位移 + 轻微收回（scale 0.955）」，松开由过渡弹回 1.0
-            Check("按下有位移反馈并轻微收回", feedback.IsPressed && Math.Abs(feedback.RenderTransform!.Value.M11-0.955)<0.01 && feedback.RenderTransform.Value.M32>0);
+            // 按下只收回不位移（scale 0.98，83ms），松开用 167ms 弹回 1.0
+            Check("按下有收回反馈（scale 0.98）", feedback.IsPressed && Math.Abs(feedback.RenderTransform!.Value.M11-0.98)<0.01);
             window.MouseUp(point,MouseButton.Left); Pump(350); model.CloseAccountsCommand.Execute(null); Pump(180);
             Check("松开后恢复正常尺寸", feedback.RenderTransform!.Value.M11>=0.99);
             var launchButton=Find<Button>("LaunchButton");
@@ -252,7 +279,7 @@ internal static class Program
             Pump(160);
             Check("按压时阴影收紧且文字保持清晰", ambientShadow.Opacity<=0.2 && hoverShadow.Opacity<0.01 && launchButton.Opacity>0.95);
             // 顺序上这里是 pressed 态：验证「收回」缩放已经生效（松开后由过渡回到 scale(1)）
-            Check("主操作按钮按压时同样收回", Math.Abs(launchButton.RenderTransform!.Value.M11 - 0.955) < 0.01);
+            Check("主操作按钮按压时同样收回", Math.Abs(launchButton.RenderTransform!.Value.M11 - 0.98) < 0.01);
             Launcher.Desktop.MotionPreferences.Mode = savedMotionMode; Pump(40);
             window.MouseMove(new Point(0,0)); window.MouseUp(new Point(0,0),MouseButton.Left); Pump(250);
             Check("移出后松开不会误启动", launch.Starts==launchesBeforePress && hoverShadow.Opacity<0.01);
@@ -293,7 +320,7 @@ internal static class Program
             var dangerOk = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("danger-solid"));
             Check("删除版本的确认框弹出且确认按钮带危险样式", model.IsConfirmOpen && dangerOk is not null && dangerOk.Content as string == "删除");
             Check("删除确认按钮红底白字",
-                dangerOk!.Background is ISolidColorBrush redFill && redFill.Color == Color.Parse("#D93A3F")
+                dangerOk!.Background is ISolidColorBrush redFill && redFill.Color == Color.Parse("#C42B1C")
                 && dangerOk.Foreground is ISolidColorBrush whiteText && whiteText.Color == Colors.White);
             Capture("confirm-delete-danger");
             model.ConfirmCancelCommand.Execute(null); Pump(120);
@@ -311,7 +338,17 @@ internal static class Program
             var navText = Find<StackPanel>("SidebarNavText");
             // 必须用真实点击驱动 ToggleButton：代码直接赋 IsChecked 绕过了 Toggle()/Command 调用序列，
             // 测不出「TwoWay 绑定 + Command 双重翻转」这种 blocker（大纲 13.3-1/2）。
-            Click(VisibleSidebarToggle()); Pump(350);
+            // 收放过程留两张中间帧：宽度是唯一被动画的量，内部布局应随宽度连续重排，不许跳档。
+            void CaptureNow(string name)
+            {
+                window.UpdateLayout();
+                using var shot = new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height), new Vector(96,96));
+                shot.Render(window); shot.Save(Path.Combine(root, name + ".png"));
+            }
+            Click(VisibleSidebarToggle());
+            CaptureNow("sidebar-collapse-mid");
+            Pump(70); CaptureNow("sidebar-collapse-late");
+            Pump(350);
             Capture("home-collapsed");
             Check("真实点击后收起：宽度约 72px 且文字淡出", model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 72) < 1 && navText.Opacity < 0.05);
             Check("收起后品牌图标仍显示", Find<Image>("SidebarAppIconCollapsed").IsEffectivelyVisible);
@@ -329,6 +366,20 @@ internal static class Program
             Check("真实点击再次展开恢复宽度且文字可见", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 236) < 1 && navText.Opacity > 0.9);
             Check("真实点击状态写入外观设置并被读回", !Launcher.Application.Settings.AppearanceStore.Read(data).SidebarCollapsed);
             Check("收起态导航项提供 ToolTip", ToolTip.GetTip(Find<Button>("LibraryNav")) as string == "游戏库");
+
+            // 侧边栏四态（大纲 B-1）：窄窗口降为 Minimal，汉堡键开 Overlay 浮层
+            var hamburger = Find<Button>("SidebarHamburger");
+            window.Width=860; window.Height=760; Pump(220);
+            Check("窄窗口自动收起为 Minimal 态", !sidebar.IsEffectivelyVisible && hamburger.IsEffectivelyVisible);
+            Capture("home-minimal");
+            Click(hamburger); Pump(280);
+            Check("汉堡键展开 Overlay 浮层侧栏", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-236)<1 && Find<Border>("SidebarScrim").IsEffectivelyVisible);
+            Capture("home-overlay");
+            var scrimPoint=new Point(window.ClientSize.Width-80,window.ClientSize.Height-80);
+            window.MouseMove(scrimPoint); window.MouseDown(scrimPoint,MouseButton.Left); Pump(40); window.MouseUp(scrimPoint,MouseButton.Left); Pump(220);
+            Check("点遮罩收起 Overlay 浮层", !sidebar.IsEffectivelyVisible && !Find<Border>("SidebarScrim").IsEffectivelyVisible);
+            window.Width=1180; window.Height=800; Pump(260);
+            Check("恢复宽窗口回到 Expanded 态", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-236)<1);
             // 共享蓝色指示条：随 ShellPage 平滑移动（大纲 7）
             var indicator = Find<Border>("NavIndicator");
             Check("首次进入游戏库指示条落位显示", indicator.IsVisible);

@@ -40,7 +40,7 @@ internal static class WorkspaceUiChecks
         check("恢复默认封面后使用原有彩色图案",!model.HasGameCover);
         window.Width=900;window.Height=640;pump(60);
         check("最小窗口详情启动入口可见",Find<Button>("DetailLaunchButton").TranslatePoint(new Point(),window) is {} p&&p.X>=0&&p.X+Find<Button>("DetailLaunchButton").Bounds.Width<=window.ClientSize.Width);
-        capture("workspace-game-compact",true);window.Width=1180;window.Height=800;
+        capture("workspace-game-compact",true);window.Width=1180;window.Height=800;pump(120);pump(120);
         click(Find<Button>("BackToLibraryButton"));check("返回游戏库不残留实例详情状态",model.ShellPage=="library"&&!model.IsDetailOpen);
         model.LibraryGroup="生存";pump(50);check("分组筛选使用保存的实例分组",model.LibraryEntries.Count==1&&model.LibraryEntries[0].Name=="方块远行");model.LibraryGroup="全部分组";
         capture("workspace-library-cards",true);

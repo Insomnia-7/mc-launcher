@@ -111,7 +111,7 @@
         </Border>
       </StackPanel>
     </ScrollViewer>
-    <TransitioningContentControl x:Name="DetailTabHost" Grid.Row="2" IsVisible="{Binding !IsOverviewTab}"><TransitioningContentControl.PageTransition><local:WorldPageTransition/></TransitioningContentControl.PageTransition></TransitioningContentControl>
+    <TransitioningContentControl x:Name="DetailTabHost" Grid.Row="2" IsVisible="{Binding !IsOverviewTab}"></TransitioningContentControl>
     <StackPanel Grid.Row="3" Spacing="7">
       <ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3"/>
       <TextBlock Text="{Binding WorkspaceHint}" Classes="optional" TextWrapping="Wrap"/>

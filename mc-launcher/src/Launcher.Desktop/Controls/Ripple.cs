@@ -30,7 +30,7 @@ public static class Ripple
     public static void SetIsEnabled(Button button, bool value) => button.SetValue(IsEnabledProperty, value);
 
     /// <summary>波纹扩散时长，接近 M3 的 400–500ms。</summary>
-    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(430);
+    private static readonly TimeSpan Duration = MotionTiming.Normal;
 
     private static bool _installed;
 
@@ -90,12 +90,12 @@ public static class Ripple
         // 因此这里用 Transitions 驱动：下一帧把目标值设上去，由属性系统插值。
         ellipse.Transitions = new Transitions
         {
-            new DoubleTransition { Property = Visual.OpacityProperty, Duration = Duration, Easing = new CubicEaseOut() },
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = Duration, Easing = MotionEasing.Entrance },
         };
         scale.Transitions = new Transitions
         {
-            new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = Duration, Easing = new CubicEaseOut() },
-            new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = Duration, Easing = new CubicEaseOut() },
+            new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = Duration, Easing = MotionEasing.Entrance },
+            new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = Duration, Easing = MotionEasing.Entrance },
         };
         host.Children.Add(ellipse);
 
@@ -112,7 +112,7 @@ public static class Ripple
             scale.ScaleX = 1;
             scale.ScaleY = 1;
             ellipse.Opacity = 0;
-            await Task.Delay(Duration + TimeSpan.FromMilliseconds(40));
+            await Task.Delay(Duration);
         }
         catch (Exception)
         {

@@ -7,8 +7,8 @@
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
-        <ColorPaletteResources x:Key="Light" Accent="#202020" />
-        <ColorPaletteResources x:Key="Dark" Accent="#EEEEEE" />
+        <ColorPaletteResources x:Key="Light" Accent="#4C8DFF" />
+        <ColorPaletteResources x:Key="Dark" Accent="#4C8DFF" />
       </FluentTheme.Palettes>
     </FluentTheme>
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Controls.axaml" />

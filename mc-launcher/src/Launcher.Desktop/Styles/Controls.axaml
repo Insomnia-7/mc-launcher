@@ -1,29 +1,47 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:local="using:Launcher.Desktop">
+  <!--
+    设计系统的落点（对应《方隅 Launcher · UI 动效设计大纲》§4）：
+      时长  MotionTiming.Faster 83 / Fast 167 / Normal 250 / Slow 420，全项目只有这四个
+      曲线  进场 Entrance(0,0,0,1) / 退场 Exit(1,0,1,1) / 颜色 Linear；禁止 ease 与任何回弹曲线
+      圆角  Control 8 / Card 12 / Pill 999；描边全项目只用 1px
+      间距  只用 4 的倍数：4 / 8 / 12 / 16 / 24 / 32 / 48
+    这里出现的每个 Duration 必须引用 MotionTiming，不许写裸数字。
+  -->
   <Styles.Resources>
+    <!-- 背景材质：纯色模式（Win10 / Linux / 鸿蒙）用实色 + 1px 描边；有 Mica 时卡片靠透明度分层。 -->
     <SolidColorBrush x:Key="BgBrush" Color="#F2F2F2" />
     <SolidColorBrush x:Key="PanelBrush" Color="#F9F9F9" />
     <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="FieldBrush" Color="#EBEBEB" />
     <SolidColorBrush x:Key="HoverBrush" Color="#E0E0E0" />
-    <SolidColorBrush x:Key="LineBrush" Color="#24000000" />
+    <SolidColorBrush x:Key="LineBrush" Color="#E7E7E7" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#D5D5D5" />
     <SolidColorBrush x:Key="TextBrush" Color="#191919" />
     <SolidColorBrush x:Key="MutedBrush" Color="#626262" />
+    <SolidColorBrush x:Key="DisabledTextBrush" Color="#A5A5A5" />
     <SolidColorBrush x:Key="AccentBrush" Color="#191919" />
     <SolidColorBrush x:Key="AccentFillBrush" Color="#202020" />
     <SolidColorBrush x:Key="SelectedBrush" Color="#12000000" />
+    <!-- 侧栏选中 pill：细灰底，和 4×24 蓝色竖条配对（大纲 §1.3） -->
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#E0E0E0" />
     <SolidColorBrush x:Key="OverlayBrush" Color="#990D0D0D" />
-    <SolidColorBrush x:Key="DangerBrush" Color="#191919" />
-    <!-- 实心危险按钮：删除这类不可挽回的动作，红底白字。DangerBrush 本身会跟着主题变成文字色，不能拿它当底色 -->
-    <SolidColorBrush x:Key="DangerFillBrush" Color="#D93A3F" />
-    <SolidColorBrush x:Key="DangerFillHoverBrush" Color="#C22F35" />
-    <!-- 联机主题的蓝色交互强调：指示条、横幅点缀。独立于黑白灰阶主题预设，避免改变既有主题色 -->
+    <SolidColorBrush x:Key="ScrimBrush" Color="#33000000" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C" />
+    <SolidColorBrush x:Key="DangerFillBrush" Color="#C42B1C" />
+    <SolidColorBrush x:Key="DangerFillHoverBrush" Color="#A82316" />
+    <!-- 视觉身份的核心色：所有强调（焦点环、选中竖条、进度、链接）统一到它（大纲 §1.4） -->
     <SolidColorBrush x:Key="NavAccentBrush" Color="#4C8DFF" />
+    <SolidColorBrush x:Key="AccentStrongBrush" Color="#4C8DFF" />
+    <SolidColorBrush x:Key="AccentStrongSoftBrush" Color="#2E4C8DFF" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#191919" />
     <SolidColorBrush x:Key="GlassEdgeBrush" Color="#30FFFFFF" />
     <SolidColorBrush x:Key="WallpaperTintBrush" Color="#45FFFFFF" />
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="White" />
     <SolidColorBrush x:Key="BackdropGlowBrush" Color="Transparent" />
+    <!-- 卡片阴影用「预渲染两层 + 切 opacity」，永远不做 BoxShadow 动画 -->
+    <SolidColorBrush x:Key="CardHoverShadowBrush" Color="#14000000" />
   </Styles.Resources>
+
   <Style Selector="icons|UiIcon"><Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" /><Setter Property="IsHitTestVisible" Value="False" /></Style>
   <Style Selector="icons|IconLabel">
     <Setter Property="Template"><ControlTemplate><StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsHitTestVisible="False">
@@ -31,6 +49,7 @@
       <TextBlock Text="{TemplateBinding Text}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" VerticalAlignment="Center" />
     </StackPanel></ControlTemplate></Setter>
   </Style>
+
   <Style Selector="Window">
     <Setter Property="FontFamily" Value="Microsoft YaHei UI, Noto Sans CJK SC, PingFang SC, Segoe UI, sans-serif" />
     <Setter Property="FontSize" Value="15" />
@@ -38,79 +57,172 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
+
   <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="FontSize" Value="13" /></Style>
-  <Style Selector="Border.library-tile"><Setter Property="Background" Value="{DynamicResource CardBrush}" /><Setter Property="CornerRadius" Value="18" /><Setter Property="BorderThickness" Value="0" /><Setter Property="BoxShadow" Value="0 3 12 0 #08000000" /></Style>
-  <Style Selector="Border.library-tile:pointerover"><Setter Property="BoxShadow" Value="0 6 18 0 #18000000" /></Style>
   <Style Selector="TextBlock.eyebrow"><Setter Property="FontSize" Value="10" /><Setter Property="LetterSpacing" Value="2" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
   <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="22" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
   <Style Selector="TextBlock.optional"><Setter Property="IsVisible" Value="{CompiledBinding Text, RelativeSource={RelativeSource Self}, DataType={x:Type TextBlock}, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" /></Style>
-  <Style Selector="Border.card"><Setter Property="CornerRadius" Value="20" /><Setter Property="Padding" Value="22" /><Setter Property="Background" Value="{DynamicResource CardBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /></Style>
-  <Style Selector="Border.modal-surface"><Setter Property="CornerRadius" Value="24" /><Setter Property="Padding" Value="28" /><Setter Property="Background" Value="{DynamicResource PanelBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BoxShadow" Value="0 20 80 0 #40000000" /><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="28" /></Style>
+
+  <!-- 卡片：圆角 12，纯色模式 1px #E7E7E7 描边 + 极淡投影（大纲 §5.3） -->
+  <Style Selector="Border.card">
+    <Setter Property="CornerRadius" Value="12" /><Setter Property="Padding" Value="24" />
+    <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #0F000000" />
+  </Style>
+
+  <!-- 游戏库卡片：hover 抬 2px（167ms 进场），阴影走预渲染层切 opacity（大纲 §3.3 C-3） -->
+  <Style Selector="Grid.library-tile">
+    <Setter Property="Transitions">
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Grid.library-tile:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-2px)" /></Style>
+  <!-- 按下轻微收回：只动 RenderTransform，不动尺寸 -->
+  <Style Selector="Grid.library-tile:pressed">
+    <Setter Property="RenderTransform" Value="translate(0px,-2px) scale(0.99)" />
+    <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
+  </Style>
+  <Style Selector="Grid.library-tile Border#TileSurface">
+    <Setter Property="CornerRadius" Value="12" /><Setter Property="Background" Value="{DynamicResource CardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Grid.library-tile Border#TileHover">
+    <Setter Property="Opacity" Value="0" /><Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="CornerRadius" Value="12" /><Setter Property="Background" Value="{DynamicResource CardBrush}" />
+    <Setter Property="BoxShadow" Value="0 6 18 0 #14000000" />
+    <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Fast}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Setter>
+  </Style>
+  <Style Selector="Grid.library-tile:pointerover Border#TileHover"><Setter Property="Opacity" Value="1" /></Style>
+
+  <Style Selector="Border.modal-surface">
+    <Setter Property="CornerRadius" Value="12" /><Setter Property="Padding" Value="24" />
+    <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /><Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 20 80 0 #40000000" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="28" />
+  </Style>
   <Style Selector="Grid.modal"><Setter Property="Background" Value="{DynamicResource OverlayBrush}" /><Setter Property="IsVisible" Value="False" /><Setter Property="ZIndex" Value="20" /></Style>
+
+  <!--
+    按钮模板。状态机（大纲 §3.3 C-1）：
+      hover   底色 83ms 线性
+      pressed 底色 83ms + scale 0.98 83ms
+      松开    回 scale 1 用 167ms —— 靠 :pressed 样式覆盖 Transitions 实现「按下比松开快」
+      焦点环  瞬时，2px #4C8DFF，无过渡
+      禁用    瞬时灰化 + opacity 0.4
+  -->
   <Style Selector="Button">
     <Setter Property="icons:Ripple.IsEnabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="11" /><Setter Property="MinHeight" Value="38" /><Setter Property="Padding" Value="16,8" /><Setter Property="Cursor" Value="Hand" /><Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="CornerRadius" Value="8" /><Setter Property="MinHeight" Value="38" /><Setter Property="Padding" Value="16,8" /><Setter Property="Cursor" Value="Hand" /><Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="RenderTransformOrigin" Value="50%,50%" /><Setter Property="RenderTransform" Value="scale(1)" />
-    <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Interaction}"><TransformOperationsTransition.Easing><local:SoftSpringEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Fast}" /></Transitions></Setter>
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition>
+        <DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" />
+      </Transitions>
+    </Setter>
     <Setter Property="Template"><ControlTemplate><Grid>
-      <!-- Cross-fade two fixed shadows instead of animating a blur radius. -->
+      <!-- 两层固定阴影交叉淡入，代替动画 BoxShadow -->
       <Border Name="AmbientShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 1 4 0 #18000000" Opacity="0.65" IsHitTestVisible="False">
-        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
       </Border>
       <Border Name="HoverShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 5 12 0 #28000000" Opacity="0" IsHitTestVisible="False">
-        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Fast}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
       </Border>
-      <Border Name="FocusRing" Margin="-3" CornerRadius="14" BorderBrush="{DynamicResource TextBrush}" BorderThickness="1.5" IsVisible="False" IsHitTestVisible="False" />
-      <Border Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+      <Border Name="FocusRing" Margin="-2" CornerRadius="10" BorderBrush="{DynamicResource AccentStrongBrush}" BorderThickness="2" IsVisible="False" IsHitTestVisible="False" />
+      <Border Name="Surface" ClipToBounds="True" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+        <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /><BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Border.Transitions>
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
           <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
-          <!-- M3 state layer：按下时叠一层很淡的前景色，松开淡出 -->
           <Border Name="StateLayer" Background="{TemplateBinding Foreground}" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False">
-            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
           </Border>
-          <!-- 水波纹绘制层：Ripple.cs 在按下时向内投圆 -->
           <Canvas Name="RippleHost" ClipToBounds="True" IsHitTestVisible="False" />
         </Grid>
       </Border>
     </Grid></ControlTemplate></Setter>
   </Style>
-  <!-- 悬停「展开」、按下「收回」：配合已有的 180ms SoftSpringEasing 过渡，形成 FlClash 式的按压回弹。 -->
-  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.01)" /></Style>
-  <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.955)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" /></Style>
   <Style Selector="Button:pressed /template/ Border#StateLayer"><Setter Property="Opacity" Value="0.08" /></Style>
-  <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
-  <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
-  <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
-  <Style Selector="Button.primary /template/ Border#AmbientShadow"><Setter Property="BoxShadow" Value="0 4 12 0 #29000000" /></Style>
-  <Style Selector="Button.primary /template/ Border#HoverShadow"><Setter Property="BoxShadow" Value="0 8 20 0 #35000000" /></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.98)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <!-- 按下与松开走不同时长：:pressed 期间覆盖成 83ms，松开后回落到基类的 167ms -->
+  <Style Selector="Button:pressed">
+    <Setter Property="Transitions">
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions>
+    </Setter>
+  </Style>
+  <!-- 焦点环一律瞬时：键盘 Tab 时若淡入，会感觉系统在追我 -->
+  <Style Selector="Button:focus-visible /template/ Border#FocusRing"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.4" /></Style>
+  <!-- 禁用是瞬时的：连基类那条 83ms 的 Opacity 过渡也要一起清掉，否则灰化会淡进淡出 -->
+  <Style Selector="Button:disabled"><Setter Property="Transitions"><Transitions /></Setter></Style>
   <Style Selector="Button:pointerover /template/ Border#HoverShadow"><Setter Property="Opacity" Value="1" /></Style>
   <Style Selector="Button:pressed /template/ Border#HoverShadow"><Setter Property="Opacity" Value="0" /></Style>
   <Style Selector="Button:pressed /template/ Border#AmbientShadow"><Setter Property="Opacity" Value="0.18" /></Style>
   <Style Selector="Button:disabled /template/ Border#HoverShadow"><Setter Property="Opacity" Value="0" /></Style>
-  <Style Selector="Button.quiet /template/ Border#AmbientShadow, Button.quiet /template/ Border#HoverShadow, Button.nav /template/ Border#AmbientShadow, Button.nav /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
-  <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /></Style>
   <Style Selector="Button:pressed /template/ Border#TopHighlight"><Setter Property="Opacity" Value="0.3" /></Style>
-  <Style Selector="Button:focus-visible /template/ Border#FocusRing"><Setter Property="IsVisible" Value="True" /></Style>
-  <Style Selector="Button.quiet"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="HorizontalContentAlignment" Value="Left" /></Style>
-  <Style Selector="Button.nav"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Left" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
-  <Style Selector="Button.nav.active"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button.nav.active /template/ Border#AmbientShadow"><Setter Property="IsVisible" Value="True" /><Setter Property="BoxShadow" Value="0 3 10 0 #16000000" /></Style>
-  <Style Selector="Button.nav:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px)"/></Style>
-  <Style Selector="Button.nav:pressed"><Setter Property="RenderTransform" Value="translate(0px,0px)"/></Style>
-  <Style Selector="Button.quiet /template/ Border#TopHighlight, Button.nav /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False" /></Style>
+
+  <!-- Primary：深色底白字；暗色主题下反转为浅底深字（大纲 §3.3 C-2） -->
+  <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
+  <Style Selector="Button.primary /template/ Border#AmbientShadow"><Setter Property="BoxShadow" Value="0 4 12 0 #29000000" /></Style>
+  <Style Selector="Button.primary /template/ Border#HoverShadow"><Setter Property="BoxShadow" Value="0 8 20 0 #35000000" /></Style>
+  <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
+
+  <!-- Ghost / Quiet：透明底，hover 才出底色 -->
+  <Style Selector="Button.quiet, Button.ghost">
+    <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.quiet:pointerover /template/ Border#Surface, Button.ghost:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+  <Style Selector="Button.quiet /template/ Border#AmbientShadow, Button.quiet /template/ Border#HoverShadow, Button.ghost /template/ Border#AmbientShadow, Button.ghost /template/ Border#HoverShadow, Button.nav /template/ Border#AmbientShadow, Button.nav /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.quiet /template/ Border#TopHighlight, Button.ghost /template/ Border#TopHighlight, Button.nav /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False" /></Style>
+
+  <!-- 导航项：选中 = 灰 pill + 共享蓝色竖条（竖条由 MainWindow 单独驱动） -->
+  <Style Selector="Button.nav">
+    <Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="MinHeight" Value="38" />
+  </Style>
+  <Style Selector="Button.nav:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
+  <Style Selector="Button.nav.active"><Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="Button.nav.active /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" /></Style>
+  <Style Selector="Button.nav.active:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" /></Style>
+  <!--
+    内容区里的方块与列表行（资源列表、游戏库卡片）只做按下水波纹，悬停不铺灰底：
+    鼠标扫过整排卡片时一片灰会盖掉封面与文字，读起来像被选中。
+  -->
+  <Style Selector="Button.tile:pointerover /template/ Border#Surface, Button.tile:pressed /template/ Border#Surface">
+    <Setter Property="Background" Value="Transparent" /><Setter Property="BorderBrush" Value="#00000000" />
+  </Style>
+
+  <!-- Danger：只在不可挽回的确认对话框里出现 -->
   <Style Selector="Button.danger"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}" /></Style>
   <Style Selector="Button.danger-solid"><Setter Property="Background" Value="{DynamicResource DangerFillBrush}" /><Setter Property="Foreground" Value="White" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
   <Style Selector="Button.danger-solid:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
   <Style Selector="Button.danger-solid:pressed /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
-  <Style Selector="Button.danger-solid:pointerover /template/ Border#AmbientShadow"><Setter Property="BoxShadow" Value="0 4 12 0 #29000000" /></Style>
+
   <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
-  <Style Selector="ListBoxItem"><Setter Property="Padding" Value="12" /><Setter Property="Margin" Value="0,3" /><Setter Property="CornerRadius" Value="12" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="12" /><Setter Property="Margin" Value="0,3" /><Setter Property="CornerRadius" Value="8" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
+  </Style>
   <Style Selector="ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
-  <Style Selector="TextBox"><Setter Property="CornerRadius" Value="10" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" /></Style>
-  <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="10" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" /><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="8" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" />
+  </Style>
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement"><Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
+  <Style Selector="ComboBox">
+    <Setter Property="CornerRadius" Value="8" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="MinHeight" Value="38" /><Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <!-- 进度条与勾选统一到强调色（大纲 §1.4） -->
+  <Style Selector="ProgressBar"><Setter Property="Foreground" Value="{DynamicResource AccentStrongBrush}" /></Style>
+  <Style Selector="ProgressBar /template/ Border#PART_Indicator"><Setter Property="Background" Value="{DynamicResource AccentStrongBrush}" /></Style>
+
   <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
   <Style Selector="Expander:down">
     <Setter Property="Template"><ControlTemplate>
@@ -129,7 +241,7 @@
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
           <ContentPresenter Name="HeaderContent" Background="Transparent" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
           <Path Name="Chevron" Grid.Column="1" Data="M 0,0 L 5,5 10,0" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.5" Width="10" Height="6" Stretch="Fill" VerticalAlignment="Center" RenderTransformOrigin="50%,50%" RenderTransform="rotate(0deg)">
-            <Path.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Interaction}" Easing="CubicEaseOut"/></Transitions></Path.Transitions>
+            <Path.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions></Path.Transitions>
           </Path>
         </Grid>
       </Border>
@@ -137,35 +249,18 @@
   </Style>
   <Style Selector="ToggleButton.expand-header:pointerover /template/ Border#ExpandSurface"><Setter Property="Background" Value="{DynamicResource HoverBrush}"/></Style>
   <Style Selector="ToggleButton.expand-header:checked /template/ Path#Chevron"><Setter Property="RenderTransform" Value="rotate(180deg)"/></Style>
-  <Style Selector="ToggleButton.expand-header:focus-visible /template/ Border#ExpandSurface"><Setter Property="BoxShadow" Value="0 0 0 2 #80808080"/></Style>
-  <Style Selector="Window.reduced-motion ToggleButton.expand-header /template/ Path"><Setter Property="Transitions"><Transitions/></Setter></Style>
-  <Style Selector="Window.reduced-motion Button /template/ Border"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="ToggleButton.expand-header:focus-visible /template/ Border#ExpandSurface"><Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}"/><Setter Property="BorderThickness" Value="2"/></Style>
+
+  <!--
+    「关闭动画」的唯一开关点：整窗一个类，清空所有过渡。
+    token 是唯一开关点，代码里不许写 if (animationsEnabled) 分支。
+  -->
   <Style Selector="Window.reduced-motion Button"><Setter Property="Transitions"><Transitions /></Setter></Style>
-  <Style Selector="ToggleButton.theme-switch">
-    <Setter Property="Width" Value="70" /><Setter Property="Height" Value="36" /><Setter Property="Cursor" Value="Hand" />
-    <Setter Property="Template"><ControlTemplate>
-      <Border CornerRadius="18" Background="#262626" BorderBrush="#50FFFFFF" BorderThickness="1" ClipToBounds="True">
-        <Grid>
-          <Border Name="DaySky" Background="#CDCDCD" Opacity="0"><Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.26" /></Transitions></Border.Transitions></Border>
-          <Ellipse Classes="star star1" Width="3" Height="3" Fill="White" Margin="13,8,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
-          <Ellipse Classes="star star2" Width="2" Height="2" Fill="White" Margin="24,21,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
-          <Ellipse Classes="star star3" Width="2" Height="2" Fill="White" Margin="32,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
-          <Border Name="Thumb" Width="26" Height="26" CornerRadius="13" Background="#FCFCFC" HorizontalAlignment="Left" Margin="4" RenderTransform="translate(32px,0px)" BoxShadow="0 1 6 0 #50000000">
-            <Border.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.38"><TransformOperationsTransition.Easing><local:SoftSpringEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions></Border.Transitions>
-            <Grid><Ellipse Name="Sun" Width="12" Height="12" Fill="#F4BF45" Opacity="0" /><Path Name="Moon" Data="M 15,3 A 10,10 0 1 0 21,17 A 10,10 0 0 1 15,3 Z" Fill="#8796CF" Width="18" Height="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid>
-          </Border>
-        </Grid>
-      </Border>
-    </ControlTemplate></Setter>
-  </Style>
-  <Style Selector="ToggleButton.theme-switch:checked /template/ Border#DaySky"><Setter Property="Opacity" Value="1" /></Style>
-  <Style Selector="ToggleButton.theme-switch:checked /template/ Border#Thumb"><Setter Property="RenderTransform" Value="translate(0px,0px)" /></Style>
-  <Style Selector="ToggleButton.theme-switch:checked /template/ Ellipse#Sun"><Setter Property="Opacity" Value="1" /></Style>
-  <Style Selector="ToggleButton.theme-switch:checked /template/ Path#Moon"><Setter Property="Opacity" Value="0" /></Style>
-  <Style Selector="ToggleButton.theme-switch:checked /template/ Ellipse.star"><Setter Property="Opacity" Value="0" /></Style>
-  <Style Selector="ToggleButton.theme-switch /template/ Ellipse.star1"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Delay="0:0:0.06" /></Transitions></Setter></Style>
-  <Style Selector="ToggleButton.theme-switch /template/ Ellipse.star2"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Delay="0:0:0.1" /></Transitions></Setter></Style>
-  <Style Selector="ToggleButton.theme-switch /template/ Ellipse.star3"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Delay="0:0:0.14" /></Transitions></Setter></Style>
-  <Style Selector="Window.reduced-motion ToggleButton.theme-switch /template/ Border"><Setter Property="Transitions"><Transitions /></Setter></Style>
-  <Style Selector="Window.reduced-motion ToggleButton.theme-switch /template/ Ellipse"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion Button /template/ Border"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion ListBoxItem"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion Grid.library-tile"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion Grid.library-tile Border#TileHover"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion ToggleButton Path"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion TextBox, Window.reduced-motion ComboBox, Window.reduced-motion ProgressBar"><Setter Property="Transitions"><Transitions /></Setter></Style>
+  <Style Selector="Window.reduced-motion ToggleButton.expand-header /template/ Path"><Setter Property="Transitions"><Transitions /></Setter></Style>
 </Styles>

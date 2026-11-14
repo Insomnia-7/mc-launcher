@@ -97,9 +97,12 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:LibraryEntry">
-            <Border Classes="library-tile" Width="246" Margin="0,0,12,12" Padding="16">
+            <Grid Classes="library-tile" Width="246" Margin="0,0,12,12">
+              <!-- 阴影走预渲染层切 opacity，hover 时卡片抬 2px（大纲 §3.3 C-3） -->
+              <Border x:Name="TileHover"/>
+              <Border x:Name="TileSurface">
               <StackPanel Spacing="12">
-                <Button Classes="quiet" Padding="0" HorizontalContentAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}">
+                <Button Classes="quiet tile" Padding="0" HorizontalContentAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}">
                   <StackPanel Spacing="12" Width="214">
                     <Border Height="118" CornerRadius="12" Background="Transparent" ClipToBounds="True">
                       <Grid>
@@ -117,7 +120,8 @@
                   <Button Grid.Column="1" Classes="quiet" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).FavoriteGameCommand}" CommandParameter="{Binding}" Content="{Binding FavoriteText}" AutomationProperties.Name="切换收藏"/>
                 </Grid>
               </StackPanel>
-            </Border>
+              </Border>
+            </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

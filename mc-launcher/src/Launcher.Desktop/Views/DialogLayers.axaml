@@ -1,6 +1,6 @@
 <UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns:motion="using:Launcher.Desktop" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:vm="using:Launcher.App.ViewModels" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers" IsHitTestVisible="{Binding HasOverlay}">
   <Grid>
-    <Grid Classes="modal" motion:Motion.IsOpen="{Binding IsSetupOpen}">
+    <Grid Classes="modal" IsVisible="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620">
         <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="15">
@@ -59,7 +59,7 @@
         </ScrollViewer>
       </Border>
     </Grid>
-    <Grid Classes="modal" motion:Motion.IsOpen="{Binding IsAccountsOpen}">
+    <Grid Classes="modal" IsVisible="{Binding IsAccountsOpen}">
       <Border Classes="modal-surface" Width="580" MaxHeight="620">
         <ScrollViewer>
           <StackPanel Spacing="16">
@@ -107,7 +107,7 @@
         </ScrollViewer>
       </Border>
     </Grid>
-    <Grid Classes="modal" ZIndex="50" motion:Motion.IsOpen="{Binding IsConfirmOpen}">
+    <Grid Classes="modal" ZIndex="50" IsVisible="{Binding IsConfirmOpen}">
       <Border Classes="modal-surface" Width="540">
         <StackPanel Spacing="16">
           <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap"/>
@@ -122,7 +122,7 @@
         </StackPanel>
       </Border>
     </Grid>
-    <Grid Classes="modal" motion:Motion.IsOpen="{Binding DataRestartRequired}">
+    <Grid Classes="modal" IsVisible="{Binding DataRestartRequired}">
       <Border Classes="modal-surface" Width="560">
         <StackPanel Spacing="18"><TextBlock Text="数据已迁移，请重新打开方隅" Classes="heading"/><TextBlock Text="{Binding DataMoveHint}" TextWrapping="Wrap"/><Button Classes="primary" Command="{Binding RestartForDataMoveCommand}" Content="退出方隅（请重新打开）"/></StackPanel>
       </Border>

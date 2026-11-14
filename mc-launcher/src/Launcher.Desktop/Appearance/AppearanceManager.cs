@@ -32,7 +32,7 @@ public sealed class AppearanceManager(string directory, IResourceDictionary reso
             }
             else
             {
-                brush.Transitions=new Transitions { new ColorTransition { Property=SolidColorBrush.ColorProperty, Duration=duration, Easing=new CubicEaseOut() } };
+                brush.Transitions=new Transitions { new ColorTransition { Property=SolidColorBrush.ColorProperty, Duration=duration, Easing=Launcher.Desktop.MotionEasing.Linear } };
                 brush.Color=target;
             }
         }

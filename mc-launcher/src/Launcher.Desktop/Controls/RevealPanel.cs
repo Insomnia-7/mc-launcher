@@ -28,12 +28,12 @@ public sealed class RevealPanel : Decorator
     }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     { _attached=false;MotionPreferences.Changed-=PreferenceChanged;Transitions=null;base.OnDetachedFromVisualTree(e); }
-    private void PreferenceChanged() { if(!MotionPreferences.Enabled) UpdateReveal(); }
+    private void PreferenceChanged() => UpdateReveal();
     private void UpdateReveal()
     {
         if(Child is {} child && IsOpen)child.IsVisible=true;
         IsHitTestVisible=IsOpen;
-        Transitions=_attached&&MotionPreferences.Enabled ? new Transitions {new DoubleTransition{Property=ProgressProperty,Duration=MotionTiming.Expand,Easing=new CubicEaseOut()}}:null;
+        Transitions=_attached&&MotionPreferences.Enabled ? new Transitions {new DoubleTransition{Property=ProgressProperty,Duration=MotionTiming.Normal,Easing=MotionEasing.Entrance}}:null;
         Progress=IsOpen?1:0;
         InvalidateMeasure();
     }
