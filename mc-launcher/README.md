@@ -85,8 +85,12 @@ MCLAUNCHER_GAME_ROOT  游戏目录（versions、libraries、assets、instances�
 
 1. `docs/releases/history.json` 追加一条
 2. `CHANGELOG.md` 顶部加一节
-3. 构建 exe，跑 `packaging/new-desktop-update.ps1` 生成并签名 `update.json`
-4. Release 里必须同时上传 `Fangyu.exe`、`update.json`、`update.json.sig`，并设为 latest
+3. 两份 README 里提到的版本号、平台状态跟着改
+4. 构建 exe，跑 `packaging/new-desktop-update.ps1` 生成并签名 `update.json`
+5. Release 里必须同时上传 `Fangyu.exe`、`update.json`、`update.json.sig`
+6. 预览版勾上 Pre-release；正式版不勾，并设为 latest
+
+编号规则：预览版是 `1.0.0-preview.N`，正式版直接 `1.0.0`、`1.0.1`，不再带 preview 字样。
 
 更新清单的签名用 `scripts/update-signing.ps1`，私钥通过 `-PrivateKeyPath` 指定（不放进仓库）。清单里的下载地址、文件大小和 SHA-256 对不上时，客户端会拒绝这次更新。
 

@@ -4,7 +4,7 @@ Minecraft Java 版启动器，Windows 桌面程序。用 C#、.NET 10 和 Avalon
 
 下载 Release 里的 `方隅.exe`，双击就能开，不用装 .NET。想改名成 `Fangyu.exe` 也可以。
 
-**当前版本**：[1.0.0-preview.6](https://github.com/Insomnia-7/mc-launcher/releases/latest)（Windows x64 单文件）
+**当前可用版本**：[1.0.0-preview.6](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.6)（Windows x64 单文件，预览版）
 
 ## 能做什么
 
@@ -53,6 +53,17 @@ pwsh -File mc-launcher/packaging/publish-desktop.ps1 -Lean -Compress
 产物在 `mc-launcher/dist/desktop-win-x64/方隅.exe`。
 
 源码结构、检查命令和发版流程都在 **[mc-launcher/README.md](mc-launcher/README.md)**。
+
+## 版本和发布
+
+Release 分两类：
+
+- **预览版**标成 Pre-release，编号带 `-preview.N`，功能可能还会改
+- **正式版**才是 Latest，编号直接是 `1.0.0` 这种
+
+现在仓库里全是预览版，所以 Latest 那一栏是空的，去 [Releases](https://github.com/Insomnia-7/mc-launcher/releases) 页面找最新的 Pre-release 下载。
+
+下次发版开始不再使用 `preview` 后缀，直接按正式版编号发布。
 
 ## 数据放在哪
 
