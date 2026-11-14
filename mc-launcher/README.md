@@ -1,149 +1,117 @@
-# 方隅 Launcher
+# 方隅 · 源码
 
-Minecraft Java 版桌面启动器，使用 C#、.NET 10 和 Avalonia。交付 Windows x64 单文件版，提供 Linux / macOS 的 x64、ARM64 原生预览包；旧 WPF 入口继续保留。
+Minecraft Java 版启动器。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
 
-[下载最新版本](https://github.com/Insomnia-7/mc-launcher/releases/latest) · [全部 Release](https://github.com/Insomnia-7/mc-launcher/releases) · [完整版本记录（0.2–1.0）](CHANGELOG.md)
+界面在 `src/Launcher.Desktop`。旧的 WPF 入口 `src/Launcher.App` 还留着，能编译能跑，但只在 Windows 用，也不再出新功能。
 
-
-## Avalonia 新版界面（预览）
-
-新增 C# / Avalonia 桌面入口，复用现有启动、安装、账号与资源业务。Windows 运行 `run-desktop.cmd`；Linux / macOS 可用 `sh run-desktop.sh`。旧 WPF 版仍可用原入口运行。
-
-新版整合首页布局，仅保留日间白 / 夜间黑两套主题，图标与插画保留原色，提供按钮回弹、页面过渡和昼夜主题开关。跨平台构建入口为 `MinecraftLauncher.Desktop.slnx`；当前已在 Windows 开发机完成构建和离线交互验证，Linux / macOS 尚待实机验收。非 Windows 预览版需要手动安装 Java，系统密钥环接入前暂不开放微软登录持久化。详细范围与运行方法见 [Avalonia 桌面说明](docs/avalonia-desktop.md)。
-
-Windows x64 可用 `pwsh -File packaging/publish-desktop.ps1 -Lean -Compress` 生成自带 .NET 运行环境的单文件 `dist/desktop-win-x64/方隅.exe`，用户下载后双击即可打开启动器。游戏与 Java 按原有流程准备。
-
-### 1.0 跨平台预览
-
-Windows preview.5 新增「联机」：局域网发现、手动服务器连接、可选 EasyTier 跨网络私密房间及一次性启动连接。组件按需下载，免虚拟网卡；房主需填写可用公共或自有节点。真实本机转发已验证，异地双机仍需试验，见 [联机使用说明](docs/multiplayer.md)。
-
-Linux 与 macOS 新增系统密钥环凭据保护、按系统与架构自动管理 Java、原生便携包和各自的签名更新清单。四个平台分别通过真实系统密钥环、官方 Java 下载与执行、应用窗口启动及更新进程成功/回退/拒绝篡改检查。macOS 包使用 ad-hoc 完整性签名，尚未 Apple Developer ID 签名和公证；真实微软授权与 Minecraft 图形运行仍需验收。范围、依赖、安装和更新方法见 [跨平台预览说明](docs/platform-preview.md)。
-
-### 0.9 游戏设置同步与动效预览
-
-「设置 → 游戏同步」可选择一个来源和需要跟随的实例，按范围共享按键、音量、画面、语言与服务器列表。默认关闭，先预览差异再采用；首次冲突保留本地，支持每个实例的独立设置与同步前备份恢复。来源退出后刷新，跟随实例启动前更新，无后台轮询和首屏配置扫描。服务器列表按整份文件处理。使用方法见 [游戏设置同步与统一动效](docs/settings-sync-and-motion.md)。
-
-统一按钮、页面、详情标签与展开面板的过渡节奏；展开时不缩放文字，快速反向操作衔接当前进度。任务和设置结果使用可关闭的页脚提示，外观中可关闭动画。没有新增运行库或网页内核。
-
-### 0.7 启动器自动更新预览
-
-设置新增「关于与更新」，默认首屏显示后后台检查新版，展示更新说明与大小，由用户确认下载。单文件更新经发布者签名和 SHA-256 校验后，使用临时副本替换并重启；新窗口无法就绪时尝试恢复旧版。中文文件名和现有账号、设置、游戏数据保留。0.6 及更早版本需先手动下载一次本版。后续发版须同步发布签名更新清单，见 [自动更新说明](docs/launcher-auto-update.md)。
-
-### 0.6 存档与维护预览
-
-游戏详情的「存档与备份」新增单世界列表，显示原有图标、名称、版本、模式、最近游玩及大小，支持单独备份、恢复和管理备份。恢复前自动保存当前世界，其他世界保持不变；有备份的已移除世界也可恢复。首页不扫描世界文件。
-
-诊断页可先检查游戏文件，再仅补下载缺失或校验异常的依赖；修复前后都执行校验。设置新增「存储」，显示游戏和备份占用，并在确认后清理超过 7 天的完整缓存，保留断点文件、已安装 Java 和个人数据。详细范围见 [存档与维护说明](docs/worlds-repair-storage.md)。
-
-### 0.5 模组工作台预览
-
-已安装模组支持多选、批量启用 / 停用 / 删除，以及按可确认的原发布版本重装。更新前先选择目标版本，查看变更、发布频道、更新日志、缺失前置和下载大小，再选择备份后应用到当前实例，或创建独立试装副本后应用。生成预览不下载或替换文件，文件变化后旧计划会失效。
-
-游戏详情的「创建试装副本」支持选择模组、设置、资源包、光影、存档、截图与服务器列表；存档默认不复制。副本共用现有游戏 / 加载器版本，私有文件独立复制。批量变更与副本复制纳入持久任务中心，支持暂停、恢复和取消。详细行为见 [模组工作台说明](docs/mod-workbench.md)。
-
-### 0.4 游戏工作区预览
-
-主导航分为游戏库、发现资源、角色、下载任务和设置。游戏库提供卡片 / 紧凑列表、名称与版本搜索、收藏、分组、自定义名称与封面，并记录最近游玩的游戏。点击游戏进入独立详情页，在概览、模组与资源、存档与备份、设置、日志与诊断之间切换。皮肤与披风、下载任务、全局设置使用独立页面。账号选择和危险操作确认保留小型对话框。
-
-名称、分组、封面和布局保存在启动器数据目录中，按游戏根目录隔离；修改显示名称不会重命名游戏目录。角色预览离开角色页后暂停，回到游戏库不会继续渲染。实现范围和验收见 [游戏工作区说明](docs/workspace-design.md)。
-
-## 功能
-
-- 原版安装与启动、自动准备 Java、官方 / BMCLAPI 下载源切换。
-- 游戏版本分为正式版、预览版、活动版、远古 Beta、远古 Alpha；活动版收录官方清单中可下载的特殊版本（如愚人节版）。
-- Fabric、Quilt、Forge、NeoForge；Modrinth / CurseForge / MultiMC·Prism 整合包导入。
-- 模组、整合包、资源包、数据包、光影包统一检索：来源、游戏版本、内容分类、加载器、热门推荐及分页。
-- 按相关度、下载量、热度、更新时间和发布时间排序。Modrinth 热度按关注数，CurseForge 按平台人气；排序在平台端完成。
-- 实例隔离、独立内存与启动参数；删除实例时回收无依赖的版本与 natives，保留共享 libraries、assets 及仍被使用的版本。
-- 模组依赖补全、来源记录与事务更新；同一游戏目录的写任务互斥。
-- 微软设备码登录、多账号切换与移除、离线身份、DPAPI 令牌存储、本地诊断及独立更新器。
-- 网络设置：自动选择、直接连接、自定义 HTTP / HTTPS / SOCKS5 代理，保存后重启生效。
-- 首次安装向导：选择正式版、内存与身份，一键准备游戏和 Java。
-- 玻璃质感界面与六套即时切换主题；导入本地壁纸、调整显示强度、导入 / 导出 JSON 配色主题，支持页面进出动画。
-- 更新器清理上游已移除的文件：每次更新后记下装过的文件清单（`installed-files.json`），下一版清单里没有的会被移进 `.backup/<时间戳>/` 再删除，用户自己放进目录的文件不受影响。
-- 被安全软件拦住时的处置引导：启动失败或被拦截时自动识别（SmartScreen / Defender / 组策略 / 权限 / 病毒判定），给出四步可操作说明；版本页与诊断卡片都有「被安全软件拦住了？」入口。
-
-## 使用
-
-首次进入空游戏目录会显示安装向导。已有版本时，可点击游戏库右上角「添加游戏」；游戏库「导入…」菜单提供整合包、文件夹和自动查找入口。
-在下载页选择资源类型和来源，按需输入名称、选择游戏版本与分类，再搜索。留空搜索或点击「热门推荐」可浏览热门内容。改变条件后重新搜索，分页保留这次搜索的条件。
-
-整合包安装会创建独立实例，并遵循搜索时选定的游戏版本、加载器。其他资源始终安装适配当前目标实例的发布文件；搜索到其他游戏版本的内容时，须先选择相应实例；筛选版本或加载器与目标实例不一致时会明确提示并停止安装。
-数据包下载到实例的 `.minecraft/datapacks`，使用时需自行移入目标世界的 `saves/<世界>/datapacks`。
-
-Modrinth 不需要 API Key。CurseForge 需要有效 Key，可通过 `CURSEFORGE_API_KEY` 或启动器数据目录 `settings.json` 的 `curseForgeApiKey` 提供。若 Key 无搜索权限，页面会明确提示，并保留按数字项目 ID 查询安装；此时无法获取该来源的热门列表。普通项目网页的 slug 链接不等于项目数字 ID。
-
-## 外观与主题
-
-新版点击侧栏「设置」（`Ctrl+,`），在「外观」中切换日间白 / 夜间黑，也可以使用标题栏昼夜按钮。可导入 PNG / JPG / BMP 壁纸并调整强度；图片保存为本机副本，源文件保留。
-
-外观下次启动自动恢复，壁纸在首帧之后后台读取。支持流畅动画、跟随系统及关闭动画三种模式，覆盖页面、资源分类与弹窗进出。旧版 WPF 的历史主题记录仍见 [外观说明](docs/appearance.md)，新版不提供彩色主题导入 / 导出。
-
-## 账号管理
-
-在版本页点击「账号管理…」，选择已保存的正版账号或离线身份，再点击「使用此身份」。切换已保存账号不需要重新完成设备码登录，选择会保存供下次启动使用。
-「添加微软账号」复用微软设备码授权，支持取消；再次登录同一账号会更新登录信息。移除账号需要确认，仅清理本机登录信息；移除当前正版账号后回到离线身份，其他账号和游戏存档保留。首次安装向导也可选择或添加账号。
-
-仅在启动时验证当前账号，不批量续期、不增加启动时网络请求。正版账号验证失败时保留原选择并停止这次启动；可重新登录，或主动选择离线身份。账号保存失败时不会宣称切换或移除成功。
-账号令牌继续由 Windows DPAPI 保护；账号列表仅展示名称和状态。详细实现与验证见 [账号管理记录](docs/account-management.md)。
-
-## 网络设置
-
-新版从侧栏「设置 → 网络」打开配置；首次安装向导中的网络入口也会进入同一页面：
-
-- **自动选择**：保持原有系统 / 环境变量代理策略；遇到可重试的网络故障时尝试另一条通道。
-- **直接连接**：启动器请求不使用系统或环境变量中的代理。
-- **自定义代理**：填写 `http://127.0.0.1:7890`、`https://proxy.example:443` 或 `socks5://127.0.0.1:1080` 形式的地址；端口按自己的代理软件填写。此模式失败会报错，不回退直连。目前不支持需要用户名、密码的代理。
-
-点击「保存」后重启启动器生效，正在进行的任务继续使用原配置。页面分别显示当前连接方式和待下次启动应用的设置。配置作用于启动器自身的下载、认证和更新请求，不修改 Windows 代理设置或游戏进程的网络。
-
-首次请求时才创建网络通道和执行自动代理探测，构造界面不会因此联网。配置保存在已被 Git 忽略的 `settings.json`，保存时保留其中的下载源、更新地址等字段。详细验证与兼容说明见 [网络设置记录](docs/network-settings.md)。
-
-## 构建与运行
-
-需要 Windows 和 .NET 10 SDK（含桌面运行时）。在本目录执行：
-
-```powershell
-dotnet build MinecraftLauncher.sln -c Release -m:1
-dotnet src/Launcher.App/bin/Release/net10.0-windows/MCLauncher.dll
+```
+src/
+  Launcher.Domain          版本 JSON、classpath、启动参数、加载器规则，纯计算
+  Launcher.Application     安装、启动编排、实例、模组、整合包、设置同步、更新
+  Launcher.Infrastructure  HTTP、Mojang 元数据、Java、Modrinth、CurseForge、EasyTier
+  Launcher.Desktop         Avalonia 界面
+  Launcher.App             旧 WPF 界面（Windows only）
+tests/
+  Core.Checks              链路与业务检查，不依赖界面
+  Desktop.Checks           Avalonia 无头渲染检查
+  App.Checks               WPF 检查
+  Platform.Checks          Unix 平台行为
+  Architecture.Check       分层依赖约束
+tools/
+  Launcher.Cli             命令行链路验证（mcl）
+  Launcher.Updater         自更新替换进程
+  Launcher.Probe           探针
+  Launcher.Bench           启动耗时测量
+packaging/                 发布脚本、更新清单生成、签名
+docs/                      各功能的设计与验收记录
 ```
 
-默认数据目录为 `%APPDATA%/MCLauncher`，游戏目录为其 `game` 子目录。可通过 `MCLAUNCHER_HOME`、`MCLAUNCHER_GAME_ROOT` 覆盖。
-可双击 `run-app.cmd` 启动已构建的程序，或通过 `run.cmd` 在首次运行时构建。脚本优先使用 `DOTNET_ROOT`，否则使用 PATH 中的 .NET SDK。
-本机配置可写入被 Git 忽略的 `launcher.local.cmd`，用 `set "变量=值"` 指定上述环境变量；该文件不会随源码发布。
+## 跑起来
 
-## 单文件开发包
-
-在仓库根目录运行 `pwsh -File scripts/publish-launcher.ps1`，会先发布独立更新器，再内嵌到 `dist/portable/MCLauncher.exe`。发布目录必须为空，避免旧文件混入。
-
-该包需要 .NET 10 Desktop Runtime；一个 EXE 指分发形态，运行时仍会保存设置、日志和更新备份。更新器只在需要更新时提取到数据目录缓存，按内容哈希校验与复用。单文件版优先使用内嵌更新器；普通源码构建继续使用外置更新器。
-
-GitHub 发布流程已改为此布局，清单和签名保持独立资产。尚未创建新的公开 Release。验证与迁移限制见 [单文件发布说明](docs/single-file-release.md)。
-
-## 检查
+需要 .NET 10 SDK。
 
 ```powershell
-dotnet tests/Core.Checks/bin/Release/net10.0/Core.Checks.dll
-dotnet tests/Architecture.Check/bin/Release/net10.0/Architecture.Check.dll
-dotnet tests/App.Checks/bin/Release/net10.0-windows/App.Checks.dll
+dotnet run --project src/Launcher.Desktop/Launcher.Desktop.csproj -c Release
 ```
 
-核心检查涵盖安装、登录、依赖、事务更新、资源 API 参数、版本分类与实例删除；WPF 检查涵盖安装向导、检索分页、取消、分类切换、权限错误以及 1000×640 / 820×560 布局渲染。测试使用隔离目录及模拟 API，不下载完整游戏。
+或者用现成脚本：Windows 是 `run-desktop.cmd`，Linux / macOS 是 `sh run-desktop.sh`。
 
-## 架构与开发记录
+## 出包
 
-Domain / Application 核心不依赖 WPF；Infrastructure 实现网络和系统接口，App 提供桌面界面，独立工具负责诊断及更新。
+Windows，单文件自带运行时：
 
-- [资源检索与清理交接](docs/resource-browser-2026-10-23.md)
-- [接手交接](docs/handoff-2026-10-23-codex.md)
-- [代码审查](docs/review-and-optimization-2026-10-23.md)
-- [六项后续修复](docs/followup-fixes-2026-10-23.md)
+```powershell
+pwsh -File packaging/publish-desktop.ps1 -Lean -Compress
+```
 
-多账号管理、代理设置和更新清单签名已完成。更新清单必须携带可信发布者签名，主程序与独立更新器分别验证；校验失败会停止更新并显示原因。发布密钥通过 GitHub `release-signing` 环境 Secret 使用，公钥随程序编译，私钥不进入仓库或安装包。
+脚本会断言输出目录里只有一个 exe，然后把 `方隅.exe` 拷到 `dist/desktop-win-x64/`。
+`-Lean` 打开裁剪，压完约 24 MB；不加是完整版，体积翻一倍左右。
 
-首次迁移到签名版本，应从项目发布页完整安装新版本（包含更新器）；旧版客户端不能获得追溯性的签名保护。后续维护、密钥轮换与验证范围见 [更新签名说明](docs/update-signing.md)。下一阶段为真实联网与发布升级验收；CurseForge 搜索权限仍取决于所用 API Key。
+Linux / macOS：
 
-## 许可证
+```powershell
+pwsh -File packaging/publish-unix.ps1 -Runtime linux-x64
+```
 
-本仓库原创代码采用 [MIT License](../LICENSE)。第三方库、下载的 Minecraft 文件与社区资源仍适用各自的许可和使用条件。
-本项目与 Mojang、Microsoft 没有关联，亦非官方产品。
+## 跑检查
+
+```powershell
+./tests/Core.Checks/bin/Release/net10.0/Core.Checks.exe
+./tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.exe <空目录>
+./tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.exe <空目录> --multiplayer
+```
+
+先构建：
+
+```powershell
+dotnet build tests/Desktop.Checks/Desktop.Checks.csproj -c Release
+```
+
+`Desktop.Checks` 是无头渲染，要用一个空的目录当数据根，不同用例别复用同一个目录，否则会读到上一轮留下的实例。
+`--empty`、`--workspace`、`--mod-workbench`、`--multiplayer` 这类开关只跑对应的那一组。
+
+## 数据目录
+
+默认 `%APPDATA%\MCLauncher`。开发时常用环境变量隔离：
+
+```
+MCLAUNCHER_HOME       数据目录（账号、实例、缓存、日志）
+MCLAUNCHER_GAME_ROOT  游戏目录（versions、libraries、assets、instances）
+```
+
+## 发布
+
+版本号在 `src/Launcher.Desktop/Launcher.Desktop.csproj`。改完版本号要一起更新：
+
+1. `docs/releases/history.json` 追加一条
+2. `CHANGELOG.md` 顶部加一节
+3. 构建 exe，跑 `packaging/new-desktop-update.ps1` 生成并签名 `update.json`
+4. Release 里必须同时上传 `Fangyu.exe`、`update.json`、`update.json.sig`，并设为 latest
+
+更新清单的签名用 `scripts/update-signing.ps1`，私钥通过 `-PrivateKeyPath` 指定（不放进仓库）。清单里的下载地址、文件大小和 SHA-256 对不上时，客户端会拒绝这次更新。
+
+## 几个约定
+
+- `versions/<id>/<id>.json` 是版本的事实来源，Forge / NeoForge 的增量文件必须沿 `inheritsFrom` 合并之后才能拿来启动。
+- 实例和版本是两回事：一个版本目录可以被多个实例共用（比如同一份 Fabric 版本装两个整合包），实例名会带 `-2` 后缀。
+- 删实例时写墓碑（`instances/hidden-versions.json`、`hidden-instances.json`），避免被依赖保留的父版本或半删目录在重新扫描时又冒出来。重装同版本会自动清掉。
+- 游戏进程启动优先走命令行直传（宽字符，中文路径安全）；参数超长才落到 `@argfile`，而 argfile 在 Windows 上要按系统 ANSI 代码页写，写 UTF-8 会让中文 classpath 条目失效。
+- 界面动画统一走 `MotionPreferences`，用户在设置里关掉动效后，页面切换、指示条、波纹都不播。
+
+## 文档
+
+| 内容 | 文件 |
+|---|---|
+| 跨平台范围与依赖 | `docs/platform-preview.md` |
+| 联机与 EasyTier | `docs/multiplayer.md` |
+| 模组工作台 | `docs/mod-workbench.md` |
+| 整合包升级 | `docs/modpack-upgrades.md` |
+| 存档、修复与存储 | `docs/worlds-repair-storage.md` |
+| 设置同步与动效 | `docs/settings-sync-and-motion.md` |
+| 自动更新与签名 | `docs/launcher-auto-update.md`、`docs/update-signing.md` |
+| 发布约定 | `docs/release-policy.md` |
+| 界面规范 | `docs/ui-reference.md`、`docs/appearance.md` |
+
+## 许可
+
+MIT。Minecraft 与第三方资源遵循各自的许可，本项目与 Mojang、Microsoft 无关联。
