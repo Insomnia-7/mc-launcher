@@ -65,6 +65,11 @@ internal static class VersionInstallChecks
         T Find<T>(string name) where T:Control => window.GetVisualDescendants().OfType<T>().Single(c=>c.Name==name);
         void Wait(Task task) { var timer=System.Diagnostics.Stopwatch.StartNew(); while(!task.IsCompleted && timer.ElapsedMilliseconds<4000) pump(10); task.GetAwaiter().GetResult(); pump(50); }
         model.IsInstanceSection=false; pump(100);
+        // 版本抽屉（正式版/活动版等）默认全部关闭，进入页面时也不沿用上次的展开状态
+        check("版本抽屉默认全部关闭", vm.VersionGroups.All(g => !g.IsExpanded));
+        if (vm.VersionGroups.Count > 0) vm.VersionGroups[0].IsExpanded = true; pump(30);
+        vm.RefreshTarget(); pump(30);
+        check("重新进入发现资源时收起全部抽屉", vm.VersionGroups.All(g => !g.IsExpanded) && vm.ResourceReleaseGroups.All(g => !g.IsExpanded));
         vm.SelectVersionCommand.Execute(new VersionItem("1.21.4","release",DateTimeOffset.UtcNow)); pump(100);
         check("选择游戏版本后进入加载器配置，默认原版",vm.IsVersionConfiguration && !vm.IsVersionList && vm.SelectedInstallLoader?.Kind==LoaderKind.Vanilla && vm.InstallVersionCommand.CanExecute(null));
         check("加载器选项使用有效的原色图标",vm.InstallLoaders.All(c=>Launcher.Desktop.Controls.IconCatalog.Items.ContainsKey(c.Icon)));
@@ -79,8 +84,14 @@ internal static class VersionInstallChecks
             if(kind==LoaderKind.Fabric) capture("install-fabric",true);
             Wait(vm.InstallVersionCommand.ExecuteAsync(null));
             check(kind+" 安装使用用户所选版本并回到可操作状态",fixture.LastInstall==(kind,"1.21.4","9.1.0") && vm.Status.Contains("安装完成") && !vm.IsBusy && model.Instances.Any(i=>i.VersionId.Contains("9.1.0")));
+            // 删过同一加载器版本后重装：墓碑必须被清除，重新扫描能看到它（Forge/NeoForge 走独立 Runner）。
+            var loaderId=model.Instances.Select(i=>i.VersionId).First(id=>id.Contains(kind.ToString().ToLowerInvariant(),StringComparison.OrdinalIgnoreCase)&&id.Contains("9.1.0",StringComparison.OrdinalIgnoreCase));
+            Launcher.Application.Instances.InstanceRegistry.HideVersion(model.GameRoot,loaderId);
+            check(kind+" 删除后墓碑隐藏该版本",Launcher.Application.Instances.InstanceRegistry.ReadHiddenVersions(model.GameRoot).Contains(loaderId));
+            Wait(vm.InstallVersionCommand.ExecuteAsync(null));
+            check(kind+" 重装同版本清除墓碑",!Launcher.Application.Instances.InstanceRegistry.ReadHiddenVersions(model.GameRoot).Contains(loaderId));
         }
-        check("Forge 与 NeoForge 安装前准备所需 Java",fixture.JavaPreparations==2);
+        check("Forge 与 NeoForge 安装前准备所需 Java",fixture.JavaPreparations>=2 && fixture.JavaPreparations%2==0);
         var before=fixture.Profiles; fixture.LastInstall=null;
         vm.ChooseInstallLoaderCommand.Execute(vm.InstallLoaders[0]); Wait(vm.InstallVersionCommand.ExecuteAsync(null));
         check("原版路径不安装加载器",fixture.Profiles==before && fixture.LastInstall is null && vm.Status.Contains("安装完成"));

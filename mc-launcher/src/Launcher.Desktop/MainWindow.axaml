@@ -7,6 +7,47 @@
     <Style Selector="Button.caption:pointerover, Button.caption:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
     <Style Selector="Button.caption.close:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource AccentFillBrush}" /></Style>
     <Style Selector="Button.caption.close:pointerover"><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /></Style>
+      <!-- 侧边栏收起/展开：宽度平滑变化，导航文字与辅助信息淡出/淡入（大纲 6.5）。 -->
+      <Style Selector="Border#SidebarPanel"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Width" Duration="0:0:0.24" Easing="CubicEaseOut" /></Transitions></Setter></Style>
+      <Style Selector="StackPanel#SidebarNavText"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" /></Transitions></Setter></Style>
+      <Style Selector="StackPanel#SidebarBottomText"><Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" /></Transitions></Setter></Style>
+      <!-- 折叠态：文字区真正退出布局（只设 Opacity=0 仍占 91px 宽，72px 侧栏会溢出到主内容区）。
+           同时保留一段极短淡出：先 IsVisible 切换，Opacity 过渡负责展开时的淡入观感。 -->
+      <Style Selector="Border#SidebarPanel.collapsed StackPanel#SidebarNavText, Border#SidebarPanel.collapsed StackPanel#SidebarBottomText"><Setter Property="IsVisible" Value="False" /><Setter Property="Opacity" Value="0" /><Setter Property="IsHitTestVisible" Value="False" /></Style>
+      <Style Selector="Border#SidebarPanel.collapsed"><Setter Property="Padding" Value="8,16,8,12" /></Style>
+      <Style Selector="Border#SidebarPanel.collapsed Grid#SidebarBrandRow"><Setter Property="Margin" Value="0,0,0,0" /></Style>
+      <!-- 收起态：导航按钮内容居中、只留图标（文字隐藏），图标保留原色 -->
+      <Style Selector="Border#SidebarPanel.collapsed Button.nav"><Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="Padding" Value="8" /></Style>
+      <Style Selector="Border#SidebarPanel.collapsed icons|IconLabel TextBlock"><Setter Property="IsVisible" Value="False" /></Style>
+      <Style Selector="Border#SidebarPanel.collapsed icons|IconLabel StackPanel"><Setter Property="Spacing" Value="0" /></Style>
+      <Style Selector="ToggleButton#SidebarToggle"><Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" /></Transitions></Setter></Style>
+      <Style Selector="ToggleButton#SidebarToggle:checked"><Setter Property="RenderTransform" Value="rotate(180deg)" /></Style>
+      <!-- 折叠按钮：透明底。ToggleButton 选中态在 Fluent 主题里会铺强调色背景，
+           这里连 :checked / 悬停 / 模板内的 ContentPresenter 一起压平，避免出现黑色方块。 -->
+      <Style Selector="ToggleButton#SidebarToggle, ToggleButton#SidebarToggleCollapsed">
+        <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <!-- 显式给回原来的 42×32 点击热区：Id 选择器会盖掉 Button.caption 的尺寸 -->
+        <Setter Property="Width" Value="42" /><Setter Property="Height" Value="32" /><Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="10" /><Setter Property="HorizontalContentAlignment" Value="Center" />
+      </Style>
+      <Style Selector="ToggleButton#SidebarToggle:checked, ToggleButton#SidebarToggleCollapsed:checked">
+        <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+      </Style>
+      <Style Selector="ToggleButton#SidebarToggle:checked /template/ ContentPresenter, ToggleButton#SidebarToggleCollapsed:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+      </Style>
+      <Style Selector="ToggleButton#SidebarToggle /template/ ContentPresenter, ToggleButton#SidebarToggleCollapsed /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+      </Style>
+      <Style Selector="ToggleButton#SidebarToggle:pointerover, ToggleButton#SidebarToggleCollapsed:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+      </Style>
+      <Style Selector="ToggleButton#SidebarToggle:pointerover /template/ ContentPresenter, ToggleButton#SidebarToggleCollapsed:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+      </Style>
+      <!-- 尊重系统「减少动态效果」：侧栏宽度/文字/箭头过渡一并禁用（大纲 8.4）。 -->
+      <Style Selector="Window.reduced-motion Border#SidebarPanel, Window.reduced-motion StackPanel#SidebarNavText, Window.reduced-motion StackPanel#SidebarBottomText, Window.reduced-motion ToggleButton#SidebarToggle"><Setter Property="Transitions"><Transitions /></Setter></Style>
   </Window.Styles>
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+1" Command="{Binding ShowInstancesCommand}" />
@@ -17,7 +58,7 @@
     <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenAppearanceCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CloseTopOverlayCommand}" />
   </Window.KeyBindings>
-  <Grid RowDefinitions="44,*,Auto" ColumnDefinitions="236,*" Margin="{Binding $parent[Window].OffScreenMargin}">
+  <Grid RowDefinitions="44,*,Auto" ColumnDefinitions="Auto,*" Margin="{Binding $parent[Window].OffScreenMargin}">
     <Grid Grid.RowSpan="3" Grid.ColumnSpan="2" IsHitTestVisible="False">
       <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}" />
       <Border Background="{DynamicResource WallpaperTintBrush}" IsVisible="{Binding WallpaperImage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
@@ -29,7 +70,6 @@
           <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center" IsHitTestVisible="False"><Image x:Name="TitleAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="24" Height="24" /><TextBlock Text="方隅" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" /><Border Width="1" Height="12" Background="{DynamicResource LineBrush}" Margin="4,0" /><TextBlock Text="JAVA EDITION" Classes="eyebrow" FontSize="9" LetterSpacing="1.2" VerticalAlignment="Center" /></StackPanel>
         </Border>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" WindowDecorationProperties.ElementRole="User">
-          <ToggleButton x:Name="ThemeToggle" Classes="theme-switch" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" Margin="0,0,8,0" ToolTip.Tip="切换浅色 / 深色主题" AutomationProperties.Name="切换日夜主题" />
           <StackPanel x:Name="CaptionButtons" Orientation="Horizontal" Spacing="3">
             <Button x:Name="MinimizeButton" Classes="quiet caption" Click="MinimizeWindow" WindowDecorationProperties.ElementRole="MinimizeButton" ToolTip.Tip="最小化" AutomationProperties.Name="最小化"><Path Data="M 2,7 L 12,7" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
             <Button x:Name="MaximizeButton" Classes="quiet caption" Click="ToggleMaximizeWindow" WindowDecorationProperties.ElementRole="MaximizeButton" ToolTip.Tip="最大化" AutomationProperties.Name="最大化"><Path x:Name="MaximizeGlyph" Data="M 2,2 L 12,2 12,12 2,12 Z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
@@ -38,23 +78,47 @@
         </StackPanel>
       </Grid>
     </Border>
-    <Border Grid.Row="1" Grid.Column="0" CornerRadius="24" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" Margin="16,8,0,8" Padding="14,20,14,12">
+    <Border x:Name="SidebarPanel" Grid.Row="1" Grid.Column="0" CornerRadius="24" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource GlassEdgeBrush}" BorderThickness="1" Margin="16,8,0,8" Padding="14,20,14,12" Width="{Binding SidebarWidth, Mode=OneWay}" Classes.collapsed="{Binding IsSidebarCollapsed}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="23">
-          <Grid ColumnDefinitions="42,*" Margin="8,0,0,0">
-            <Image x:Name="SidebarAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="38" Height="38" HorizontalAlignment="Left" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="方隅" FontSize="15" FontWeight="SemiBold" /><TextBlock Text="FANGYU LAUNCHER" Classes="eyebrow" FontSize="8" LetterSpacing="0.8" /></StackPanel>
+          <!-- 展开态品牌行：图标 + 名称 + 右侧折叠按钮。
+               只用 TwoWay 绑定作为唯一状态入口：IsChecked 改变时 OnIsSidebarCollapsedChanged 负责持久化。
+               不要再加 Command——ToggleButton 的 Toggle() 与 Button 的 Command.Execute 会在同一次点击里
+               把 IsSidebarCollapsed 翻转两次，最终回到原值，表现为点击无响应（大纲 13.3-1/2）。 -->
+          <Grid x:Name="SidebarBrandExpanded" ColumnDefinitions="*,Auto" Margin="8,0,0,0" IsVisible="{Binding !IsSidebarCollapsed}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Image x:Name="SidebarAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="38" Height="38" VerticalAlignment="Center" />
+              <StackPanel x:Name="SidebarNavText" Spacing="2" VerticalAlignment="Center"><TextBlock Text="方隅" FontSize="15" FontWeight="SemiBold" /><TextBlock Text="FANGYU LAUNCHER" Classes="eyebrow" FontSize="8" LetterSpacing="0.8" /></StackPanel>
+            </StackPanel>
+            <ToggleButton x:Name="SidebarToggle" Grid.Column="1" Classes="quiet caption" IsChecked="{Binding IsSidebarCollapsed, Mode=TwoWay}" ToolTip.Tip="收起 / 展开导航" AutomationProperties.Name="收起或展开导航">
+              <Path Data="M 8,3 L 3,8 8,13 M 12,3 L 7,8 12,13" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.4" Width="15" Height="15" IsHitTestVisible="False" />
+            </ToggleButton>
           </Grid>
-          <StackPanel Spacing="7">
-            <Button x:Name="LibraryNav" Classes="nav" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏库"><icons:IconLabel Icon="NavVersions" Text="游戏库" /></Button>
-            <Button x:Name="DiscoverNav" Classes="nav" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源"><icons:IconLabel Icon="NavDownload" Text="发现资源" /></Button>
-            <Button x:Name="MultiplayerNav" Classes="nav" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机"><icons:IconLabel Icon="ActionGlobe" Text="联机" /></Button>
-            <Button x:Name="WardrobeEntry" Classes="nav" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色"><icons:IconLabel Icon="ActionLogin" Text="角色" /></Button>
-            <Button x:Name="TaskCenterEntry" Classes="nav" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载任务"><icons:IconLabel Icon="ActionCloudDownload" Text="下载任务" /></Button>
-            <Button x:Name="SettingsEntry" Classes="nav" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>
+          <!-- 收起态：72px 放不下「图标 + 按钮」一行，改为上下两行，避免按钮压住品牌图标；
+               导航列表随之下移，与图标分开。 -->
+          <StackPanel x:Name="SidebarBrandCollapsed" Spacing="10" Margin="0,2,0,0" HorizontalAlignment="Center" IsVisible="{Binding IsSidebarCollapsed}">
+            <Image x:Name="SidebarAppIconCollapsed" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="34" Height="34" HorizontalAlignment="Center" />
+            <ToggleButton x:Name="SidebarToggleCollapsed" Classes="quiet caption" HorizontalAlignment="Center" IsChecked="{Binding IsSidebarCollapsed, Mode=TwoWay}" ToolTip.Tip="收起 / 展开导航" AutomationProperties.Name="收起或展开导航">
+              <Path Data="M 8,3 L 3,8 8,13 M 12,3 L 7,8 12,13" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.4" Width="15" Height="15" IsHitTestVisible="False" />
+            </ToggleButton>
           </StackPanel>
+          <Grid>
+            <StackPanel x:Name="NavList" Spacing="7">
+            <Button x:Name="LibraryNav" Classes="nav" ToolTip.Tip="游戏库" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏库"><icons:IconLabel Icon="NavVersions" Text="游戏库" /></Button>
+            <Button x:Name="DiscoverNav" Classes="nav" ToolTip.Tip="发现资源" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源"><icons:IconLabel Icon="NavDownload" Text="发现资源" /></Button>
+            <Button x:Name="MultiplayerNav" Classes="nav" ToolTip.Tip="联机" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机"><icons:IconLabel Icon="ActionGlobe" Text="联机" /></Button>
+            <Button x:Name="WardrobeEntry" Classes="nav" ToolTip.Tip="角色" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色"><icons:IconLabel Icon="ActionLogin" Text="角色" /></Button>
+            <Button x:Name="TaskCenterEntry" Classes="nav" ToolTip.Tip="下载任务" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载任务"><icons:IconLabel Icon="ActionCloudDownload" Text="下载任务" /></Button>
+            <Button x:Name="SettingsEntry" Classes="nav" ToolTip.Tip="设置" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>
+            </StackPanel>
+            <!-- 共享蓝色指示条：整条导航只有这一条，切换页面时平滑移动（大纲 7） -->
+            <Border x:Name="NavIndicator" Width="3.5" Height="24" CornerRadius="2" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Background="{DynamicResource NavAccentBrush}" IsHitTestVisible="False" IsVisible="False">
+              <Border.RenderTransform><TranslateTransform X="-10" Y="0" /></Border.RenderTransform>
+            </Border>
+          </Grid>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Spacing="12" Margin="8,12,8,0">
+        <StackPanel x:Name="SidebarBottomText" DockPanel.Dock="Bottom" Spacing="12" Margin="8,12,8,0">
           <Button x:Name="LauncherUpdateNotice" Content="方隅有新版本 · 查看更新" Command="{Binding OpenLauncherUpdatesCommand}" IsVisible="{Binding HasUpdate}" FontSize="12"/>
           <Border Height="1" Background="{DynamicResource LineBrush}" />
           <TextBlock Text="{Binding InstanceCountText}" Classes="muted" />
@@ -66,7 +130,7 @@
     <Grid x:Name="PageContent" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
       <TransitioningContentControl x:Name="PageHost"><TransitioningContentControl.PageTransition><local:WorldPageTransition /></TransitioningContentControl.PageTransition></TransitioningContentControl>
     </Grid>
-    <Border Grid.Row="2" Grid.ColumnSpan="2" Padding="24,8,24,12">
+    <Border x:Name="StatusBar" Grid.Row="2" Grid.ColumnSpan="2" Padding="24,8,24,12">
       <StackPanel Spacing="6">
         <icons:RevealPanel x:Name="NoticeReveal" IsOpen="{Binding HasNotice}">
           <Border CornerRadius="12" Background="{DynamicResource CardBrush}" Padding="12,6" Margin="0,0,0,4" BoxShadow="0 2 10 0 #10000000">
@@ -78,7 +142,8 @@
             </Grid>
           </Border>
         </icons:RevealPanel>
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="JAVA EDITION" Classes="eyebrow" FontSize="8" Margin="20,0,0,0" /></Grid>
+        <!-- 只有真正有内容的状态（安装进度、失败原因等）才占这一行；默认「就绪」不显示，界面更简洁。 -->
+        <TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasStatusText}" />
       </StackPanel>
     </Border>
     <ContentControl x:Name="OverlayHost" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />

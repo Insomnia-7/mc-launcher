@@ -130,7 +130,8 @@ public sealed partial class MainViewModel : ObservableObject
         InitializeSetup(meta);
         RefreshAccountChoices(selectCurrent: true);
         RefreshInstances();
-        IsSetupOpen = Instances.Count == 0 && !HasGameRootProblem;
+        // 首次启动不再自动弹出安装向导：直接进主页面，由「添加游戏」按钮按需打开。
+        IsSetupOpen = false;
         _logger.LogInformation("主视图初始化完成：{Count} 个版本，游戏目录 {GameRoot}", Instances.Count, GameRoot);
     }
 
@@ -900,6 +901,14 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusText = string.Empty;
 
+    /// <summary>
+    /// 底栏是否显示状态行：默认的「就绪」不算信息，隐藏后界面更简洁；
+    /// 安装进度、删除失败等真实提示仍会显示。
+    /// </summary>
+    public bool HasStatusText => StatusText.Length > 0 && StatusText is not ("就绪" or "Ready");
+
+    partial void OnStatusTextChanged(string value) => OnPropertyChanged(nameof(HasStatusText));
+
     /// <summary>游戏目录不可用时的中文说明（空字符串表示正常）。</summary>
     [ObservableProperty]
     private string _gameRootProblem = string.Empty;
@@ -1540,6 +1549,24 @@ public sealed partial class MainViewModel : ObservableObject
     private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath)
     {
         if(!CanDeleteInstance()) {StatusText="当前任务结束后再删除版本。";return;}
+
+        if (HasPendingInstanceTasks?.Invoke(GameRoot, instance.InstanceId) == true)
+        {
+            StatusText = $"「{instance.DisplayName}」还有未完成的下载/安装任务，请先到「下载任务」处理后再删除。";
+            return;
+        }
+
+        // 删除前检查：目标版本正在运行时拒绝删除（大纲 4.3-4），
+        // 否则 Windows 上文件被进程占用，删到一半失败还留下半删状态。
+        lock (_running)
+        {
+            if (_running.TryGetValue(instance.VersionId, out var runningPid))
+            {
+                StatusText = $"「{instance.DisplayName}」正在运行（pid {runningPid}），请先退出游戏再删除。";
+                return;
+            }
+        }
+
         using var operation = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(GameRoot, "删除实例");
         if (operation is null) { StatusText = Launcher.Application.Operations.GameOperationCoordinator.Shared.BusyMessage(GameRoot); return; }
         try
@@ -1552,10 +1579,16 @@ public sealed partial class MainViewModel : ObservableObject
                 : $"已删除版本 {instance.DisplayName}";
             _logger.LogInformation("删除版本 {InstanceId}（version {VersionId}，共用={Shared}）",
                 instance.InstanceId, instance.VersionId, stillUsed);
+
+            // 删除已经成功：桌面端界面收尾（关详情/提示/清理偏好）单独容错，
+            // 它抛异常不能把业务结果改写成「删除失败」，也不能跳过列表刷新（大纲 4.6）。
+            try { InstanceDeleted?.Invoke(instance.InstanceId, instance.DisplayName, stillUsed); }
+            catch (Exception uiEx) { _logger.LogWarning(uiEx, "删除成功后的界面收尾失败（不影响删除结果）"); }
             RefreshInstances();
         }
         catch (Exception ex)
         {
+            // 失败：留在详情页，状态栏给可读原因；不跳转、不显示成功提示。
             _logger.LogError(ex, "删除版本失败");
             StatusText = "删除失败：" + ErrorText.Describe(ex);
         }

@@ -45,9 +45,28 @@ internal static class CatalogScrollChecks
         check("删除版本先提示存档与配置风险",model.IsConfirmOpen&&model.ConfirmMessage.Contains("存档"));model.ConfirmCancelCommand.Execute(null);
         check("取消确认保留版本",model.Instances.Count==count);
         vm.IsBusy=true;check("下载期间禁用删除",!model.DeleteInstanceCommand.CanExecute(null));vm.IsBusy=false;
+        // 排队中的持久化任务（Ready/Paused/Failed）不持有进程内租约，也要拦截删除（大纲 4.3-5）。
+        var savedPending=model.HasPendingInstanceTasks;var targetId=model.SelectedInstance!.InstanceId;
+        model.HasPendingInstanceTasks=(root,id)=>string.Equals(id,targetId,StringComparison.OrdinalIgnoreCase);
+        model.DeleteInstanceCommand.Execute(null);model.ConfirmOkCommand.Execute(null);pump(80);
+        check("存在未完成的持久化任务时拒绝删除",model.Instances.Count==count&&model.StatusText.Contains("未完成"));model.ConfirmCancelCommand.Execute(null);
+        model.HasPendingInstanceTasks=savedPending;
         model.DeleteInstanceCommand.Execute(null);model.ConfirmOkCommand.Execute(null);pump(100);
         check("确认删除仅移除选中的测试实例",model.Instances.Count==count-1);
+        check("删除成功后返回游戏库主页面",!model.IsDetailOpen&&model.IsInstanceSection&&model.ShellPage=="library");
+        check("删除成功弹出操作提示",model.HasNotice&&model.NoticeText.Contains("已删除"));model.DismissNoticeCommand.Execute(null);pump(30);
+        check("失败路径不假装成功",!model.IsConfirmOpen);
         model.ShowInstancesCommand.Execute(null);pump(50);
+        // 独立场景：UI 收尾钩子抛异常不能把已成功的删除误报成失败、也不能跳过列表刷新。
+        if(model.Instances.Count>0)
+        {
+            var savedHook=model.InstanceDeleted;var before=model.Instances.Count;
+            model.InstanceDeleted=(id,name,shared)=>throw new InvalidOperationException("ui hook fixture failure");
+            model.SelectedInstance=model.Instances.First();
+            model.DeleteInstanceCommand.Execute(null);model.ConfirmOkCommand.Execute(null);pump(100);
+            check("界面收尾异常不改变删除成功结果",model.Instances.Count==before-1&&!model.StatusText.Contains("删除失败"));
+            model.InstanceDeleted=savedHook;
+        }
         fixture.CatalogCount=0;
     }
 }

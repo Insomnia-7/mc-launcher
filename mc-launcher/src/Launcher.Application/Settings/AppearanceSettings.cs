@@ -52,7 +52,7 @@ public static class ThemeCatalog
     }
 }
 
-public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55, string MotionMode = "smooth")
+public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55, string MotionMode = "smooth", bool SidebarCollapsed = false)
 {
     public AppearanceSettings Validate()
     {

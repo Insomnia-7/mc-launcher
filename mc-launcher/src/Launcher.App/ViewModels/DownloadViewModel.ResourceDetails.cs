@@ -216,7 +216,7 @@ public sealed partial class DownloadViewModel
             && (loader is null || r.Loaders.Contains(loader,StringComparer.OrdinalIgnoreCase))
             && (ResourceReleaseChannel=="全部版本" || r.ReleaseChannel==ResourceReleaseChannel)).OrderBy(r=>r.ChannelOrder).ToArray();
         ResourceReleaseGroups.Clear();
-        foreach(var group in visible.GroupBy(r=>r.Header)) ResourceReleaseGroups.Add(new(group.Key,group.ToArray()){IsExpanded=ResourceReleaseGroups.Count==0});
+        foreach(var group in visible.GroupBy(r=>r.Header)) ResourceReleaseGroups.Add(new(group.Key,group.ToArray()));   // 资源发布版本抽屉同样默认关闭
         SelectedResourceRelease=visible.Contains(SelectedResourceRelease)?SelectedResourceRelease:visible.FirstOrDefault();
         ResourceVersionsStatus=visible.Length==0?"没有匹配的"+(ResourceReleaseChannel=="全部版本"?"发布版本":ResourceReleaseChannel)+"，可切换版本类型、游戏版本或加载器。":$"已显示 {visible.Length} 个发布版本"+(HasMoreResourceVersions?"，下方可加载更多。":"。");
         RefreshResourceCompatibility();

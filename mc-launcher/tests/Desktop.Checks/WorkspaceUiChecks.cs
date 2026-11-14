@@ -69,6 +69,5 @@ internal static class WorkspaceUiChecks
         model.OpenAppearanceCommand.Execute(null);pump(60);check("设置独立成页并退出角色任务状态",model.IsSettingsPage&&!model.IsExperienceOpen&&!model.HasOverlay&&Find<Border>("PreferencesSurface").IsEffectivelyVisible);
         model.OpenAccountsCommand.Execute(null);model.CloseTopOverlayCommand.Execute(null);check("关闭账号浮层保留底层设置页",!model.IsAccountsOpen&&model.IsSettingsPage);
         model.ShowInstancesCommand.Execute(null);pump(80);check("主导航能从设置直接返回游戏库",model.ShellPage=="library"&&!model.IsPreferencesOpen);
-        model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");capture("workspace-library-dark",true);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
     }
 }

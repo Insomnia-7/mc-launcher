@@ -16,6 +16,8 @@
     <!-- 实心危险按钮：删除这类不可挽回的动作，红底白字。DangerBrush 本身会跟着主题变成文字色，不能拿它当底色 -->
     <SolidColorBrush x:Key="DangerFillBrush" Color="#D93A3F" />
     <SolidColorBrush x:Key="DangerFillHoverBrush" Color="#C22F35" />
+    <!-- 联机主题的蓝色交互强调：指示条、横幅点缀。独立于黑白灰阶主题预设，避免改变既有主题色 -->
+    <SolidColorBrush x:Key="NavAccentBrush" Color="#4C8DFF" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#191919" />
     <SolidColorBrush x:Key="GlassEdgeBrush" Color="#30FFFFFF" />
     <SolidColorBrush x:Key="WallpaperTintBrush" Color="#45FFFFFF" />
@@ -47,6 +49,7 @@
   <Style Selector="Border.modal-surface"><Setter Property="CornerRadius" Value="24" /><Setter Property="Padding" Value="28" /><Setter Property="Background" Value="{DynamicResource PanelBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BoxShadow" Value="0 20 80 0 #40000000" /><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="28" /></Style>
   <Style Selector="Grid.modal"><Setter Property="Background" Value="{DynamicResource OverlayBrush}" /><Setter Property="IsVisible" Value="False" /><Setter Property="ZIndex" Value="20" /></Style>
   <Style Selector="Button">
+    <Setter Property="icons:Ripple.IsEnabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="11" /><Setter Property="MinHeight" Value="38" /><Setter Property="Padding" Value="16,8" /><Setter Property="Cursor" Value="Hand" /><Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="RenderTransformOrigin" Value="50%,50%" /><Setter Property="RenderTransform" Value="scale(1)" />
@@ -63,13 +66,21 @@
       <Border Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
           <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
+          <!-- M3 state layer：按下时叠一层很淡的前景色，松开淡出 -->
+          <Border Name="StateLayer" Background="{TemplateBinding Foreground}" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False">
+            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" /></Transitions></Border.Transitions>
+          </Border>
+          <!-- 水波纹绘制层：Ripple.cs 在按下时向内投圆 -->
+          <Canvas Name="RippleHost" ClipToBounds="True" IsHitTestVisible="False" />
         </Grid>
       </Border>
     </Grid></ControlTemplate></Setter>
   </Style>
-  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px)" /></Style>
+  <!-- 悬停「展开」、按下「收回」：配合已有的 180ms SoftSpringEasing 过渡，形成 FlClash 式的按压回弹。 -->
+  <Style Selector="Button:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-1px) scale(1.01)" /></Style>
   <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="translate(0px,1px) scale(0.955)" /><Setter Property="Opacity" Value="0.98" /></Style>
+  <Style Selector="Button:pressed /template/ Border#StateLayer"><Setter Property="Opacity" Value="0.08" /></Style>
   <Style Selector="Button:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="2" /></Style>
   <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.42" /></Style>
   <Style Selector="Button.primary"><Setter Property="Background" Value="{DynamicResource PrimaryFillBrush}" /><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>

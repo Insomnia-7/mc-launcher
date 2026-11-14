@@ -90,6 +90,10 @@ public sealed partial class GameInstaller(
             JsonSerializer.Serialize(version, new JsonSerializerOptions { WriteIndented = true }),
             ct).ConfigureAwait(false);
 
+        // 用户删过这个版本后重新下载安装：清掉「已从库中移除」墓碑，让它重新出现在游戏库。
+        // 原版/整合包/首次向导经这里；Forge/NeoForge 由独立 Runner 落盘，见 DownloadViewModel.VersionInstall.cs 的统一清理。
+        Launcher.Application.Instances.InstanceRegistry.UnhideVersion(gameRoot, version.Id);
+
         return new InstallReport(
             version.Id,
             unique.Count,

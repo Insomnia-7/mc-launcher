@@ -2,7 +2,7 @@
   <Grid>
     <Grid Classes="modal" motion:Motion.IsOpen="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620">
-        <ScrollViewer>
+        <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="15">
             <TextBlock Text="开始你的 Minecraft" Classes="heading"/>
             <TextBlock Text="选好版本与身份，其余交给启动器。" Classes="muted"/>

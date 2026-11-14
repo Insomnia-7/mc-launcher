@@ -6,9 +6,11 @@ namespace Launcher.App.Appearance;
 internal static class DesktopThemes
 {
     public const string LightId = "glacier";
+    /// <summary>旧夜间主题的 id：仅用于把历史设置迁移到日间白，不再对外提供。</summary>
     public const string DarkId = "aurora";
+    /// <summary>外观只提供日间白一种主题。</summary>
     public static IReadOnlyList<ThemePreset> Choices { get; } =
-        [new(LightId, Create(true)), new(DarkId, Create(false))];
+        [new(LightId, Create(true))];
 
     private static ThemeDefinition Create(bool light)
     {

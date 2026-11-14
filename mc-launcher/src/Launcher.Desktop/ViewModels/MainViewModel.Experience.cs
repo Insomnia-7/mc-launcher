@@ -119,6 +119,25 @@ public sealed partial class MainViewModel
                 _packUpdates.Discard(plan);
         };
         _tasks.Changed+=()=>{_ = PlatformUi.RunOnUiAsync(RefreshTaskRows);};
+        // 删除实例前拦截仍挂在它上面的未终止持久化任务（Ready/Running/Paused/Failed），
+        // 否则任务恢复后会按 request.InstanceId 操作一个已被删掉的目录（大纲 4.3-5）。
+        // InstanceId 为 null 的全局任务（version/setup/import/resource/loader）会写同一个 GameRoot
+        // 的 versions/instances，删除时也必须拦截，避免并发恢复写进半删目录。
+        HasPendingInstanceTasks=(root,id)=>
+        {
+            IReadOnlyList<DurableTaskRecord> tasks;
+            try { tasks = _tasks.List(); } catch { return false; }
+            return tasks.Any(t=>
+                string.Equals(t.Request.GameRoot,root,StringComparison.OrdinalIgnoreCase)
+                && t.State is DurableTaskState.Ready or DurableTaskState.Running or DurableTaskState.Paused or DurableTaskState.Failed
+                && (string.Equals(t.Request.InstanceId,id,StringComparison.OrdinalIgnoreCase)
+                    // InstanceId 为 null 的全局任务只在「明确要写这个版本」时拦截：
+                    // 否则别的版本的安装任务会无端阻止删除（同 root 多版本并存）。
+                    || (t.Request.InstanceId is null
+                        && t.Request.Kind is "version" or "setup" or "import" or "resource" or "loader" or "pack-update" or "mod-update"
+                        && t.Request.Arguments.TryGetValue("game", out var game)
+                        && string.Equals(game, id, StringComparison.OrdinalIgnoreCase))));
+        };
         Download.QueueTask=QueueExperienceTaskAsync;
         CancelPersistentTask=()=>{if(_tasks.ActiveId is not {} id)return false;_tasks.Cancel(id);return true;};
         Download.CancelPersistentTask=CancelPersistentTask;

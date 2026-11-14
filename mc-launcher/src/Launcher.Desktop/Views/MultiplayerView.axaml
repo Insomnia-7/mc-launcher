@@ -31,8 +31,8 @@
       <StackPanel Spacing="14" IsVisible="{Binding Multiplayer.IsRoomTab}">
         <Border Classes="card" Padding="18">
           <StackPanel Spacing="10">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14"><StackPanel Spacing="5"><TextBlock Text="{Binding Multiplayer.EngineState}" FontWeight="SemiBold"/><TextBlock Text="{Binding Multiplayer.EngineDescription}" Classes="muted" FontSize="13" TextWrapping="Wrap"/></StackPanel><Button x:Name="InstallRoomEngineButton" Grid.Column="1" Content="下载 / 修复组件" Command="{Binding Multiplayer.InstallEngineCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"/></Grid>
-            <ProgressBar Minimum="0" Maximum="100" Height="4" Value="{Binding Multiplayer.DownloadPercent}" IsVisible="{Binding Multiplayer.IsBusy}"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14"><StackPanel Spacing="5"><TextBlock Text="{Binding Multiplayer.EngineState}" FontWeight="SemiBold"/><TextBlock Text="{Binding Multiplayer.EngineDescription}" Classes="muted" FontSize="13" TextWrapping="Wrap"/></StackPanel><Button x:Name="InstallRoomEngineButton" Grid.Column="1" Command="{Binding Multiplayer.InstallEngineCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><TextBlock Text="{Binding Multiplayer.InstallEngineLabel}"/><ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.EngineInstallBusy}"/></StackPanel></Button></Grid>
+            <ProgressBar Minimum="0" Maximum="100" Height="4" Value="{Binding Multiplayer.DownloadPercent}" IsVisible="{Binding Multiplayer.DownloadVisible}"/>
             <TextBlock Text="房主需填写一个可用的公共或自有 EasyTier 节点，朋友通过邀请使用同一节点。公共节点由第三方提供，连接表现取决于双方网络和节点线路。" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
             <Button Content="查找社区公共节点 ↗" Command="{Binding Multiplayer.NodeGuideCommand}" HorizontalAlignment="Left"/>
           </StackPanel>
@@ -43,16 +43,30 @@
             <TextBlock Text="先进入单人世界并开放局域网，再填写游戏显示的端口。" Classes="muted" TextWrapping="Wrap"/>
             <Grid ColumnDefinitions="*,150" ColumnSpacing="10"><TextBox x:Name="RoomNameInput" Text="{Binding Multiplayer.RoomName}" PlaceholderText="房间名称" MaxLength="60"/><TextBox x:Name="HostPortInput" Grid.Column="1" Text="{Binding Multiplayer.HostPort}" PlaceholderText="游戏端口" MaxLength="5"/></Grid>
             <TextBox x:Name="RoomPeerInput" Text="{Binding Multiplayer.PeerAddress}" PlaceholderText="节点地址，例如 tcp://主机:端口" MaxLength="300"/>
-            <Button x:Name="CreateRoomButton" Classes="primary" HorizontalAlignment="Right" Command="{Binding Multiplayer.CreateRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><TextBlock Text="创建房间" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+            <Button x:Name="CreateRoomButton" Classes="primary" HorizontalAlignment="Right" Command="{Binding Multiplayer.CreateRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Multiplayer.CreateRoomLabel}" Foreground="{Binding $parent[Button].Foreground}"/>
+                <ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.RoomBusy}" Foreground="{Binding $parent[Button].Foreground}"/>
+              </StackPanel>
+            </Button>
           </StackPanel>
         </Border>
         <Border Classes="card" Padding="20" IsVisible="{Binding !Multiplayer.HasSession}">
-          <StackPanel Spacing="12"><TextBlock Text="加入朋友的房间" FontSize="19" FontWeight="SemiBold"/><TextBox x:Name="RoomInvitationInput" Text="{Binding Multiplayer.InviteToJoin}" PlaceholderText="粘贴朋友分享的 fangyu-room:// 邀请信息" AcceptsReturn="True" TextWrapping="Wrap" Height="72" MaxLength="4096"/><Button x:Name="JoinRoomButton" Content="连接房间" HorizontalAlignment="Right" Command="{Binding Multiplayer.JoinRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"/></StackPanel>
+          <StackPanel Spacing="12"><TextBlock Text="加入朋友的房间" FontSize="19" FontWeight="SemiBold"/><TextBox x:Name="RoomInvitationInput" Text="{Binding Multiplayer.InviteToJoin}" PlaceholderText="粘贴朋友分享的 fangyu-room:// 邀请信息" AcceptsReturn="True" TextWrapping="Wrap" Height="72" MaxLength="4096"/><Button x:Name="JoinRoomButton" HorizontalAlignment="Right" Command="{Binding Multiplayer.JoinRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><TextBlock Text="{Binding Multiplayer.JoinRoomLabel}"/><ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.JoinRoomBusy}"/></StackPanel></Button></StackPanel>
         </Border>
         <Border Classes="card" Padding="20" IsVisible="{Binding Multiplayer.HasSession}">
           <StackPanel Spacing="12">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="{Binding Multiplayer.SessionTitle}" FontSize="20" FontWeight="SemiBold"/><Button x:Name="DisconnectRoomButton" Grid.Column="1" Content="断开房间" Command="{Binding Multiplayer.DisconnectCommand}"/></Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="{Binding Multiplayer.SessionTitle}" FontSize="20" FontWeight="SemiBold"/><Button x:Name="DisconnectRoomButton" Grid.Column="1" Command="{Binding Multiplayer.DisconnectCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}"><StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><TextBlock Text="{Binding Multiplayer.DisconnectLabel}"/><ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.DisconnectBusy}"/></StackPanel></Button></Grid>
             <TextBlock x:Name="RoomConnectionState" Text="{Binding Multiplayer.SessionState}" Classes="muted" TextWrapping="Wrap"/>
+            <!-- 大纲 9.5：实际地址、端口、节点来自服务层 session，不写死示例值 -->
+            <Border Background="{DynamicResource FieldBrush}" CornerRadius="10" Padding="12" IsVisible="{Binding Multiplayer.HasSessionAddress}">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10">
+                <StackPanel Grid.Row="0" Spacing="2"><TextBlock Text="游戏连接地址" Classes="eyebrow" FontSize="9"/><TextBlock Text="{Binding Multiplayer.SessionAddress}" FontSize="14" FontWeight="SemiBold"/></StackPanel>
+                <Button Grid.Row="0" Grid.Column="1" Content="复制地址" Command="{Binding Multiplayer.CopySessionAddressCommand}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="16"><TextBlock Classes="muted" FontSize="12"><Run Text="游戏端口 "/><Run Text="{Binding Multiplayer.SessionGamePort}" FontWeight="SemiBold"/></TextBlock><TextBlock Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis"><Run Text="节点 "/><Run Text="{Binding Multiplayer.SessionPeer}" FontWeight="SemiBold"/></TextBlock></StackPanel>
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Classes="muted" FontSize="11" Text="{Binding Multiplayer.SessionNetwork}" TextTrimming="CharacterEllipsis"/>
+              </Grid>
+            </Border>
             <StackPanel Spacing="8" IsVisible="{Binding Multiplayer.IsHost}"><TextBox Text="{Binding Multiplayer.InvitationText}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="90"/><Grid ColumnDefinitions="*,Auto" ColumnSpacing="10"><TextBlock Text="邀请有效期 12 小时，仅分享给信任的朋友。" Classes="muted" FontSize="13" TextWrapping="Wrap"/><Button Grid.Column="1" Content="复制邀请信息" Command="{Binding Multiplayer.CopyInvitationCommand}"/></Grid></StackPanel>
             <TextBlock Text="联机期间请保持方隅运行。房主关闭世界后，该世界将无法继续连接。" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
           </StackPanel>

@@ -149,6 +149,9 @@ public sealed partial class DownloadViewModel
         SelectedSort = SortOptions.Single(s => s.Value == ResourceSort.Popularity);
         PageNumber = 1; await BrowseAsync();
     }
+    /// <summary>单次检索的上限时长：超过就当作超时，避免界面一直停在「正在搜索」。</summary>
+    private static readonly TimeSpan SearchTimeout = TimeSpan.FromSeconds(25);
+
     private async Task BrowseAsync(CancellationToken ct = default, bool paging = false, bool append = false)
     {
         if (IsBusy || !IsSearchMode || SelectedCategory is null || append&&!CanLoadMoreResources()) return;
@@ -161,7 +164,11 @@ public sealed partial class DownloadViewModel
                 SelectedSort?.Value??ResourceSort.Popularity,PageSize,offset);
         if(source==CurseForgeSource) request=request with {Limit=Math.Min(request.Limit,10000-offset)};
         if(request.Limit<=0) return;
-        using var cts=CancellationTokenSource.CreateLinkedTokenSource(ct);
+        // 平台接口最坏要等 HttpClient 的 100 秒超时，期间界面只能一直显示「正在搜索」。
+        // 这里给一次检索独立设上限：到点就报「检索超时」并复位，不让进度条无限转。
+        using var timeout=new CancellationTokenSource();
+        timeout.CancelAfter(SearchTimeout);
+        using var cts=CancellationTokenSource.CreateLinkedTokenSource(ct,timeout.Token);
         _runningCts=cts;_searching=true;IsLoadingMore=append;IsBusy=true;IsSearchingResources=true;_loadMoreFailed=false;
         if(!append) {SelectedResult=null;_installRequest=null;_hasMoreResults=false;}
         Status=append?"正在加载更多资源…":$"正在从 {source} 获取资源…";
@@ -216,8 +223,14 @@ public sealed partial class DownloadViewModel
         {
             if(generation==_browserGeneration)
             {
-                if(append) {_loadMoreFailed=true;Status="已取消后续加载，已有结果保留";}
-                else { _lastRequest=paging?previousRequest:null; TotalResults=paging?previousTotal:0; PageNumber=paging&&previousRequest is not null?previousRequest.Offset/PageSize+1:1; Status="已取消搜索，已有结果保留。"; }
+                // 区分「用户点了取消」和「超时」：后者要给可操作的提示，而不是安静地停住。
+                var timedOut=timeout.IsCancellationRequested&&!ct.IsCancellationRequested;
+                if(append) {_loadMoreFailed=true;Status=timedOut?"后续加载超时，已有结果保留，可点击加载更多重试。":"已取消后续加载，已有结果保留";}
+                else
+                {
+                    _lastRequest=paging?previousRequest:null; TotalResults=paging?previousTotal:0; PageNumber=paging&&previousRequest is not null?previousRequest.Offset/PageSize+1:1;
+                    Status=timedOut?$"检索超时（{SearchTimeout.TotalSeconds:0} 秒无响应），请检查网络或切换资源平台后重试。":"已取消搜索，已有结果保留。";
+                }
             }
         }
         catch(Exception ex)

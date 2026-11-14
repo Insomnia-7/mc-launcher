@@ -31,6 +31,8 @@ public sealed partial class App : Avalonia.Application
             if (!_ownsMutex) { desktop.Shutdown(); return; }
 
             AppPaths.EnsureCreated();
+            // FlClash/M3 式按压反馈：类级注册一次，之后所有 Button 都带水波纹。
+            Launcher.Desktop.Controls.Ripple.Install();
             Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
                 .WriteTo.File(Path.Combine(AppPaths.LogsDirectory, "desktop-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
                 .CreateLogger();

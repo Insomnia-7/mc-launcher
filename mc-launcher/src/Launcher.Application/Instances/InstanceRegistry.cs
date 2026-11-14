@@ -94,6 +94,73 @@ public sealed class InstanceRegistry
     public static string PathFor(string gameRoot) => Path.Combine(gameRoot, "instances", FileName);
 
     /// <summary>
+    /// 版本墓碑：用户删过、但 files 因被其它加载器版本继承而保留的 versionId。
+    /// 只用于过滤 LoadCore 第 ② 阶段的「虚拟 versions/ 条目」，绝不能用来过滤真实实例。
+    /// </summary>
+    public static string HiddenVersionsPathFor(string gameRoot) => Path.Combine(gameRoot, "instances", "hidden-versions.json");
+    /// <summary>实例墓碑：已删（或半删残留）的 instanceId，只用于过滤 ScanDisk 出来的真实目录。</summary>
+    public static string HiddenInstancesPathFor(string gameRoot) => Path.Combine(gameRoot, "instances", "hidden-instances.json");
+
+    private static IReadOnlySet<string> ReadHidden(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ids = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(path), JsonOptions);
+            return new HashSet<string>(
+                (ids ?? []).Where(id => !string.IsNullOrWhiteSpace(id)
+                    && id != "." && id != ".." && id.IndexOfAny(['/', '\\', ':']) < 0),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+    private static void WriteHidden(string path, IEnumerable<string> ids)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temp = path + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(ids.Distinct(StringComparer.OrdinalIgnoreCase).ToList(), JsonOptions));
+        File.Move(temp, path, overwrite: true);
+    }
+
+    public static IReadOnlySet<string> ReadHiddenVersions(string gameRoot) => ReadHidden(HiddenVersionsPathFor(gameRoot));
+    public static IReadOnlySet<string> ReadHiddenInstances(string gameRoot) => ReadHidden(HiddenInstancesPathFor(gameRoot));
+
+    /// <summary>标记版本「已从库中移除」；instanceId 记到独立的实例墓碑，避免误伤共用同一 versionId 的其它真实实例。</summary>
+    public static void HideVersion(string gameRoot, string versionId, string? instanceId = null)
+    {
+        var versions = new HashSet<string>(ReadHiddenVersions(gameRoot), StringComparer.OrdinalIgnoreCase);
+        var versionsChanged = !string.IsNullOrWhiteSpace(versionId) && versions.Add(versionId);
+        if (versionsChanged) WriteHidden(HiddenVersionsPathFor(gameRoot), versions);
+
+        // 删除中途失败时 instances/<id> 可能只剩半截目录；记到实例墓碑，让 ScanDisk 不复活它。
+        // 注意：即便 instanceId == versionId 也写，二者是不同语义的集合。
+        if (!string.IsNullOrWhiteSpace(instanceId))
+        {
+            var instances = new HashSet<string>(ReadHiddenInstances(gameRoot), StringComparer.OrdinalIgnoreCase);
+            if (instances.Add(instanceId)) WriteHidden(HiddenInstancesPathFor(gameRoot), instances);
+        }
+    }
+
+    /// <summary>重新安装 / 重新登记时清除两类墓碑，让实例与版本重新出现在游戏库。</summary>
+    public static void UnhideVersion(string gameRoot, string versionId, string? instanceId = null)
+    {
+        var versions = new HashSet<string>(ReadHiddenVersions(gameRoot), StringComparer.OrdinalIgnoreCase);
+        var changed = !string.IsNullOrWhiteSpace(versionId) && versions.Remove(versionId);
+        if (changed) WriteHidden(HiddenVersionsPathFor(gameRoot), versions);
+        var ids = new[] { versionId, instanceId }.Where(id => !string.IsNullOrWhiteSpace(id)).ToArray();
+        if (ids.Length > 0)
+        {
+            var instances = new HashSet<string>(ReadHiddenInstances(gameRoot), StringComparer.OrdinalIgnoreCase);
+            var instancesChanged = false;
+            foreach (var id in ids) instancesChanged |= instances.Remove(id!);
+            if (instancesChanged) WriteHidden(HiddenInstancesPathFor(gameRoot), instances);
+        }
+    }
+
+    /// <summary>
     /// 读登记表；索引缺失或与磁盘不一致时按磁盘重建（<b>不写盘</b>，要落盘用 <see cref="LoadOrMigrate"/>）。
     /// </summary>
     public static InstanceRegistry Load(string gameRoot) => LoadCore(gameRoot, persist: false);
@@ -214,6 +281,8 @@ public sealed class InstanceRegistry
         _entries.Add(entry);
         Sort();
         Save();
+        // 用户重新登记了这个版本，撤销之前的「已从库中移除」标记
+        UnhideVersion(GameRoot, versionId, instanceId);
         return entry;
     }
 
@@ -266,6 +335,8 @@ public sealed class InstanceRegistry
         }
 
         var entries = new List<InstanceRegistration>();
+        var hiddenVersions = ReadHiddenVersions(gameRoot);
+        var hiddenInstances = ReadHiddenInstances(gameRoot);
 
         // ① 实例目录（有 instance.json 的优先，没有的算"孤儿目录"也要登记，否则界面上会豁一块）
         foreach (var (id, metadata) in onDisk)
@@ -273,6 +344,9 @@ public sealed class InstanceRegistry
             var versionId = metadata?.LoaderVersionId;
             if (string.IsNullOrWhiteSpace(versionId) && fromIndex.TryGetValue(id, out var indexed)) versionId = indexed.VersionId;
             if (string.IsNullOrWhiteSpace(versionId)) versionId = DeriveVersionId(id, versionIds);
+            // 只按实例 id 过滤：删掉共享 versionId 的一个实例时，其它实例仍指向同一 versionId，
+            // 绝不能因 hiddenVersions 把它们一起隐藏（13.1「删除多个版本中的一个，其他版本不受影响」）。
+            if (hiddenInstances.Contains(id)) continue;
 
             entries.Add(new InstanceRegistration(
                 id,
@@ -285,12 +359,14 @@ public sealed class InstanceRegistry
                 metadata?.ImportedAt));
         }
 
-        // ② 只有 versions/ 目录、没有实例目录的老版本：以前界面就是这么列的，保持可见
+        // ② 只有 versions/ 目录、没有实例目录的老版本：以前界面就是这么列的，保持可见。
+        // 但「用户删除过、文件因被其它加载器版本继承而保留」的版本必须跳过：否则删完重开游戏库
+        // 会被这里补成一条虚拟实例，看起来像没删掉（大纲 13.1）。
         var knownVersions = new HashSet<string>(
             entries.Select(e => e.VersionId), StringComparer.OrdinalIgnoreCase);
         foreach (var versionId in versionIds.OrderBy(v => v, StringComparer.OrdinalIgnoreCase))
         {
-            if (knownVersions.Contains(versionId)) continue;
+            if (knownVersions.Contains(versionId) || hiddenVersions.Contains(versionId)) continue;
             entries.Add(new InstanceRegistration(versionId, versionId, null, null, null, null, null, null));
         }
 

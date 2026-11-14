@@ -64,7 +64,6 @@ internal static class LauncherUpdateUiChecks
             model.OpenNetworkCommand.Execute(null); check("更新页面可切回网络", model.IsNetworkSettings && !model.ShowsLauncherUpdates);
             model.OpenLauncherUpdatesCommand.Execute(null); model.OpenAppearanceCommand.Execute(null); check("更新页面可切回外观", model.IsAppearanceSettings && !model.ShowsLauncherUpdates);
             model.OpenLauncherUpdatesCommand.Execute(null); fixture.Result = new(manifest, "https://fixture/update.json"); Wait(model.CheckUpdateCommand.ExecuteAsync(null));
-            model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); capture("launcher-update-dark", true);
             window.Width = 900; window.Height = 640; pump(120); capture("launcher-update-compact", true);
             check("最小窗口更新入口仍可见", Find<Button>("CheckLauncherUpdateButton").TranslatePoint(default, window) is { X: >= 0, Y: >= 0 });
             model.AutomaticLauncherUpdates = false;

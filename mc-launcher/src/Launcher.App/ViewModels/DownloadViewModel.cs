@@ -171,7 +171,19 @@ public sealed partial class DownloadViewModel : ObservableObject
     public event Action? InstancesChanged;
 
     /// <summary>主界面切到下载页时调用：当前版本可能刚变过，重算一下落盘目录提示。</summary>
-    public void RefreshTarget() { TargetText = BuildTargetText(SelectedCategory?.Category); RefreshResourceCompatibility(); }
+    public void RefreshTarget()
+    {
+        TargetText = BuildTargetText(SelectedCategory?.Category);
+        CollapseAllGroups();
+        RefreshResourceCompatibility();
+    }
+
+    /// <summary>进入发现资源页时把所有版本/资源抽屉收起：上次手动展开的状态不延续到下次进入。</summary>
+    public void CollapseAllGroups()
+    {
+        foreach (var group in VersionGroups) group.IsExpanded = false;
+        foreach (var group in ResourceReleaseGroups) group.IsExpanded = false;
+    }
 
     /// <summary>
     /// 首次进入下载页时才真正拉版本清单（920 条，几百毫秒 + 一次网络请求）。
@@ -776,7 +788,7 @@ public sealed partial class DownloadViewModel : ObservableObject
         {
             var items = _allVersions.Where(v => VersionClassification.Group(v.Id, v.Type) == group).ToList();
             if (items.Count == 0) continue;
-            var bucket = new VersionGroup(group) { IsExpanded = VersionGroups.Count == 0 || group == "活动版" };
+            var bucket = new VersionGroup(group);   // 抽屉默认全部关闭，避免「正式版/活动版」一进页面就是展开态
             foreach (var item in items) bucket.Versions.Add(item);
             VersionGroups.Add(bucket);
         }

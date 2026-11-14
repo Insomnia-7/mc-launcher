@@ -1,11 +1,17 @@
 using System.ComponentModel;
+using System.Collections.Generic;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Automation;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using Launcher.App.ViewModels;
 using Launcher.Desktop.Views;
 
@@ -54,15 +60,26 @@ public sealed partial class MainWindow : Window
             if (_model is not null) _model.PropertyChanged += ModelChanged;
             UpdatePage();
             UpdateOverlay();
+            Dispatcher.UIThread.Post(() => UpdateNavIndicator(animate: false), DispatcherPriority.Loaded);
         };
         MotionPreferences.Changed += UpdateMotion;
         UpdateMotion();
+        // 侧栏宽度 240ms 过渡期间、窗口缩放、DPI 变化时 NavList 的 Bounds 每帧都变：
+        // 用 LayoutUpdated 持续落位（与 DiscoverView 的 SelectionHighlight 同一做法），
+        // 避免只在属性变化当帧按旧 Bounds 算一次就卡住（F4/F10）。
+        NavListLayoutUpdated();
+        Opened += (_,_) => Dispatcher.UIThread.Post(() => UpdateNavIndicator(animate: false), DispatcherPriority.Loaded);
         Closing += async (_,e)=>
         {
             if(_model?.Multiplayer?.HasSession==true){e.Cancel=true;_model.ConfirmMultiplayerClose(Close);return;}
             if(!_closingAfterPause&&_model?.HasActivePersistentTask==true){e.Cancel=true;await _model.PauseTasksForShutdownAsync();_closingAfterPause=true;Close();}
         };
-        Closed += (_, _) => { if (_model is not null) _model.PropertyChanged -= ModelChanged; MotionPreferences.Changed -= UpdateMotion; };
+        Closed += (_, _) =>
+        {
+            if (_model is not null) _model.PropertyChanged -= ModelChanged;
+            MotionPreferences.Changed -= UpdateMotion;
+            _navIndicatorCts?.Cancel(); _navIndicatorCts?.Dispose(); _navIndicatorCts = null;
+        };
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         DragDrop.SetAllowDrop(this, true);
@@ -81,8 +98,100 @@ public sealed partial class MainWindow : Window
     private void UpdateMotion() => Classes.Set("reduced-motion", !MotionPreferences.Enabled);
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.ShellPage)) UpdatePage();
+        // ShellPage 一次导航会发多条中间通知（先关旧页再开新页），
+        // 指示条只在值稳定后落位，避免被中间态（如 "" 空页）闪隐藏。
         if (e.PropertyName == nameof(MainViewModel.HasOverlay)) UpdateOverlay();
+        if (e.PropertyName == nameof(MainViewModel.IsSidebarCollapsed) || e.PropertyName == nameof(MainViewModel.ShellPage))
+        {
+            UpdatePage();
+            // 一次导航会发多条中间通知（连关 5 个 bool + 广播 ShellPage），
+            // 用递增 revision 只让最后一次 Post 生效，避免多个 Animation 互相取消（F5）。
+            var revision = ++_navIndicatorRevision;
+            Dispatcher.UIThread.Post(() => { if (revision == _navIndicatorRevision) UpdateNavIndicator(); }, DispatcherPriority.Background);
+        }
+    }
+    /// <summary>导航按钮在 ShellPage 上的对应关系。experience 页按当前 tab 解析，不再隐藏蓝条（F7）。</summary>
+    private static readonly Dictionary<string, string> NavButtonForPage = new()
+    {
+        ["library"] = "LibraryNav",
+        ["detail"] = "LibraryNav",
+        ["discover"] = "DiscoverNav",
+        ["multiplayer"] = "MultiplayerNav",
+        ["settings"] = "SettingsEntry",
+    };
+    private string? NavButtonName()
+    {
+        if (_model is null) return null;
+        if (_model.ShellPage == "experience")
+            return _model.IsRolePage ? "WardrobeEntry" : _model.IsTaskPage ? "TaskCenterEntry" : null;
+        return NavButtonForPage.TryGetValue(_model.ShellPage, out var name) ? name : null;
+    }
+    /// <summary>
+    /// 共享蓝色指示条：整条导航只有一条，随 ShellPage 平滑移动（大纲 7）。
+    /// 位置与路由同步；首次显示直接落位不飞入；侧栏收起时按图标布局重算。
+    /// </summary>
+    private void UpdateNavIndicator(bool animate = true)
+    {
+        if (_model is null) return;
+        var indicator = this.FindControl<Border>("NavIndicator");
+        var list = this.FindControl<StackPanel>("NavList");
+        if (indicator is null || list is null) return;
+        if (NavButtonName() is not { } buttonName
+            || this.FindControl<Button>(buttonName) is not { } target
+            || !target.IsAttachedToVisualTree()
+            || target.GetVisualAncestors().OfType<Control>().All(a => a != (Control)list))
+        {
+            indicator.IsVisible = false;
+            return;
+        }
+        var origin = target.TranslatePoint(new Point(0, (target.Bounds.Height - indicator.Height) / 2), list);
+        if (origin is not { } point) { indicator.IsVisible = false; return; }
+        var transform = indicator.RenderTransform as TranslateTransform;
+        if (transform is null) return;
+        indicator.IsVisible = true;
+        _navIndicatorPlaced = true;
+        if (!animate || !MotionPreferences.Enabled)
+        {
+            transform.X = point.X - 10; transform.Y = point.Y;
+            return;
+        }
+        _navIndicatorCts?.Cancel(); _navIndicatorCts?.Dispose();
+        var cts = _navIndicatorCts = new CancellationTokenSource();
+        var fromX = transform.X; var fromY = transform.Y;
+        _ = AnimateIndicatorAsync(indicator, transform, fromX, fromY, point.X - 10, point.Y, cts.Token);
+    }
+    private CancellationTokenSource? _navIndicatorCts;
+    private int _navIndicatorRevision;
+    private bool _navIndicatorPlaced;
+    /// <summary>布局每帧变化（侧栏宽度过渡、窗口缩放、折叠）时以 animate:false 跟随，不做飞入动画。</summary>
+    private void NavListLayoutUpdated()
+    {
+        var list = this.FindControl<StackPanel>("NavList");
+        if (list is null) return;
+        list.LayoutUpdated += (_,_) =>
+        {
+            // 首次未落位时也要跟随（冷启动 attach 前 TranslatePoint 可能为 null，靠这里兜底 F8）；
+            // 已落位后持续跟随布局过渡，避免按旧 Bounds 卡住（F4）。
+            if (_model is null) return;
+            if (!_navIndicatorPlaced || _navIndicatorCts is not null) UpdateNavIndicator(animate: false);
+        };
+    }
+    private static async Task AnimateIndicatorAsync(Border indicator, TranslateTransform transform, double fromX, double fromY, double toX, double toY, CancellationToken token)
+    {
+        try
+        {
+            var animation = new Animation { Duration = MotionTiming.Page, Easing = new CubicEaseOut(), FillMode = FillMode.Forward };
+            animation.Children.Add(new KeyFrame { Cue = new Cue(0), Setters = { new Setter(TranslateTransform.XProperty, fromX), new Setter(TranslateTransform.YProperty, fromY) } });
+            animation.Children.Add(new KeyFrame { Cue = new Cue(1), Setters = { new Setter(TranslateTransform.XProperty, toX), new Setter(TranslateTransform.YProperty, toY) } });
+            await animation.RunAsync(indicator, token);
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            // FillMode.Forward 只在动画正常完成时保留终值；取消/中断时若被释放，transform 可能回落
+            // 到旧值或停在中间帧。显式写回 base value，保证快速连续切换后位置一致（F5）。
+            if (!token.IsCancellationRequested) { transform.X = toX; transform.Y = toY; }
+        }
     }
     private void UpdatePage()
     {

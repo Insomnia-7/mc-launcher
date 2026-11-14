@@ -34,7 +34,7 @@ internal static class SettingsSyncUiChecks
         model.SyncTarget=model.SyncInstances.Single(i=>i.Id==target);model.FollowSettings=true;model.FollowKeys=true;model.FollowSound=true;model.FollowLanguage=false;Wait(model.SaveSettingsSyncTargetCommand.ExecuteAsync(null));
         Wait(model.PreviewSettingsSyncCommand.ExecuteAsync(null));
         check("同步预览列出本地和共享值且冲突默认保留",model.HasSettingsSyncPlan&&model.SyncChanges.Count==2&&model.SyncChanges.All(c=>!c.Apply)&&File.ReadAllText(FileFor(target)).Contains("0.2"));
-        capture("settings-sync-preview-light",true);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(60);capture("settings-sync-preview-dark",true);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
+        capture("settings-sync-preview-light",true);
         model.SyncChanges.Single(c=>c.Change.Key=="soundCategory_master").Apply=true;model.ApplySettingsSyncCommand.Execute(null);model.ConfirmCancelCommand.Execute(null);
         check("取消应用不修改游戏设置",File.ReadAllText(FileFor(target)).Contains("0.2"));
         model.ApplySettingsSyncCommand.Execute(null);model.ConfirmOkCommand.Execute(null);Until(()=>!model.SettingsSyncBusy&&File.ReadAllText(FileFor(target)).Contains("0.7"));

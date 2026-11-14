@@ -62,7 +62,7 @@ internal static class MaintenanceUiChecks
             Wait(model.OpenStorageSettingsCommand.ExecuteAsync(null));
             model.CleanStorageCommand.Execute(model.StorageAreas.Single(a => a.Key == "cache/meta")); check("清理缓存先显示分类确认", model.IsConfirmOpen && File.Exists(cache)); model.ConfirmOkCommand.Execute(null);
             Until(() => !model.StorageBusy); check("无关旧任务不阻止清理且仅删除陈旧缓存", !File.Exists(cache) && Directory.Exists(world));
-            model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); Wait(model.ScanStorageCommand.ExecuteAsync(null)); capture("storage-dark", true);
+            Wait(model.ScanStorageCommand.ExecuteAsync(null)); capture("storage-light", true);
             window.Width = 900; window.Height = 640; pump(100); capture("storage-compact", true);
             check("最小窗口保留存储扫描按钮", Find<Button>("ScanStorageButton").TranslatePoint(default, window) is { X: >= 0, Y: >= 0 } point && point.X + Find<Button>("ScanStorageButton").Bounds.Width <= window.ClientSize.Width);
         }

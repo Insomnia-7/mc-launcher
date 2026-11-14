@@ -34,7 +34,6 @@ internal static class ModpackUpgradeUiChecks
         Wait(model.PreparePackUpdateFileAsync(archive));
         check("界面展示文件差异和冲突默认选择",model.HasPackPlan&&model.PackChanges.Count==3&&model.PackChanges.Single(c=>c.Kind=="冲突").Apply==false);
         capture("pack-upgrade-light",true);
-        model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(100);capture("pack-upgrade-dark",true);
         model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
         model.ApplyPackUpdateCommand.Execute(null);pump(50);check("整合包更新先展示确认摘要",model.IsConfirmOpen);model.ConfirmCancelCommand.Execute(null);
         check("取消确认不改变整合包",InstanceMetadata.TryRead(model.GameRoot,id)?.PackVersion=="1.0");
@@ -46,7 +45,7 @@ internal static class ModpackUpgradeUiChecks
         model.ShowDownloadsCommand.Execute(null);var download=model.Download;download.SelectedSource=DownloadViewModel.ModrinthSource;download.SelectedCategory=download.Categories.First(c=>c.Category==DownloadCategory.Modpack&&!c.IsSeparator);
         Wait(download.SearchCommand.ExecuteAsync(null));Wait(download.OpenResourceCommand.ExecuteAsync(download.Results.First()));
         check("整合包封面与介绍作为默认详情",download.ShowsPackOverview&&Find<Border>("PackResourceHero").IsEffectivelyVisible&&Find<ScrollViewer>("PackOverviewScroll").IsEffectivelyVisible);
-        capture("pack-discover-light",true);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(100);capture("pack-discover-dark",true);
+        capture("pack-discover-light",true);
         download.ShowPackVersionsCommand.Execute(null);pump(100);check("详情页可切换到版本安装",download.ShowsResourceVersions&&Find<ScrollViewer>("ResourceReleaseScroll").IsEffectivelyVisible);capture("pack-versions-dark",true);
         download.BackToResourcesCommand.Execute(null);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
     }

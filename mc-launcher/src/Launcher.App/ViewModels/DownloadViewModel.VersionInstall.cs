@@ -126,20 +126,27 @@ public sealed partial class DownloadViewModel
     private async Task<string> InstallSelectedLoaderAsync(string game, string root, LoaderKind kind, string version,
         IProgress<DownloadProgress> downloadProgress, CancellationToken ct)
     {
+        string installedId;
         if (kind is LoaderKind.Fabric or LoaderKind.Quilt)
-            return (await _loaderInstaller.InstallAsync(game, kind, root, version, downloadProgress, ct)).VersionId;
-
-        var metadata = await _meta.GetVersionAsync(game, ct);
-        var requiredJava = Math.Max(17, metadata.JavaVersion?.MajorVersion ?? 8);
-        Status = $"准备 Java {requiredJava}，用于安装 {kind}…";
-        await _javaProvisioner.EnsureAsync(requiredJava, AppPaths.DataDirectory,
-            new Progress<JavaProvisionProgress>(p => { ProgressPercent = p.Percent; Status = $"{p.Stage} {p.Detail}"; }), ct);
-        var progress = new Progress<ModpackImportProgress>(p => { ProgressPercent = p.Percent; Status = $"{p.Stage} {p.Detail}"; });
-        return kind switch
+            installedId = (await _loaderInstaller.InstallAsync(game, kind, root, version, downloadProgress, ct)).VersionId;
+        else
         {
-            LoaderKind.Forge => await _forgeInstaller.InstallAsync(game, version, root, progress, ct),
-            LoaderKind.NeoForge => await _neoForgeInstaller.InstallAsync(game, version, root, progress, ct),
-            _ => throw new NotSupportedException($"不支持的加载器：{kind}"),
-        };
+            var metadata = await _meta.GetVersionAsync(game, ct);
+            var requiredJava = Math.Max(17, metadata.JavaVersion?.MajorVersion ?? 8);
+            Status = $"准备 Java {requiredJava}，用于安装 {kind}…";
+            await _javaProvisioner.EnsureAsync(requiredJava, AppPaths.DataDirectory,
+                new Progress<JavaProvisionProgress>(p => { ProgressPercent = p.Percent; Status = $"{p.Stage} {p.Detail}"; }), ct);
+            var progress = new Progress<ModpackImportProgress>(p => { ProgressPercent = p.Percent; Status = $"{p.Stage} {p.Detail}"; });
+            installedId = kind switch
+            {
+                LoaderKind.Forge => await _forgeInstaller.InstallAsync(game, version, root, progress, ct),
+                LoaderKind.NeoForge => await _neoForgeInstaller.InstallAsync(game, version, root, progress, ct),
+                _ => throw new NotSupportedException($"不支持的加载器：{kind}"),
+            };
+        }
+        // 加载器版本（尤其 Forge/NeoForge 由独立 Runner 写 versions/<id>/<id>.json，不经过
+        // GameInstaller.InstallVersionAsync）重装时必须清掉删除时留下的墓碑，否则游戏库不显示。
+        Launcher.Application.Instances.InstanceRegistry.UnhideVersion(root, installedId);
+        return installedId;
     }
 }

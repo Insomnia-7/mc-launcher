@@ -90,6 +90,19 @@ public sealed partial class MainViewModel
     private void InitializeWorkspace()
     {
         BeforeMainNavigation=()=>{IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
+        // 删除成功后回到游戏库主页面：关详情页、复位标签、清理展示偏好/封面、提示结果（大纲 4.6/4.5）。
+        InstanceDeleted=(id,name,shared)=>
+        {
+            IsDetailOpen=false;DetailTab=0;
+            // 清掉 library 偏好（名称/分组/收藏/LastPlayed）与专属封面，避免已删实例在偏好文件里留脏数据。
+            if(_libraryPreferences.Games.TryGetValue(id,out var deleted))
+            {
+                _libraryPreferences.Games.Remove(id);
+                if(deleted.CoverFile is {Length:>0} cover)DeleteLibraryCover(cover);
+                SaveLibraryPreferences();
+            }
+            ShowNotice(shared?$"已删除 {name}；版本文件被其他实例共用，已保留。":$"已删除 {name}");
+        };
         GameStarted=id=>
         {
             var preferences=PreferencesFor(id) with {LastPlayed=DateTimeOffset.UtcNow};
@@ -253,8 +266,17 @@ public sealed partial class MainViewModel
     private static Bitmap DecodeLibraryCover(Stream stream,int width)
     {
         // Avalonia's Skia decoder throws NullReferenceException for invalid image bytes.
-        try{return Bitmap.DecodeToWidth(stream,width);}
-        catch(NullReferenceException ex){throw new InvalidDataException("图片已损坏，或图片格式不受支持。",ex);}
+        try{return Bitmap.DecodeToWidth(stream,width);}catch(NullReferenceException ex){throw new InvalidDataException("图片已损坏，或图片格式不受支持。",ex);}
+    }
+    /// <summary>删除实例时顺手清掉它专属的封面文件；别的实例不会引用同一路径（文件名含实例 id 哈希）。</summary>
+    private static void DeleteLibraryCover(string relative)
+    {
+        try
+        {
+            var path=ExperienceFiles.Child(AppPaths.DataDirectory,relative);
+            if(File.Exists(path))File.Delete(path);
+        }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidDataException){ }
     }
     [RelayCommand] private void RemoveGameCover()
     {

@@ -36,8 +36,7 @@ internal static class InstanceIconUiChecks
         model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");model.SetLibraryLayoutCommand.Execute("cards");pump(100);
         var scroll=window.GetVisualDescendants().OfType<ScrollViewer>().Single(c=>c.Name=="LibraryScroll");scroll.Offset=new Vector(0,315);capture("instance-icons-cards-light",true);
         model.SetLibraryLayoutCommand.Execute("list");pump(100);scroll.Offset=new Vector(0,305);capture("instance-icons-list-light",true);
-        model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(100);capture("instance-icons-list-dark",true);
-        check("实际列表使用加载器原始图标控件",window.GetVisualDescendants().OfType<InstanceTypeIcon>().Count(i=>i.IsEffectivelyVisible)>=5);
+                check("实际列表使用加载器原始图标控件",window.GetVisualDescendants().OfType<InstanceTypeIcon>().Count(i=>i.IsEffectivelyVisible)>=5);
         model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
         model.OpenGameCommand.Execute(packEntry);pump(60);
         var cover=Path.Combine(root,"user-cover.png");File.WriteAllBytes(cover,AppearanceFixture.MakeSkin());model.ImportGameCoverFileAsync(cover).GetAwaiter().GetResult();pump(60);

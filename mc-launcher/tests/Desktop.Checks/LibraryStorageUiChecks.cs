@@ -24,7 +24,6 @@ internal static class LibraryStorageUiChecks
         check("存储页展示游戏和启动器数据真实位置",model.LocationSummary.Contains(model.GameRoot) && model.LocationSummary.Contains(model.DataRootPath));
         check("所有分类都有实际路径", model.StorageAreas.Count>0 && model.StorageAreas.All(a=>Path.IsPathFullyQualified(a.Path)));
         capture("storage-light",true);
-        model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(100);capture("storage-dark",true);
         window.Width=900; window.Height=640;pump(100);capture("storage-small",true);
         check("小窗口存储页可滚动",window.GetVisualDescendants().OfType<ScrollViewer>().Any(s=>s.IsEffectivelyVisible && s.Extent.Height>s.Viewport.Height));
         window.Width=1180;window.Height=800;model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
@@ -37,7 +36,7 @@ internal static class LibraryStorageUiChecks
         check("历史页展示完成任务",model.VisibleDurableTasks.Count>0 && model.VisibleDurableTasks.All(t=>t.IsHistory));
         model.ClearTaskHistoryCommand.Execute(null);pump(50);
         check("界面清空记录后游戏仍存在",model.VisibleDurableTasks.Count==0 && Directory.Exists(Path.Combine(model.GameRoot,"versions","1.21.4")));
-        model.ShowInstancesCommand.Execute(null);model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(100);capture("meadow-library-dark",true);
+        model.ShowInstancesCommand.Execute(null);capture("meadow-library-light-2",true);
         model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");pump(100);capture("meadow-library-light",true);
         foreach(var factor in new[]{1d,1.25,1.5})
         {

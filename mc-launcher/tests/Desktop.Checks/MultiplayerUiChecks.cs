@@ -12,7 +12,7 @@ internal sealed class MultiplayerFixture : ILanWorldDiscovery,IGameServerStatusC
     public string DownloadDescription=>"EasyTier 2.6.4 · 首次下载约 31.1 MiB · 免虚拟网卡";
     public RoomSession? Session {get;private set;}
     public event Action? Changed;
-    public int Scans,Starts,Queries;
+    public int Scans,Starts,Queries,StartDelayMs;
     public bool BlockScan,FailQuery;
     public async Task<IReadOnlyList<LanWorld>> DiscoverAsync(TimeSpan window,CancellationToken cancellationToken=default)
     {
@@ -22,8 +22,8 @@ internal sealed class MultiplayerFixture : ILanWorldDiscovery,IGameServerStatusC
     public Task<GameServerStatus> QueryAsync(ServerAddress address,CancellationToken ct=default)
     {Queries++;if(FailQuery)throw new IOException("测试世界已关闭");return Task.FromResult(new GameServerStatus("1.21.4",2,8,"溪流草甸",16));}
     public Task InstallAsync(IProgress<double>? progress=null,CancellationToken ct=default){IsInstalled=true;progress?.Report(100);Changed?.Invoke();return Task.CompletedTask;}
-    public Task<RoomSession> StartAsync(RoomInvitation invitation,bool host,CancellationToken ct=default)
-    {Starts++;Session=new(invitation,host,new("127.0.0.1",host?invitation.GamePort:30000));Changed?.Invoke();return Task.FromResult(Session);}
+    public async Task<RoomSession> StartAsync(RoomInvitation invitation,bool host,CancellationToken ct=default)
+    {Starts++;if(StartDelayMs>0)await Task.Delay(StartDelayMs,ct);Session=new(invitation,host,new("127.0.0.1",host?invitation.GamePort:30000));Changed?.Invoke();return Session;}
     public void Stop(){Session=null;Changed?.Invoke();}
     public void Dispose()=>Stop();
 }
@@ -48,28 +48,44 @@ internal static class MultiplayerUiChecks
         Wait(vm.CreateRoomCommand.ExecuteAsync(null));check("未装组件时给出引导且不启动引擎",fixture.Starts==0&&vm.Hint.Contains("下载联机组件"));
         capture("multiplayer-room-setup",true);
         Wait(vm.InstallEngineCommand.ExecuteAsync(null));check("组件只由用户操作安装",vm.EngineInstalled);
-        Wait(vm.CreateRoomCommand.ExecuteAsync(null));check("房主生成有期限的私密邀请",vm.IsHost&&RoomInvitation.Decode(vm.InvitationText).GamePort==51234);
+        check("下载进度条非安装操作时不显示",!vm.DownloadVisible&&!vm.EngineInstallBusy&&vm.InstallEngineLabel=="下载 / 修复组件");
+        // 代理按钮状态机（大纲 9）：操作进行中给出加载反馈、结束恢复真实状态、失败留提示。
+        fixture.StartDelayMs=400;
+        var creating=vm.CreateRoomCommand.ExecuteAsync(null);pump(30);
+        check("创建房间进行中显示加载态且禁止重复提交",vm.IsBusy&&vm.RoomBusy&&vm.CreateRoomLabel=="正在创建…"&&vm.RoomPhase==MultiplayerViewModel.RoomActionPhase.Working);
+        var startsBeforeDuplicate=fixture.Starts;vm.CreateRoomCommand.Execute(null);pump(20);
+        check("进行中重复点击不启动第二个房间",fixture.Starts==startsBeforeDuplicate);
+        Wait(creating);fixture.StartDelayMs=0;check("创建成功后按钮恢复真实状态",vm.RoomPhase==MultiplayerViewModel.RoomActionPhase.Done&&!vm.RoomBusy&&vm.IsBusy==false);
+        check("会话卡显示服务层实际地址与端口",vm.HasSessionAddress&&vm.SessionAddress=="127.0.0.1:51234"&&vm.SessionGamePort=="51234"&&vm.SessionPeer=="tcp://example.org:11010");
+        check("房主生成有期限的私密邀请",vm.IsHost&&RoomInvitation.Decode(vm.InvitationText).GamePort==51234);
         var invitation=vm.InvitationText;
         Wait(vm.CopyInvitationCommand.ExecuteAsync(null));check("复制邀请使用完整信息",copied==invitation);
         capture("multiplayer-room-host",true);
         var closed=false;model.ConfirmMultiplayerClose(()=>closed=true);check("退出活动房间会确认",model.IsConfirmOpen&&!closed);
         model.ConfirmCancelCommand.Execute(null);check("取消退出保留房间",vm.HasSession&&!closed);
-        vm.DisconnectCommand.Execute(null);pump(50);check("断开房间清除邀请和会话",!vm.HasSession&&vm.InvitationText.Length==0);
+        check("断开按钮在操作空闲时可用",Find<Button>("DisconnectRoomButton").IsEnabled);
+        var disconnecting=vm.DisconnectCommand.ExecuteAsync(null);pump(20);
+        check("断开操作显示进行中状态",vm.DisconnectBusy&&vm.DisconnectLabel=="正在断开…");
+        Wait(disconnecting);check("断开房间清除邀请和会话",!vm.HasSession&&vm.InvitationText.Length==0&&!vm.DisconnectBusy);
         vm.InviteToJoin="invalid";Wait(vm.JoinRoomCommand.ExecuteAsync(null));check("无效邀请不会启动组件",fixture.Starts==1&&vm.Hint.Contains("无效"));
         vm.InviteToJoin=invitation;Wait(vm.JoinRoomCommand.ExecuteAsync(null));
         check("加入者获得本地游戏入口且状态来自游戏探测",vm.HasSession&&!vm.IsHost&&vm.ConnectAddress=="127.0.0.1:30000"&&vm.ConnectionHint.Contains("游戏可连接"));
         capture("multiplayer-room-guest-light",true);
-        model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");capture("multiplayer-room-guest-dark",true);
         window.Width=900;window.Height=640;pump(80);capture("multiplayer-compact",true);
         check("最小窗口房间卡片没有横向溢出",Find<Button>("DisconnectRoomButton").TranslatePoint(new Avalonia.Point(),window) is {} point&&point.X>=0&&point.X+Find<Button>("DisconnectRoomButton").Bounds.Width<=window.ClientSize.Width);
         window.Width=1180;window.Height=800;model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="glacier");
-        vm.DisconnectCommand.Execute(null);pump(50);vm.ConnectAddress="192.168.1.8:25565";
+        Wait(vm.DisconnectCommand.ExecuteAsync(null));vm.ConnectAddress="192.168.1.8:25565";
         Wait(vm.LaunchGameCommand.ExecuteAsync(null));check("启动并连接传递一次性游戏地址",launcher.Starts==1&&launcher.Plan!.GameArguments.Contains("192.168.1.8"));
         pump(2200);Wait(model.LaunchCommand.ExecuteAsync(null));check("后续普通启动不会保留联机地址",launcher.Starts==2&&!launcher.Plan!.GameArguments.Contains("--server"));
         fixture.FailQuery=true;Wait(vm.CheckConnectionCommand.ExecuteAsync(null));check("连接失败替换检测中提示",vm.ConnectionHint.Contains("已关闭"));fixture.FailQuery=false;
         vm.ShowLanCommand.Execute(null);fixture.BlockScan=true;var scanning=vm.ScanCommand.ExecuteAsync(null);pump(40);vm.CancelCommand.Execute(null);Wait(scanning);
         check("取消扫描恢复页面交互",!vm.IsBusy&&vm.Hint.Contains("取消"));
         model.ShowInstancesCommand.Execute(null);pump(60);check("主导航可从联机返回游戏库",model.IsLibraryPage&&!model.IsMultiplayerOpen);
+        // 失败文案按动作归属：扫描失败不应把「连接房间」改成「重试连接」，且 ConnectionHint 同步失败原因
+        fixture.BlockScan=true;var failedScan=vm.ScanCommand.ExecuteAsync(null);pump(30);vm.CancelCommand.Execute(null);Wait(failedScan);
+        fixture.FailQuery=true;vm.ConnectAddress="192.168.1.8:25565";Wait(vm.CheckConnectionCommand.ExecuteAsync(null));fixture.FailQuery=false;
+        check("失败文案不跨动作串台",vm.JoinRoomLabel=="连接房间"&&vm.CreateRoomLabel=="创建房间");
+        check("失败时连接提示同步真实原因",vm.ConnectionHint.Contains("已关闭"));
         vm.Dispose();
     }
 }

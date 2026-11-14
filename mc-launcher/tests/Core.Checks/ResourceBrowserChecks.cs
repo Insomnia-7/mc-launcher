@@ -113,19 +113,53 @@ internal static class ResourceBrowserChecks
                 check("删除私有实例数据 " + scenario, !Directory.Exists(instance), null);
                 check("版本和 native 按依赖保留 " + scenario, result.VersionRetained == keep && Directory.Exists(version) == keep && Directory.Exists(natives) == keep, null);
                 check("共享资源保留 " + scenario, File.Exists(Path.Combine(game, "assets", "shared")) && File.Exists(Path.Combine(game, "libraries", "shared")), null);
+                if (scenario == "shared")
+                    check("删除共享版本的一个实例后其它实例仍在 " + scenario,
+                        InstanceRegistry.Load(game).Instances.Any(r => r.Id == "v-2"), null);
                 if (!keep) check("重新扫描不会复活已删版本 " + scenario, InstanceRegistry.Load(game).Instances.Count == 0, null);
+                if (!keep) check("版本目录删净后回收版本墓碑 " + scenario, !InstanceRegistry.ReadHiddenVersions(game).Contains("v"), null);
+                else check("依赖保留时重扫不会把父版本复活成实例 " + scenario,
+                    InstanceRegistry.Load(game).Instances.All(r => !r.Id.Equals("v", StringComparison.OrdinalIgnoreCase)), null);
+                if (scenario is "inheritsFrom" or "x-launcher-parent")
+                {
+                    check("墓碑文件记录已移除版本 " + scenario, InstanceRegistry.ReadHiddenVersions(game).Contains("v"), null);
+                    var registry = InstanceRegistry.LoadOrMigrate(game);
+                    registry.Register("v", "v", new InstanceMetadata("restored", null, null, null, "v", null, "v"));
+                    check("重新登记清除墓碑 " + scenario, !InstanceRegistry.ReadHiddenVersions(game).Contains("v"), null);
+                }
+                // 重新安装同一版本必须清墓碑（GameInstaller 落盘 version JSON 后调用 UnhideVersion）
+                if (scenario == "single")
+                {
+                    InstanceRegistry.HideVersion(game, "v");
+                    var versionDir = Path.Combine(game, "versions", "v");
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, "v.json"), "{\"id\":\"v\"}");
+                    InstanceRegistry.HideVersion(game, "v", "v");
+                    GameInstallerUnhideSimulated(game, "v", "v");
+                    check("重装同版本清除两类墓碑", !InstanceRegistry.ReadHiddenVersions(game).Contains("v") && !InstanceRegistry.ReadHiddenInstances(game).Contains("v"), null);
+                }
                 if (scenario == "shared")
                 {
                     InstanceDeletion.Delete(game, "v-2", "v");
                     check("最后共享实例删除后回收版本文件", !Directory.Exists(version) && !Directory.Exists(natives), null);
                 }
             }
+            // 半删目录：墓碑同时记 instanceId，ScanDisk 不得把残留的 instances/<id> 复活成实例
+            var half = Path.Combine(root, "half-deleted");
+            var halfInstance = Path.Combine(half, "instances", "v"); Directory.CreateDirectory(halfInstance);
+            File.WriteAllText(Path.Combine(halfInstance, "settings.json"), "dangling");
+            var halfVersion = Path.Combine(half, "versions", "v"); Directory.CreateDirectory(halfVersion);
+            File.WriteAllText(Path.Combine(halfVersion, "v.json"), "{\"id\":\"v\"}");
+            InstanceRegistry.HideVersion(half, "v", "v");
+            check("实例墓碑独立记录被删实例", InstanceRegistry.ReadHiddenInstances(half).Contains("v") && InstanceRegistry.ReadHiddenVersions(half).Contains("v"), null);
+            check("半删残留目录不被 ScanDisk 复活", InstanceRegistry.Load(half).Instances.All(r => r.Id != "v"), null);
             var rejected = false;
             try { InstanceDeletion.Delete(root, "..", "v"); } catch (ArgumentException) { rejected = true; }
             check("非法删除路径被拒绝", rejected, null);
         }
         finally { Directory.Delete(root, true); }
     }
+    private static void GameInstallerUnhideSimulated(string game,string versionId,string? instanceId=null)=>InstanceRegistry.UnhideVersion(game,versionId,instanceId);
     private static Dictionary<string,string> Query(Uri uri) => uri.Query.TrimStart('?').Split('&').Select(s => s.Split('=',2)).ToDictionary(p => Uri.UnescapeDataString(p[0]), p => Uri.UnescapeDataString(p[1]));
     private sealed class Handler : HttpMessageHandler
     {

@@ -59,6 +59,12 @@ public sealed partial class MainViewModel
     private bool _isWallpaperBusy;
     public bool CanEditAppearance => !IsWallpaperBusy;
 
+    /// <summary>左侧导航收起状态。展开约 236px，收起约 72px；选择持久化在 appearance.json（大纲 6.8）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SidebarWidth))]
+    private bool _isSidebarCollapsed;
+    public double SidebarWidth => IsSidebarCollapsed ? 72 : 236;
+
     private void InitializeAppearance()
     {
         _readingAppearance=true;
@@ -66,11 +72,13 @@ public sealed partial class MainViewModel
         InitializeDesktopShell();
         _appearanceSettings=_appearance.Read();
         if(!File.Exists(AppearanceStore.SettingsPath(AppPaths.DataDirectory))) _appearanceSettings=_appearanceSettings with { ThemeId="glacier" };
-        var migrated=_appearanceSettings.ThemeId is not (DesktopThemes.LightId or DesktopThemes.DarkId) || _appearanceSettings.CustomTheme is not null;
-        _appearanceSettings=_appearanceSettings with { ThemeId=_appearanceSettings.ThemeId==DesktopThemes.LightId ? DesktopThemes.LightId : DesktopThemes.DarkId, CustomTheme=null };
+        // 外观只保留日间白：历史上保存过夜间黑/自定义主题的一律迁移过来。
+        var migrated=_appearanceSettings.ThemeId!=DesktopThemes.LightId || _appearanceSettings.CustomTheme is not null;
+        _appearanceSettings=_appearanceSettings with { ThemeId=DesktopThemes.LightId, CustomTheme=null };
         foreach(var theme in DesktopThemes.Choices) ThemeChoices.Add(new(theme.Id,theme.Definition));
-        SelectedTheme=ThemeChoices.Single(t=>t.Id==_appearanceSettings.ThemeId);
+        SelectedTheme=ThemeChoices.FirstOrDefault(t=>t.Id==_appearanceSettings.ThemeId)??ThemeChoices[0];
         WallpaperOpacity=_appearanceSettings.WallpaperOpacity;
+        IsSidebarCollapsed=_appearanceSettings.SidebarCollapsed;
         SelectedMotion=MotionChoices.Single(m=>m.Id==_appearanceSettings.MotionMode);
         MotionPreferences.Mode=_appearanceSettings.MotionMode;
         _appearance.Apply(SelectedTheme!.Definition);
@@ -114,6 +122,15 @@ public sealed partial class MainViewModel
         _appearanceSaveTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(300),DispatcherPriority.Background,(_,_)=>SaveAppearance());
         _appearanceSaveTimer.Stop(); _appearanceSaveTimer.Start();
     }
+    partial void OnIsSidebarCollapsedChanged(bool value)
+    {
+        if(_readingAppearance) return;
+        _appearanceSettings=_appearanceSettings with { SidebarCollapsed=value };
+        SaveAppearance();
+    }
+    // 侧栏状态由 SidebarToggle 的 IsChecked 双向绑定唯一驱动，持久化在 OnIsSidebarCollapsedChanged。
+    // 这里不要提供 ToggleSidebarCommand：ToggleButton 的 Toggle() 与 Command.Execute 会在同一次点击
+    // 各翻转一次 IsSidebarCollapsed，最终回到原值（点击看似无响应）。
     [RelayCommand] private void OpenAppearance() { IsAppearanceOpen=true; }
     partial void OnIsAppearanceOpenChanged(bool value)
     {

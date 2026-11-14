@@ -32,8 +32,16 @@ public static class InstanceDeletion
                         && parent.GetString()?.Equals(versionId, StringComparison.OrdinalIgnoreCase) == true) retained = true;
             }
         }
+        // 墓碑必须先写：删除过程中程序异常退出时，versions/<id>/<id>.json 可能只删了一半，
+        // 或者被其它加载器版本继承而保留（retained=true）。只要墓碑在，LoadCore 就不会把它补成
+        // 虚拟实例「复活」。重装同版本时 GameInstaller / Registry.Register 会清除墓碑。
+        InstanceRegistry.HideVersion(gameRoot, versionId, instanceId);
         DeleteDirectory(instancePath);
         if (!retained) { DeleteDirectory(versionPath); DeleteDirectory(nativePath); }
+        // 版本目录确实删干净了就回收版本墓碑，避免 hidden-versions.json 只增不减。
+        // retained（被其它加载器版本继承）时必须保留，否则虚拟条目会复活。
+        // 实例墓碑始终保留：防止半删残留的 instances/<id> 复活，重装时由 UnhideVersion 清除。
+        if (!retained && !Directory.Exists(versionPath)) InstanceRegistry.UnhideVersion(gameRoot, versionId);
         registry.Remove(instanceId);
         return new(retained);
     }
@@ -53,6 +61,30 @@ public static class InstanceDeletion
     }
     private static void DeleteDirectory(string path)
     {
-        if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+        if (!Directory.Exists(path)) return;
+        // 游戏进程或解压器留下的临时/日志文件常带只读位；先清属性再递归删，
+        // 避免「文件被占用/只读」让删除停在半途还误报成功。
+        ClearReadOnly(path);
+        Directory.Delete(path, recursive: true);
+    }
+
+    private static void ClearReadOnly(string directory)
+    {
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var attributes = File.GetAttributes(file);
+                    if ((attributes & FileAttributes.ReadOnly) != 0)
+                        File.SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 }

@@ -101,20 +101,27 @@ internal static class Program
             if(args.Contains("--mod-workbench")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);Check("模组工作台无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} mod workbench checks passed");return 0;}
             if(args.Contains("--legacy-theme"))
             {
-                Check("旧彩色主题迁移为夜间黑", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);
+                Check("旧彩色主题迁移为日间白", model.IsLightTheme && model.SelectedTheme?.Id=="glacier" && model.ThemeChoices.Count==1);
                 var saved=Launcher.Application.Settings.AppearanceStore.Read(data);
-                Check("迁移保存黑白选项并清除旧配色", saved.ThemeId=="aurora" && saved.CustomTheme is null);
+                Check("迁移保存日间白并清除旧配色", saved.ThemeId=="glacier" && saved.CustomTheme is null);
                 Check("迁移保留其他外观偏好", saved.MotionMode=="off" && saved.WallpaperOpacity==0.35);
                 Check("旧主题迁移后无绑定错误", log.Errors.Count==0);
                 return 0;
             }
             if(args.Contains("--empty"))
             {
-                Check("首次启动显示安装向导", model.IsSetupOpen && model.Instances.Count==0);
+                Check("首次启动直接进入主页面、不自动弹安装向导", !model.IsSetupOpen && model.Instances.Count==0 && model.ShellPage=="library");
                 Check("空游戏库也不阻塞首页联网", http.Requests==0);
+                Capture("empty-library");
+                // 向导改为手动入口：点「添加游戏」才打开，且内部滚动条不显示突兀的竖条
+                model.OpenSetupCommand.Execute(null); Pump(120);
+                Check("添加游戏按钮仍可打开安装向导", model.IsSetupOpen);
+                var setupScroller = window.GetVisualDescendants().OfType<ScrollViewer>()
+                    .FirstOrDefault(s => s.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("modal-surface")));
+                Check("安装向导隐藏纵向滚动条", setupScroller is { VerticalScrollBarVisibility: ScrollBarVisibility.Hidden });
                 Capture("first-run");
-                model.CloseSetupCommand.Execute(null); Pump(50); Capture("empty-library");
-                Check("可以跳过向导后继续使用", !model.IsSetupOpen && !model.HasInstances);
+                model.CloseSetupCommand.Execute(null); Pump(50);
+                Check("可以关掉向导后继续使用", !model.IsSetupOpen && !model.HasInstances);
                 Check("首次启动页面没有绑定错误", log.Errors.Count==0);
                 return 0;
             }
@@ -131,16 +138,20 @@ internal static class Program
                 if(livePacks)
                 {
                     Check("真实整合包介绍页可用",model.Download.ShowsPackOverview&&model.Download.PackDescription.Length>0);Capture("live-pack-overview");
-                    model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");Pump(100);Capture("live-pack-overview-dark");
                     model.Download.ShowPackVersionsCommand.Execute(null);Pump(100);
                 }
                 Check("真实项目版本可按游戏版本浏览",model.Download.ResourceReleaseGroups.Count>0);Capture("live-resource-versions");
                 Check("真实项目无绑定错误",log.Errors.Count==0);return 0;
             }
             Check("真实版本目录加载", model.Instances.Count == 3 && model.SelectedInstance is not null);
-            Check("仅提供日间白和夜间黑", model.ThemeChoices.Count==2 && model.ThemeChoices.Select(t=>t.Name).SequenceEqual(new[]{"日间 · 白","夜间 · 黑"}));
+            Check("外观仅提供日间白", model.ThemeChoices.Count==1 && model.ThemeChoices.Select(t=>t.Name).SequenceEqual(new[]{"日间 · 白"}));
             Check("全部主题色均为灰阶", model.ThemeChoices.SelectMany(t=>t.Definition.Colors.Values).Select(Color.Parse).All(c=>c.R==c.G && c.G==c.B));
             Check("首页构造不联网", http.Requests == 0);
+            // 底栏精简：默认「就绪」不占位，右下角 JAVA EDITION 已移除
+            Check("默认状态不显示底部状态行", !model.HasStatusText);
+            var statusBar = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "StatusBar");
+            Check("底栏不再显示 JAVA EDITION", !statusBar.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "JAVA EDITION"));
+            Check("底栏状态行默认隐藏", !statusBar.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == model.StatusText && t.IsEffectivelyVisible));
             Check("新版界面不依赖 WPF 程序集", !typeof(MainWindow).Assembly.GetReferencedAssemblies().Any(a=>a.Name is "PresentationCore" or "PresentationFramework" or "WindowsBase"));
             Check("缺少安全存储时不降级明文令牌", !PlatformUi.CanStoreSecrets(null));
             Check("首页启动按钮连接共用业务命令", Find<Button>("LaunchButton").Command == model.LaunchCommand);
@@ -166,8 +177,8 @@ internal static class Program
             Check("网络诊断快捷入口仍打开统一设置的网络选项", model.IsNetworkOpen && Find<Border>("PreferencesSurface").IsEffectivelyVisible && model.ProxyModeIndex==1);
             Click(Find<Button>("AppearanceSettingsTab"));
             Check("网络返回外观时仅显示一个设置面板", model.IsAppearanceOpen && !model.IsNetworkOpen && model.IsPreferencesOpen);
-            model.SelectedTheme = model.ThemeChoices.Single(t => t.Id == "aurora"); Pump(50);
-            Check("主题切换与保存", !model.IsLightTheme && File.ReadAllText(Path.Combine(data,"appearance.json")).Contains("aurora"));
+            Check("主题列表只有日间白且已写盘", model.ThemeChoices.Select(t => t.Id).SequenceEqual(new[]{"glacier"})
+                && File.ReadAllText(Path.Combine(data, "appearance.json")).Contains("glacier"));
             Capture("appearance"); model.CloseAppearanceCommand.Execute(null); Pump(50); Capture("home-dark");
             if(OperatingSystem.IsWindows())
             {
@@ -180,14 +191,12 @@ internal static class Program
                 Check("标题栏最小化按钮可用", window.WindowState==WindowState.Minimized);
                 window.WindowState=WindowState.Normal; window.Activate(); Pump(60);
             }
-            Click(Find<ToggleButton>("ThemeToggle"));
-            Check("昼夜按钮可切回白天并保存", model.IsLightTheme && Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="glacier");
+            // 外观只保留日间白：标题栏不再有日夜切换按钮。
+            Check("标题栏不再提供日夜切换", !window.GetVisualDescendants().OfType<ToggleButton>().Any(t => t.Name == "ThemeToggle"));
+            Check("日间主题已保存", model.IsLightTheme && Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="glacier");
             var primaryForeground=(ISolidColorBrush)Avalonia.Application.Current!.Resources["PrimaryTextBrush"]!;
             Check("日间主按钮使用白字", primaryForeground.Color==Colors.White);
-            Click(Find<ToggleButton>("ThemeToggle"));
-            primaryForeground=(ISolidColorBrush)Avalonia.Application.Current.Resources["PrimaryTextBrush"]!;
-            Check("夜间主按钮切为黑字", !model.IsLightTheme && primaryForeground.Color==Colors.Black);
-            Check("夜间矢量图标同步主按钮字色", Find<Button>("LaunchButton").GetVisualDescendants().OfType<UiIcon>().Single().Foreground is ISolidColorBrush { Color:var iconColor } && iconColor==Colors.Black);
+            Check("日间矢量图标同步主按钮字色", Find<Button>("LaunchButton").GetVisualDescendants().OfType<UiIcon>().Single().Foreground is ISolidColorBrush { Color:var iconColor } && iconColor==Colors.White);
             Check("其他配色入口已移除", !window.GetVisualDescendants().OfType<Button>().Any(b=>b.Content is string name && name is "导入配色" or "导出配色"));
             model.IsSettingsOpen = true; Pump(40);
             model.MemoryMb = 3072; model.SaveSettingsCommand.Execute(null);
@@ -212,7 +221,8 @@ internal static class Program
             model.CloseAccountsCommand.Execute(null); Pump(250);
             var feedback=Find<Button>("AccountEntry"); var point=feedback.TranslatePoint(new Point(feedback.Bounds.Width/2,feedback.Bounds.Height/2),window)!.Value;
             window.MouseMove(point); window.MouseDown(point,MouseButton.Left); Pump(140);
-            Check("按下有位移反馈且文字保持原尺寸", feedback.IsPressed && Math.Abs(feedback.RenderTransform!.Value.M11-1)<0.001 && feedback.RenderTransform.Value.M32>0);
+            // 改版后按下是「位移 + 轻微收回（scale 0.955）」，松开由过渡弹回 1.0
+            Check("按下有位移反馈并轻微收回", feedback.IsPressed && Math.Abs(feedback.RenderTransform!.Value.M11-0.955)<0.01 && feedback.RenderTransform.Value.M32>0);
             window.MouseUp(point,MouseButton.Left); Pump(350); model.CloseAccountsCommand.Execute(null); Pump(180);
             Check("松开后恢复正常尺寸", feedback.RenderTransform!.Value.M11>=0.99);
             var launchButton=Find<Button>("LaunchButton");
@@ -220,13 +230,30 @@ internal static class Program
             var ambientShadow=launchButton.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="AmbientShadow");
             window.MouseMove(new Point(0,0)); Pump(220);
             var launchPoint=launchButton.TranslatePoint(new Point(launchButton.Bounds.Width/2,launchButton.Bounds.Height/2),window)!.Value;
-            window.MouseMove(launchPoint); Pump(35);
-            Check("阴影随悬停渐入", hoverShadow.Opacity>0 && hoverShadow.Opacity<1);
+            // 悬停阴影是 180ms 过渡，单次固定采样偶发落在动画首帧（opacity=0）；
+            // 这里在 120ms 窗口内寻找中间帧，语义不变但消除时序抖动。
+            window.MouseMove(launchPoint);
+            var sawFadeIn = false;
+            for (var i = 0; i < 12 && !sawFadeIn; i++) { Pump(10); sawFadeIn = hoverShadow.Opacity > 0 && hoverShadow.Opacity < 1; }
+            Check("阴影随悬停渐入", sawFadeIn);
             Pump(200); Capture("button-hover",false);
             Check($"悬停结束后阴影稳定（opacity={hoverShadow.Opacity:F2}, over={launchButton.IsPointerOver}）", hoverShadow.Opacity>=0.99);
+            // FlClash/M3 式按压：按下瞬间在按钮模板的水波纹层里投一个扩散圆，并有 state layer 压暗。
+            // 夹具默认 motionMode=off（减少动效），波纹按设计不画；这里临时开启动画验证后恢复。
+            var savedMotionMode = Launcher.Desktop.MotionPreferences.Mode;
+            Launcher.Desktop.MotionPreferences.Mode = "smooth"; Pump(40);
             var launchesBeforePress=launch.Starts;
-            window.MouseDown(launchPoint,MouseButton.Left); Pump(220);
+            window.MouseDown(launchPoint,MouseButton.Left); Pump(60);
+            var rippleHost = launchButton.GetVisualDescendants().OfType<Canvas>().FirstOrDefault(c => c.Name == "RippleHost");
+            var stateLayer = launchButton.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Name == "StateLayer");
+            Check("按钮模板提供水波纹层与 state layer", rippleHost is not null && stateLayer is not null);
+            Check("按下时出现水波纹圆", rippleHost is not null && rippleHost.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Any());
+            Check("按下时叠加 state layer", stateLayer is { Opacity: > 0 });
+            Pump(160);
             Check("按压时阴影收紧且文字保持清晰", ambientShadow.Opacity<=0.2 && hoverShadow.Opacity<0.01 && launchButton.Opacity>0.95);
+            // 顺序上这里是 pressed 态：验证「收回」缩放已经生效（松开后由过渡回到 scale(1)）
+            Check("主操作按钮按压时同样收回", Math.Abs(launchButton.RenderTransform!.Value.M11 - 0.955) < 0.01);
+            Launcher.Desktop.MotionPreferences.Mode = savedMotionMode; Pump(40);
             window.MouseMove(new Point(0,0)); window.MouseUp(new Point(0,0),MouseButton.Left); Pump(250);
             Check("移出后松开不会误启动", launch.Starts==launchesBeforePress && hoverShadow.Opacity<0.01);
             Find<Button>("LibraryNav").Focus(NavigationMethod.Tab); feedback.Focus(NavigationMethod.Tab); Pump(80);
@@ -262,8 +289,7 @@ internal static class Program
             ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);
             SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);
             // 删除确认：危险动作的确认按钮要红底白字，其他确认维持主色
-            model.SelectedInstance = model.Instances.First(); Pump(80);
-            model.DeleteInstanceCommand.Execute(null); Pump(150);
+            model.SelectedInstance = model.Instances.First(); Pump(80);            model.DeleteInstanceCommand.Execute(null); Pump(150);
             var dangerOk = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("danger-solid"));
             Check("删除版本的确认框弹出且确认按钮带危险样式", model.IsConfirmOpen && dangerOk is not null && dangerOk.Content as string == "删除");
             Check("删除确认按钮红底白字",
@@ -274,6 +300,50 @@ internal static class Program
             Check("取消删除后实例仍在且弹窗关闭", model.Instances.Count >= 3 && !model.IsConfirmOpen
                 && !window.GetVisualDescendants().OfType<Button>().Any(b => b.Classes.Contains("danger-solid") && b.IsEffectivelyVisible));
             Check("普通确认按钮不带危险样式", window.GetVisualDescendants().OfType<Button>().Any(b => b.Classes.Contains("primary")));
+            // 侧边栏收起/展开：宽度两种状态、文字淡出、状态记忆（大纲 6）
+            var sidebar = Find<Border>("SidebarPanel");
+            // 收起/展开各有独立按钮（收起态 72px 放不下"图标+按钮"一行，改上下两行），
+            // 这里始终点当前可见的那个。
+            ToggleButton VisibleSidebarToggle() => window.GetVisualDescendants().OfType<ToggleButton>()
+                .First(t => t.Name is "SidebarToggle" or "SidebarToggleCollapsed" && t.IsEffectivelyVisible);
+            var sidebarToggle = Find<ToggleButton>("SidebarToggle");
+            Check("侧边栏默认展开约 236px", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 236) < 1);
+            var navText = Find<StackPanel>("SidebarNavText");
+            // 必须用真实点击驱动 ToggleButton：代码直接赋 IsChecked 绕过了 Toggle()/Command 调用序列，
+            // 测不出「TwoWay 绑定 + Command 双重翻转」这种 blocker（大纲 13.3-1/2）。
+            Click(VisibleSidebarToggle()); Pump(350);
+            Capture("home-collapsed");
+            Check("真实点击后收起：宽度约 72px 且文字淡出", model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 72) < 1 && navText.Opacity < 0.05);
+            Check("收起后品牌图标仍显示", Find<Image>("SidebarAppIconCollapsed").IsEffectivelyVisible);
+            Check("收起态折叠按钮恢复原触发范围（42×32）",
+                Math.Abs(Find<ToggleButton>("SidebarToggleCollapsed").Bounds.Width - 42) < 1
+                && Math.Abs(Find<ToggleButton>("SidebarToggleCollapsed").Bounds.Height - 32) < 1);
+            Check("收起态折叠按钮不与品牌图标重叠",
+                Find<ToggleButton>("SidebarToggleCollapsed").TranslatePoint(new Point(0, 0), sidebar) is { } togglePos
+                && Find<Image>("SidebarAppIconCollapsed").TranslatePoint(new Point(0, 0), sidebar) is { } iconPos
+                && togglePos.Y >= iconPos.Y + Find<Image>("SidebarAppIconCollapsed").Bounds.Height - 1);
+            var libraryNav = Find<Button>("LibraryNav");
+            var navCenter = libraryNav.TranslatePoint(new Point(libraryNav.Bounds.Width / 2, libraryNav.Bounds.Height / 2), window)!.Value;
+            Check("收起后导航图标仍可点击", navCenter.X > 0 && navCenter.X < sidebar.Bounds.Width + 40);
+            Click(VisibleSidebarToggle()); Pump(350);
+            Check("真实点击再次展开恢复宽度且文字可见", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 236) < 1 && navText.Opacity > 0.9);
+            Check("真实点击状态写入外观设置并被读回", !Launcher.Application.Settings.AppearanceStore.Read(data).SidebarCollapsed);
+            Check("收起态导航项提供 ToolTip", ToolTip.GetTip(Find<Button>("LibraryNav")) as string == "游戏库");
+            // 共享蓝色指示条：随 ShellPage 平滑移动（大纲 7）
+            var indicator = Find<Border>("NavIndicator");
+            Check("首次进入游戏库指示条落位显示", indicator.IsVisible);
+            var list = Find<StackPanel>("NavList");
+            double IndicatorY() => (indicator.RenderTransform as TranslateTransform)?.Y ?? double.NaN;
+            var beforeY = IndicatorY();
+            Check("指示条使用蓝色", indicator.Background is ISolidColorBrush b && b.Color == Color.Parse("#4C8DFF"));
+            Check("指示条对准游戏库", Math.Abs(beforeY - Find<Button>("LibraryNav").TranslatePoint(new Point(0, 0), list)!.Value.Y - (Find<Button>("LibraryNav").Bounds.Height - indicator.Height) / 2) < 1);
+            Find<Button>("MultiplayerNav").Command?.Execute(null); Pump(450);
+            Check("切换到联机页指示条平滑移动到新位置",
+                model.IsMultiplayerPage && indicator.IsVisible
+                && Math.Abs(IndicatorY() - Find<Button>("MultiplayerNav").TranslatePoint(new Point(0, 0), list)!.Value.Y - (Find<Button>("MultiplayerNav").Bounds.Height - indicator.Height) / 2) < 1
+                && IndicatorY() != beforeY);
+            model.ShowInstancesCommand.Execute(null); Pump(450);
+            Check("返回游戏库指示条回到原位", Math.Abs(IndicatorY() - beforeY) < 1);
             Check("无数据绑定错误", log.Errors.Count==0);
             using(var portableServices=LauncherServices.Create(s=>s.RemoveAll<ISecretProtector>()))
             {
