@@ -4,7 +4,9 @@
 
 2026-11-14。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.7)。
 
-Windows 单文件 25721976 字节，SHA-256：`1aee3884044197db774a69a473d28ad544a509427bc3943333e250d6d687cc8b`。341 项桌面界面检查（含 4 项侧栏四态、3 项切页残留/瞬时切换）、880 项核心、47 项平台检查通过，另通过架构检查与 31 项联机界面检查。
+[源码 ad050c8](https://github.com/Insomnia-7/mc-launcher/commit/ad050c83297d4bf6be7003e06f94b415328d0ebe)。
+
+Windows 单文件 25721435 字节，SHA-256：`85661d8ba20539c97aa329636554b5c800b82bd84a01a94685d309eeed59bfeb`。341 项桌面界面检查（含 4 项侧栏四态、3 项切页残留/瞬时切换）、880 项核心、47 项平台检查通过，另通过架构检查与 31 项联机界面检查。
 
 按《方隅 Launcher · UI 动效设计大纲》重画整套外壳：先定 token，再改控件模板，最后才动布局。
 

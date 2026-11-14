@@ -351,5 +351,20 @@
     "sha256": "b3e51e87890c7cf413c9ecac1f99b493eabc4c2804723777c1cd70f9bd6317f9",
     "binaryProductVersion": "1.0.0-preview.6+72dc112ff754704e89983fa02a861e2ea7029269",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "1.0.0-preview.7",
+    "date": "2026-11-14",
+    "title": "界面与动效体系重构",
+    "tag": "desktop-v1.0.0-preview.7",
+    "sourceCommit": "ad050c83297d4bf6be7003e06f94b415328d0ebe",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/ad050c83297d4bf6be7003e06f94b415328d0ebe",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.7",
+    "changes": "按动效设计大纲重画外壳：动效 token（83/167/250/420 与三条基线曲线）、侧边栏四态（展开/收起/极窄/浮层）、按钮与卡片状态机、焦点环与强调色统一；页面切换、内分页、弹窗、卡片入场改为瞬时以消除闪白与残留；资源搜索去掉 25 秒提示，列表与卡片悬停不再铺灰底；重复启动安静退出。",
+    "platform": "Windows x64",
+    "bytes": 25721435,
+    "sha256": "85661d8ba20539c97aa329636554b5c800b82bd84a01a94685d309eeed59bfeb",
+    "binaryProductVersion": "1.0.0-preview.7+ad050c83297d4bf6be7003e06f94b415328d0ebe",
+    "buildMetadataMatchesSource": true
   }
 ]
