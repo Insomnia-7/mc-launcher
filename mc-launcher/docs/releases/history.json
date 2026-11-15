@@ -366,5 +366,32 @@
     "sha256": "85661d8ba20539c97aa329636554b5c800b82bd84a01a94685d309eeed59bfeb",
     "binaryProductVersion": "1.0.0-preview.7+ad050c83297d4bf6be7003e06f94b415328d0ebe",
     "buildMetadataMatchesSource": true
+  },
+  {
+    "version": "1.0.0-preview.8",
+    "date": "2026-11-15",
+    "title": "三态主题、材质适配与一体化标题栏",
+    "tag": "desktop-v1.0.0-preview.8",
+    "sourceCommit": "0f50b361bb3296492938274064a836b4558289c7",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/0f50b361bb3296492938274064a836b4558289c7",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.8",
+    "changes": "M2 材质适配与 M3 标题栏、三态主题快切、当前页面名称、原生窗口行为及验证。",
+    "platform": "Windows x64",
+    "bytes": 25730875,
+    "sha256": "9446025dc429860d20549e0da823ef7f2e27b8cf6664bf0f4ff9503737dd566a",
+    "binaryProductVersion": "1.0.0-preview.8+0f50b361bb3296492938274064a836b4558289c7",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "nativeShell": 16,
+      "empty": 6,
+      "legacyTheme": 4,
+      "shell": 35,
+      "desktop": 341,
+      "core": 880,
+      "trimmedAssemblies": true,
+      "architecture": true,
+      "singleFileStartup": true,
+      "total": 1282
+    }
   }
 ]

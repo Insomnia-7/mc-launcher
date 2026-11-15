@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.8)。
 
+[源码 0f50b36](https://github.com/Insomnia-7/mc-launcher/commit/0f50b361bb3296492938274064a836b4558289c7)。Windows 单文件 25730875 字节，SHA-256：`9446025dc429860d20549e0da823ef7f2e27b8cf6664bf0f4ff9503737dd566a`。1282 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 交付此前已合入的深色 / 浅色 / 跟随系统主题、设计资源和 240px 展开侧栏。
 - M2：补齐 Windows Mica / Acrylic / 实色回退，仅标题栏和侧栏使用高不透明度材质色，业务内容保持实色；自定义壁纸优先。
 - M3：标题栏收紧为 38px，保留原始品牌标识并显示当前真实页面或实例名称；新增三态主题快切、真实后台任务入口和键盘焦点提示。
