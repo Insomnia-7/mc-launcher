@@ -111,7 +111,7 @@ public sealed partial class MainViewModel
                 if(deleted.CoverFile is {Length:>0} cover)DeleteLibraryCover(cover);
                 SaveLibraryPreferences();
             }
-            ShowNotice(shared?$"已删除 {name}；版本文件被其他实例共用，已保留。":$"已删除 {name}");
+            ShowNotice(shared?$"已删除 {name}；版本文件被其他实例共用，已保留。":$"已删除 {name}",level:ToastLevel.Success);
         };
         GameStarted=id=>
         {

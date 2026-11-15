@@ -16,6 +16,9 @@ public static class MotionTokens
     public static TimeSpan ContentEntrance => TimeSpan.FromMilliseconds(220);
     public static TimeSpan StaggerStep => TimeSpan.FromMilliseconds(40);
     public static TimeSpan Dialog => TimeSpan.FromMilliseconds(220);
+    public static TimeSpan DialogScrim => TimeSpan.FromMilliseconds(180);
+    public static TimeSpan DialogExit => TimeSpan.FromMilliseconds(150);
+    public static TimeSpan ToastExit => TimeSpan.FromMilliseconds(150);
     public static TimeSpan Tooltip => TimeSpan.FromMilliseconds(140);
     public const int TooltipDelayMs = 450;
 }

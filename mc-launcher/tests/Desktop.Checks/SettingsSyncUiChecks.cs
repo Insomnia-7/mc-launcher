@@ -53,8 +53,8 @@ internal static class SettingsSyncUiChecks
         model.SyncSourceEditorOpen=true;pump(35);check("展开动画在中间帧逐步显示且不缩放字体",reveal.Progress>0&&reveal.Progress<1&&reveal.Bounds.Height>0&&reveal.RenderTransform is null);
         model.SyncSourceEditorOpen=false;pump(20);model.SyncSourceEditorOpen=true;pump(260);check("快速反向展开最终状态一致",reveal.IsOpen&&reveal.Progress>0.99&&reveal.Child!.IsEffectivelyVisible);
         model.SyncSourceEditorOpen=false;pump(20);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");pump(30);check("关闭动画立即收拢并释放内容区域",reveal.Progress==0&&reveal.Bounds.Height==0&&!reveal.Child!.IsVisible);
-        var actions=0;model.ShowNotice("设置已同步",()=>actions++);pump(40);check("操作结果提示不阻塞主界面",model.HasNotice&&!model.HasOverlay&&Find<RevealPanel>("NoticeReveal").Bounds.Height>0);model.OpenNoticeCommand.Execute(null);pump(30);
-        check("提示可跳转并关闭且不会重复执行",actions==1&&!model.HasNotice&&Find<RevealPanel>("NoticeReveal").Bounds.Height==0);
+        var actions=0;model.ShowNotice("设置已同步",()=>actions++);pump(40);check("操作结果提示不阻塞主界面",model.HasNotice&&!model.HasOverlay&&model.Toasts.Items.Count==1);model.OpenNoticeCommand.Execute(null);pump(30);
+        check("提示可跳转并关闭且不会重复执行",actions==1&&!model.HasNotice&&model.Toasts.Items.Count==0);
         model.OpenAppearanceCommand.Execute(null);check("同步页可以切回外观",model.IsAppearanceSettings&&!model.ShowsSettingsSync);
         model.ShowInstancesCommand.Execute(null);model.SelectedInstance=model.Instances.Single(i=>i.InstanceId==target);model.OpenGameCommand.Execute(null);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");
         foreach(var tab in new[]{1,2,3,2,1,3}){model.SelectDetailTabCommand.Execute(tab.ToString());pump(15);}pump(300);

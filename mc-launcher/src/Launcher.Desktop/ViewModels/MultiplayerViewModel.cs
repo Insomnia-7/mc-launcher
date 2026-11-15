@@ -45,6 +45,7 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     [ObservableProperty] private string _roomAction = "";
     /// <summary>最近一次失败的动作名。Operation 的 finally 会清空 RoomAction，文案要靠它判断「哪个按钮该显示重试」。</summary>
     private string _failedAction = "";
+    private string _completedAction = "";
     /// <summary>当前动作是否为「创建房间」：驱动该按钮的加载态与文案。</summary>
     public bool RoomBusy => RoomPhase == RoomActionPhase.Working && RoomAction == "创建房间";
     public bool JoinRoomBusy => RoomPhase == RoomActionPhase.Working && RoomAction == "连接房间";
@@ -52,6 +53,13 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     public bool EngineInstallBusy => RoomPhase == RoomActionPhase.Working && RoomAction == "下载联机组件";
     /// <summary>下载进度条只对「下载联机组件」可见，避免扫描/检测时显示一条 Value=0 的空进度条。</summary>
     public bool DownloadVisible => EngineInstallBusy;
+    public bool CreateRoomSucceeded => RoomPhase==RoomActionPhase.Done && _completedAction=="创建房间" && HasSession && IsHost;
+    public bool JoinRoomSucceeded => RoomPhase==RoomActionPhase.Done && _completedAction=="连接房间" && HasSession && !IsHost;
+    public bool InstallEngineSucceeded => RoomPhase==RoomActionPhase.Done && _completedAction=="下载联机组件" && EngineInstalled;
+    public bool CreateRoomFailed => RoomPhase==RoomActionPhase.Failed && _failedAction=="创建房间";
+    public bool JoinRoomFailed => RoomPhase==RoomActionPhase.Failed && _failedAction=="连接房间";
+    public bool InstallEngineFailed => RoomPhase==RoomActionPhase.Failed && _failedAction=="下载联机组件";
+
     public string InstallEngineLabel => EngineInstallBusy ? "正在下载…" : _failedAction == "下载联机组件" ? "重试下载" : "下载 / 修复组件";
     public string CreateRoomLabel => RoomBusy ? "正在创建…" : RoomPhase == RoomActionPhase.Done && !HasSession ? "重新创建" : _failedAction == "创建房间" ? "重试创建" : "创建房间";
     public string JoinRoomLabel => JoinRoomBusy ? "正在连接…" : _failedAction == "连接房间" ? "重试连接" : "连接房间";
@@ -82,12 +90,12 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     partial void OnRoomActionChanged(string value)=>NotifyRoomLabels();
     private void NotifyRoomLabels()
     {
-        foreach(var name in new[]{nameof(RoomBusy),nameof(JoinRoomBusy),nameof(DisconnectBusy),nameof(EngineInstallBusy),nameof(DownloadVisible),nameof(CreateRoomLabel),nameof(JoinRoomLabel),nameof(DisconnectLabel),nameof(InstallEngineLabel)})OnPropertyChanged(name);
+        foreach(var name in new[]{nameof(RoomBusy),nameof(JoinRoomBusy),nameof(DisconnectBusy),nameof(EngineInstallBusy),nameof(DownloadVisible),nameof(CreateRoomLabel),nameof(JoinRoomLabel),nameof(DisconnectLabel),nameof(InstallEngineLabel),nameof(CreateRoomSucceeded),nameof(JoinRoomSucceeded),nameof(InstallEngineSucceeded),nameof(CreateRoomFailed),nameof(JoinRoomFailed),nameof(InstallEngineFailed)})OnPropertyChanged(name);
     }
     private async Task Operation(string actionLabel,Func<CancellationToken,Task> action)
     {
-        if(IsBusy)return;IsBusy=true;RoomAction=actionLabel;_failedAction="";RoomPhase=RoomActionPhase.Working;using var cts=new CancellationTokenSource();_operation=cts;
-        try{await action(cts.Token);RoomPhase=RoomActionPhase.Done;}
+        if(IsBusy)return;IsBusy=true;RoomAction=actionLabel;_failedAction="";_completedAction="";RoomPhase=RoomActionPhase.Working;using var cts=new CancellationTokenSource();_operation=cts;
+        try{await action(cts.Token);_completedAction=actionLabel;RoomPhase=RoomActionPhase.Done;}
         catch(OperationCanceledException){Hint="操作已取消。";RoomPhase=RoomActionPhase.Idle;}
         catch(Exception ex)when(ex is IOException or InvalidDataException or UnauthorizedAccessException or PlatformNotSupportedException or System.Net.Sockets.SocketException or HttpRequestException or ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or System.Text.Json.JsonException)
         {SetFailure(actionLabel,ex.Message);}

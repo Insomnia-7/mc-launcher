@@ -1,6 +1,6 @@
-<UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns:motion="using:Launcher.Desktop" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:vm="using:Launcher.App.ViewModels" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers" IsHitTestVisible="{Binding HasOverlay}">
+<UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns:motion="using:Launcher.Desktop" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:vm="using:Launcher.App.ViewModels" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers">
   <Grid>
-    <Grid Classes="modal" IsVisible="{Binding IsSetupOpen}">
+    <icons:AnimatedDialog x:Name="SetupDialog" Classes="modal" IsOpen="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620">
         <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="15">
@@ -58,8 +58,8 @@
           </StackPanel>
         </ScrollViewer>
       </Border>
-    </Grid>
-    <Grid Classes="modal" IsVisible="{Binding IsAccountsOpen}">
+    </icons:AnimatedDialog>
+    <icons:AnimatedDialog x:Name="AccountsDialog" Classes="modal" IsOpen="{Binding IsAccountsOpen}">
       <Border Classes="modal-surface" Width="580" MaxHeight="620">
         <ScrollViewer>
           <StackPanel Spacing="16">
@@ -106,8 +106,8 @@
           </StackPanel>
         </ScrollViewer>
       </Border>
-    </Grid>
-    <Grid Classes="modal" ZIndex="50" IsVisible="{Binding IsConfirmOpen}">
+    </icons:AnimatedDialog>
+    <icons:AnimatedDialog x:Name="ConfirmDialog" Classes="modal" ZIndex="50" IsOpen="{Binding IsConfirmOpen}">
       <Border Classes="modal-surface" Width="540">
         <StackPanel Spacing="16">
           <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap"/>
@@ -121,11 +121,11 @@
           </Grid>
         </StackPanel>
       </Border>
-    </Grid>
-    <Grid Classes="modal" IsVisible="{Binding DataRestartRequired}">
+    </icons:AnimatedDialog>
+    <icons:AnimatedDialog x:Name="RestartDialog" Classes="modal" IsOpen="{Binding DataRestartRequired}">
       <Border Classes="modal-surface" Width="560">
         <StackPanel Spacing="18"><TextBlock Text="数据已迁移，请重新打开方隅" Classes="heading"/><TextBlock Text="{Binding DataMoveHint}" TextWrapping="Wrap"/><Button Classes="primary" Command="{Binding RestartForDataMoveCommand}" Content="退出方隅（请重新打开）"/></StackPanel>
       </Border>
-    </Grid>
+    </icons:AnimatedDialog>
   </Grid>
 </UserControl>

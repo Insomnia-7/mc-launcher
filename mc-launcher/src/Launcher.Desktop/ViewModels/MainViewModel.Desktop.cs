@@ -31,6 +31,7 @@ public sealed partial class MainViewModel
 
     private void InitializeDesktopShell()
     {
+        InitializeNotices();
         InitializeWorkspace();
         InitializeHome();
         PropertyChanged += (_, e) =>

@@ -1,6 +1,6 @@
 # 方隅 · 源码
 
-当前 Windows 版本：`1.0.0-preview.11`。
+当前 Windows 版本：`1.0.0-preview.12`。
 
 Minecraft Java 版启动器。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
 
@@ -124,4 +124,4 @@ MIT。Minecraft 与第三方资源遵循各自的许可，本项目与 Mojang、
 
 ## UI 重构进度
 
-M2 材质适配、M3 标题栏与 M4 侧边栏交互已落地。具体实现与验证范围见 [进度记录](../UI-design-plan/02-implementation-progress.md)。M5 已接入双层切页、统一动效时长与首次交错入场；M6 已接入默认主页、快速启动、真实联机状态与紧凑实例列表；下一阶段为 M7 全局组件。
+M2 材质适配、M3 标题栏与 M4 侧边栏交互已落地。具体实现与验证范围见 [进度记录](../UI-design-plan/02-implementation-progress.md)。M5 已接入双层切页、统一动效时长与首次交错入场；M6 已接入默认主页、快速启动、真实联机状态与紧凑实例列表；M7 已接入统一按钮状态、弹窗动画、通知队列与 Tooltip；下一阶段为 M8 开发预览页。

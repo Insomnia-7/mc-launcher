@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.Views.ToastView" x:DataType="vm:ToastItem" AutomationProperties.Name="{Binding Message}">
+  <UserControl.Styles>
+    <Style Selector="Border#ToastAccent"><Setter Property="Background" Value="{DynamicResource AccentStrongBrush}"/></Style>
+    <Style Selector="Border#ToastAccent.success"><Setter Property="Background" Value="{DynamicResource SuccessBrush}"/></Style>
+    <Style Selector="Border#ToastAccent.warning"><Setter Property="Background" Value="{DynamicResource WarnBrush}"/></Style>
+    <Style Selector="Border#ToastAccent.error"><Setter Property="Background" Value="{DynamicResource DangerBrush}"/></Style>
+  </UserControl.Styles>
+  <Border x:Name="ToastSurface" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="12" BoxShadow="0 5 18 0 #25000000" ClipToBounds="True">
+    <Grid ColumnDefinitions="4,*">
+      <Border x:Name="ToastAccent" Classes.success="{Binding IsSuccess}" Classes.warning="{Binding IsWarning}" Classes.error="{Binding IsError}"/>
+      <Grid Grid.Column="1" Margin="12" ColumnDefinitions="20,*,24" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+        <icons:UiIcon Kind="{Binding IconKind}" Width="18" Height="18" Foreground="{Binding #ToastAccent.Background}"/>
+        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
+        <Button Grid.Column="2" Classes="quiet icon" Width="24" Height="24" MinHeight="24" Padding="4" Command="{Binding CloseCommand}" AutomationProperties.Name="关闭通知"><icons:UiIcon Kind="ActionClose" Width="14" Height="14"/></Button>
+        <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Message}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" FontSize="12" ToolTip.Tip="{Binding Message}"/>
+        <Button Grid.Row="2" Grid.Column="1" Classes="quiet compact" Content="{Binding ActionLabel}" Command="{Binding InvokeActionCommand}" IsVisible="{Binding HasAction}" IsEnabled="{Binding !IsClosing}" MinHeight="24" Padding="0" FontSize="12"/>
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

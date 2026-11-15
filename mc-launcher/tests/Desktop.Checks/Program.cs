@@ -40,6 +40,7 @@ internal static class Program
         }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--components-native"))return ShellNativeChecks.Start(root, components: true);
         if(args.Contains("--home-native"))return ShellNativeChecks.Start(root, home: true);
         if(args.Contains("--page-motion-native"))return ShellNativeChecks.Start(root, pageMotion: true);
         if(args.Contains("--sidebar-native"))return ShellNativeChecks.Start(root, sidebar: true);
@@ -64,7 +65,7 @@ internal static class Program
         var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
-            if(args.Contains("--multiplayer") || args.Contains("--home")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
+            if(args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -98,6 +99,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--components")){ComponentChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),Pump,Check,Capture);Check("全局组件无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} component checks passed");return 0;}
             if(args.Contains("--home")){HomeUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture,Click,()=>http.Requests,root);Check("首页无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} home checks passed");return 0;}
             if(args.Contains("--page-motion")){PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("页面动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} page motion checks passed");return 0;}
             if(args.Contains("--sidebar")){SidebarUiChecks.Run(model,window,Pump,Check,Capture,Click,data);Check("侧边栏无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} sidebar checks passed");return 0;}

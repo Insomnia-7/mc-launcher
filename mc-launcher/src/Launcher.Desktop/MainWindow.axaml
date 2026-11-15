@@ -231,20 +231,11 @@
     <!-- ④ 底部状态栏 h=24 -->
     <Border x:Name="StatusBar" Grid.Row="2" Grid.ColumnSpan="2" Padding="24,6,24,10">
       <StackPanel Spacing="6">
-        <icons:RevealPanel x:Name="NoticeReveal" IsOpen="{Binding HasNotice}">
-          <Border CornerRadius="12" Background="{DynamicResource CardBrush}" Padding="12,6" Margin="0,0,0,4" BoxShadow="0 2 10 0 #10000000">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-              <icons:UiIcon Kind="StatusInfo" Width="18" Height="18" VerticalAlignment="Center" />
-              <TextBlock x:Name="NoticeMessage" Grid.Column="1" Text="{Binding NoticeText}" FontSize="13" VerticalAlignment="Center" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
-              <Button Grid.Column="2" Classes="quiet compact" Content="查看" IsVisible="{Binding HasNoticeAction}" Command="{Binding OpenNoticeCommand}" MinHeight="28" />
-              <Button Grid.Column="3" Classes="quiet compact" Content="×" Command="{Binding DismissNoticeCommand}" MinHeight="28" AutomationProperties.Name="关闭操作提示" />
-            </Grid>
-          </Border>
-        </icons:RevealPanel>
         <TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasStatusText}" />
       </StackPanel>
     </Border>
     <Border x:Name="WindowOutline" Grid.RowSpan="3" Grid.ColumnSpan="2" ZIndex="20" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" IsHitTestVisible="False" />
+    <views:ToastHost x:Name="Notifications" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" DataContext="{Binding Toasts}" Width="360" MaxWidth="360" Margin="20" HorizontalAlignment="Right" VerticalAlignment="Bottom" ZIndex="30" />
     <ContentControl x:Name="OverlayHost" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
   </Grid>
 </Window>

@@ -97,25 +97,28 @@
   <Style Selector="Grid.library-tile:pointerover Border#TileHover"><Setter Property="Opacity" Value="1" /></Style>
 
   <Style Selector="Border.modal-surface">
-    <Setter Property="CornerRadius" Value="12" /><Setter Property="Padding" Value="24" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="CornerRadius" Value="16" /><Setter Property="Padding" Value="24" />
     <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /><Setter Property="BorderThickness" Value="1" />
     <Setter Property="BoxShadow" Value="0 20 80 0 #40000000" />
     <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="28" />
   </Style>
+  <Style Selector="icons|AnimatedDialog.modal"><Setter Property="ScrimBrush" Value="{DynamicResource OverlayBrush}" /><Setter Property="ZIndex" Value="20" /></Style>
   <Style Selector="Grid.modal"><Setter Property="Background" Value="{DynamicResource OverlayBrush}" /><Setter Property="IsVisible" Value="False" /><Setter Property="ZIndex" Value="20" /></Style>
 
   <!--
     按钮模板。状态机（大纲 §3.3 C-1）：
-      hover   底色 83ms 线性
-      pressed 底色 83ms + scale 0.98 83ms
-      松开    回 scale 1 用 167ms —— 靠 :pressed 样式覆盖 Transitions 实现「按下比松开快」
+      hover   底色 120ms 线性
+      pressed 底色 120ms + scale 0.98 85ms
+      松开    回 scale 1 用 140ms —— 靠 :pressed 样式覆盖 Transitions 实现「按下比松开快」
       焦点环  瞬时，2px #4C8DFF，无过渡
-      禁用    瞬时灰化 + opacity 0.4
+      禁用    瞬时灰化 + opacity 0.45
   -->
   <Style Selector="Button">
     <Setter Property="icons:Ripple.IsEnabled" Value="True" />
+    <Setter Property="icons:ButtonFeedback.TrackCommand" Value="True" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="8" /><Setter Property="MinHeight" Value="38" /><Setter Property="Padding" Value="16,8" /><Setter Property="Cursor" Value="Hand" /><Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="RenderTransformOrigin" Value="50%,50%" /><Setter Property="RenderTransform" Value="scale(1)" />
@@ -137,10 +140,11 @@
       <Border Name="Surface" ClipToBounds="True" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
         <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /><BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Border.Transitions>
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
-          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
+          <ContentPresenter Name="ActionContent" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
           <Border Name="StateLayer" Background="{TemplateBinding Foreground}" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False">
             <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
           </Border>
+          <icons:FeedbackIcon Name="ActionFeedback" State="{TemplateBinding icons:ButtonFeedback.State}" Foreground="{TemplateBinding Foreground}" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" IsHitTestVisible="False" />
           <Canvas Name="RippleHost" ClipToBounds="True" IsHitTestVisible="False" />
         </Grid>
       </Border>
@@ -149,16 +153,16 @@
   <Style Selector="Button:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" /></Style>
   <Style Selector="Button:pressed /template/ Border#StateLayer"><Setter Property="Opacity" Value="0.08" /></Style>
   <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="scale(0.98)" /><Setter Property="Opacity" Value="0.98" /></Style>
-  <!-- 按下与松开走不同时长：:pressed 期间覆盖成 83ms，松开后回落到基类的 167ms -->
+  <!-- 按下与松开走不同时长：:pressed 期间覆盖成 85ms，松开后回落到基类的 140ms -->
   <Style Selector="Button:pressed">
     <Setter Property="Transitions">
-      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions>
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Pressed}" Easing="{x:Static local:MotionEasing.Linear}" /><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Pressed}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions>
     </Setter>
   </Style>
   <!-- 焦点环一律瞬时：键盘 Tab 时若淡入，会感觉系统在追我 -->
   <Style Selector="Button:focus-visible /template/ Border#FocusRing"><Setter Property="IsVisible" Value="True" /></Style>
-  <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.4" /></Style>
-  <!-- 禁用是瞬时的：连基类那条 83ms 的 Opacity 过渡也要一起清掉，否则灰化会淡进淡出 -->
+  <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.45" /></Style>
+  <!-- 禁用是瞬时的：连基类那条 120ms 的 Opacity 过渡也要一起清掉，否则灰化会淡进淡出 -->
   <Style Selector="Button:disabled"><Setter Property="Transitions"><Transitions /></Setter></Style>
   <Style Selector="Button:pointerover /template/ Border#HoverShadow"><Setter Property="Opacity" Value="1" /></Style>
   <Style Selector="Button:pressed /template/ Border#HoverShadow"><Setter Property="Opacity" Value="0" /></Style>
@@ -173,13 +177,13 @@
   <Style Selector="Button.primary:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource GlassEdgeBrush}" /></Style>
 
   <!-- Ghost / Quiet：透明底，hover 才出底色 -->
-  <Style Selector="Button.quiet, Button.ghost">
+  <Style Selector="Button.quiet, Button.ghost, Button.icon">
     <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="HorizontalContentAlignment" Value="Left" />
   </Style>
-  <Style Selector="Button.quiet:pointerover /template/ Border#Surface, Button.ghost:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
-  <Style Selector="Button.quiet /template/ Border#AmbientShadow, Button.quiet /template/ Border#HoverShadow, Button.ghost /template/ Border#AmbientShadow, Button.ghost /template/ Border#HoverShadow, Button.nav /template/ Border#AmbientShadow, Button.nav /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
-  <Style Selector="Button.quiet /template/ Border#TopHighlight, Button.ghost /template/ Border#TopHighlight, Button.nav /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.quiet:pointerover /template/ Border#Surface, Button.ghost:pointerover /template/ Border#Surface, Button.icon:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+  <Style Selector="Button.quiet /template/ Border#AmbientShadow, Button.quiet /template/ Border#HoverShadow, Button.ghost /template/ Border#AmbientShadow, Button.ghost /template/ Border#HoverShadow, Button.icon /template/ Border#AmbientShadow, Button.icon /template/ Border#HoverShadow, Button.nav /template/ Border#AmbientShadow, Button.nav /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.quiet /template/ Border#TopHighlight, Button.ghost /template/ Border#TopHighlight, Button.icon /template/ Border#TopHighlight, Button.nav /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False" /></Style>
 
   <!-- 导航项：选中 = 灰 pill + 共享蓝色竖条（竖条由 MainWindow 单独驱动） -->
   <Style Selector="Button.nav">
@@ -203,6 +207,20 @@
   <Style Selector="Button.danger-solid"><Setter Property="Background" Value="{DynamicResource DangerFillBrush}" /><Setter Property="Foreground" Value="White" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
   <Style Selector="Button.danger-solid:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
   <Style Selector="Button.danger-solid:pressed /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource DangerFillHoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+
+
+  <Style Selector="Button.icon"><Setter Property="Padding" Value="8" /><Setter Property="HorizontalContentAlignment" Value="Center" /></Style>
+  <Style Selector="Button.is-loading"><Setter Property="icons:ButtonFeedback.State" Value="Loading" /><Setter Property="IsEnabled" Value="False" /><Setter Property="Opacity" Value="0.82" /></Style>
+  <Style Selector="Button.is-success"><Setter Property="icons:ButtonFeedback.State" Value="Success" /><Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" /></Style>
+  <Style Selector="Button.is-error"><Setter Property="icons:ButtonFeedback.State" Value="Error" /><Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" /></Style>
+  <Style Selector="Button.is-loading /template/ ContentPresenter#ActionContent"><Setter Property="Opacity" Value="0" /></Style>
+  <Style Selector="Button.is-loading /template/ icons|FeedbackIcon#ActionFeedback, Button.is-success /template/ icons|FeedbackIcon#ActionFeedback, Button.is-error /template/ icons|FeedbackIcon#ActionFeedback"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Button.is-success /template/ icons|FeedbackIcon#ActionFeedback"><Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" /></Style>
+  <Style Selector="Button.is-error /template/ icons|FeedbackIcon#ActionFeedback"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}" /></Style>
+  <Style Selector="Button.is-success /template/ icons|FeedbackIcon#ActionFeedback, Button.is-error /template/ icons|FeedbackIcon#ActionFeedback"><Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="Margin" Value="8,0,0,0" /></Style>
+  <Style Selector="Button.is-success /template/ ContentPresenter#ActionContent, Button.is-error /template/ ContentPresenter#ActionContent"><Setter Property="Margin" Value="24,0,0,0" /></Style>
+  <Style Selector=":is(Control)"><Setter Property="ToolTip.ShowDelay" Value="{x:Static local:MotionTokens.TooltipDelayMs}" /><Setter Property="ToolTip.BetweenShowDelay" Value="-1" /></Style>
+  <Style Selector="ToolTip"><Setter Property="icons:PopupMotion.Enabled" Value="True" /><Setter Property="Background" Value="{DynamicResource FieldBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="6" /><Setter Property="FontSize" Value="12" /><Setter Property="Padding" Value="10,6" /></Style>
 
   <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
   <Style Selector="ListBoxItem">

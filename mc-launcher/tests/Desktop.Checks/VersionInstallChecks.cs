@@ -76,6 +76,9 @@ internal static class VersionInstallChecks
         capture("install-vanilla",true);
         foreach(var kind in new[]{LoaderKind.Fabric,LoaderKind.Quilt,LoaderKind.Forge,LoaderKind.NeoForge})
         {
+            // A rapid test installs/deletes repeatedly without the normal five-second pause.
+            // Close completed task notifications before clicking the next covered option.
+            model.DismissNoticeCommand.Execute(null);pump(20);
             var choice=vm.InstallLoaders.Single(c=>c.Kind==kind);
             click(window.GetVisualDescendants().OfType<Button>().Single(b=>ReferenceEquals(b.DataContext,choice)));
             check(kind+" 互斥选中并加载可用版本",vm.InstallLoaders.Count(c=>c.IsSelected)==1 && vm.SelectedInstallLoader==choice && vm.InstallLoaderVersions.Count==2);

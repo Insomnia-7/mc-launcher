@@ -1,0 +1,6 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:local="using:Launcher.Desktop.Views" x:Class="Launcher.Desktop.Views.ToastHost" x:DataType="vm:ToastManager">
+  <ItemsControl x:Name="ToastItems" ItemsSource="{Binding Items}">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="10"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ToastItem"><local:ToastView/></DataTemplate></ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

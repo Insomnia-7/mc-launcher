@@ -140,7 +140,7 @@ public sealed partial class MainViewModel
         var sections=SharedSections;var root=GameRoot;
         AskConfirm("保存共享来源","共享方案仅保存在本机。其他实例启用跟随后，会在启动前读取共享设置；冲突默认保留本地。",source.Name,"保存共享来源",()=>_=SyncActionAsync(source.Id,async(sync,ct)=>
         {
-            if(root!=GameRoot)return;await sync.SetSourceAsync(source.Id,sections,ct);LoadSettingsSyncEditor();SettingsSyncHint="共享来源已保存；可以为其他实例选择跟随内容。";ShowNotice("共享设置已保存");
+            if(root!=GameRoot)return;await sync.SetSourceAsync(source.Id,sections,ct);LoadSettingsSyncEditor();SettingsSyncHint="共享来源已保存；可以为其他实例选择跟随内容。";ShowNotice("共享设置已保存",level:ToastLevel.Success);
         }));
     }
     [RelayCommand] private async Task SaveSettingsSyncTargetAsync()
@@ -167,7 +167,7 @@ public sealed partial class MainViewModel
         var choices=SyncChanges.Where(c=>c.CanChoose).ToDictionary(c=>c.Change.Key,c=>c.Apply,StringComparer.Ordinal);
         AskConfirm("应用共享设置","将备份并应用已勾选的差异；未勾选的设置保留为本实例例外。",SettingsSyncSummary,"备份并应用",()=>_=SyncActionAsync(plan.InstanceId,async(sync,ct)=>
         {
-            var count=await Task.Run(()=>sync.ApplyAsync(plan,choices,ct:ct),ct);LoadSyncMember();SettingsSyncHint=count>0?$"已同步 {count} 项，原设置已备份。":"已保留本地设置，并保存实例例外。";ShowNotice(SettingsSyncHint);
+            var count=await Task.Run(()=>sync.ApplyAsync(plan,choices,ct:ct),ct);LoadSyncMember();SettingsSyncHint=count>0?$"已同步 {count} 项，原设置已备份。":"已保留本地设置，并保存实例例外。";ShowNotice(SettingsSyncHint,level:ToastLevel.Success);
         }));
     }
     [RelayCommand] private void CloseSettingsSyncPreview(){_syncPlan=null;SyncChanges.Clear();NotifySyncPlan();}
@@ -176,7 +176,7 @@ public sealed partial class MainViewModel
         if(!CanEditSyncTarget||SyncTarget is not {} target)return;
         var backup=CurrentSettingsSync.Backups(target.Id).FirstOrDefault();if(backup is null)return;
         AskConfirm("恢复同步前设置","恢复上次同步涉及的设置，并暂停此实例的同步。",backup.Label,"恢复并暂停同步",()=>_=SyncActionAsync(target.Id,async(sync,ct)=>
-        {await Task.Run(()=>sync.RestoreAsync(target.Id,backup.Id,ct),ct);LoadSyncMember();SettingsSyncHint="已恢复同步前的设置，并暂停此实例同步。";ShowNotice("已恢复原设置并暂停同步");}));
+        {await Task.Run(()=>sync.RestoreAsync(target.Id,backup.Id,ct),ct);LoadSyncMember();SettingsSyncHint="已恢复同步前的设置，并暂停此实例同步。";ShowNotice("已恢复原设置并暂停同步",level:ToastLevel.Success);}));
     }
     private bool InstanceStopped(string id,string root){try{EnsureInstanceStopped(id,root);return true;}catch(InvalidOperationException){return false;}}
     private async Task ApplySharedBeforeLaunchAsync(string id,CancellationToken ct)
@@ -192,7 +192,7 @@ public sealed partial class MainViewModel
             if(count>0||plan.Conflicts>0)ShowNotice(SettingsSyncHint,()=>{OpenSettingsSync();SyncTarget=SyncInstances.FirstOrDefault(i=>i.Id==id);});
         }
         catch(OperationCanceledException)when(ct.IsCancellationRequested){throw;}
-        catch(Exception ex){SettingsSyncHint="已保留当前游戏设置，本次跳过同步："+ex.Message;ShowNotice(SettingsSyncHint,()=>OpenSettingsSync());}
+        catch(Exception ex){SettingsSyncHint="已保留当前游戏设置，本次跳过同步："+ex.Message;ShowNotice(SettingsSyncHint,()=>OpenSettingsSync(),ToastLevel.Warning);}
     }
     private async Task RefreshSharedAfterExitAsync(string root,string id)
     {

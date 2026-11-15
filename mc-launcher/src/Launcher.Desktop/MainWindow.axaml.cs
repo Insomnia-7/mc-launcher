@@ -102,6 +102,7 @@ public sealed partial class MainWindow : Window
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
+            _model?.Toasts.Dispose();
             PageHost.FinishTransition();
             _sidebarCts?.Cancel(); _sidebarCts?.Dispose(); _sidebarCts = null;
         };
@@ -192,9 +193,10 @@ public sealed partial class MainWindow : Window
         if (_model?.HasOverlay == true && _dialogs is null)
         {
             _dialogs=new DialogLayers { DataContext=_model };
+            _dialogs.VisibilityChanged+=UpdateOverlay;
             OverlayHost.Content=_dialogs;
         }
-        OverlayHost.IsHitTestVisible=_model?.HasOverlay == true;
+        OverlayHost.IsHitTestVisible=_model?.HasOverlay == true || _dialogs?.HasVisibleDialogs == true;
     }
 
     private void OnDragOver(object? sender, DragEventArgs e) => e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
