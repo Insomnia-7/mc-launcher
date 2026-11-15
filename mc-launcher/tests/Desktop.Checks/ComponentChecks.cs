@@ -113,6 +113,7 @@ internal static class ComponentChecks
         model.OpenAccountsCommand.Execute(null);
         await Task.Delay(35);
         var dialog=Part<AnimatedDialog>(main,"AccountsDialog");var surface=dialog.Surface!;
+        for(var frame=0;frame<15&&surface.Opacity==0;frame++)await Task.Delay(10);
         Console.WriteLine($"dialog open={dialog.IsOpen} visible={dialog.IsVisible} opacity={surface.Opacity} matrix={surface.RenderTransform?.Value} scrim={dialog.ScrimOpacity} motion={MotionPreferences.Enabled}");
         Check("原生弹窗主体存在透明度和缩放中间帧",dialog.IsVisible&&surface.Opacity>0&&surface.Opacity<1&&surface.RenderTransform!.Value.M11>0.97&&surface.RenderTransform.Value.M11<1);
         Check("原生遮罩正在独立淡入",dialog.ScrimOpacity>0&&dialog.ScrimOpacity<=1);
@@ -131,12 +132,13 @@ internal static class ComponentChecks
         var popupWindow=new Window{Width=350,Height=200,Content=trigger};popupWindow.Show();await Task.Delay(100);
         Check("Tooltip 全局延迟为 450ms",ToolTip.GetShowDelay(trigger)==450);
         ToolTip.SetIsOpen(trigger,true);await Task.Delay(30);
+        for(var frame=0;frame<15&&tip.Opacity==0;frame++)await Task.Delay(10);
         Check("原生 Tooltip 使用淡入和 4px 位移",tip.Opacity>0&&tip.Opacity<1&&tip.RenderTransform!.Value.M32>0&&tip.RenderTransform.Value.M32<4);
         await Task.Delay(180);Check("Tooltip 140ms 后完全可见",tip.Opacity==1&&Math.Abs(tip.RenderTransform!.Value.M32)<0.001);
         ToolTip.SetIsOpen(trigger,false);await Task.Delay(30);Check("Tooltip 卸载清理过渡",tip.Transitions is null&&tip.RenderTransform is null&&tip.Opacity==1);
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");ToolTip.SetIsOpen(trigger,true);await Task.Delay(20);Check("减少动画 Tooltip 直接呈现",tip.Opacity==1&&tip.RenderTransform is null);ToolTip.SetIsOpen(trigger,false);popupWindow.Close();
         model.Toasts.Clear();model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");model.Toasts.Show("通知入场和手动退场");await Task.Delay(35);
-        var toast=main.GetVisualDescendants().OfType<ToastView>().Single();Check("原生通知存在淡入与位移中间帧",toast.Opacity>0&&toast.Opacity<1&&toast.RenderTransform!.Value.M32>0);
+        var toast=main.GetVisualDescendants().OfType<ToastView>().Single();for(var frame=0;frame<15&&toast.Opacity==0;frame++)await Task.Delay(10);Check("原生通知存在淡入与位移中间帧",toast.Opacity>0&&toast.Opacity<1&&toast.RenderTransform!.Value.M32>0);
         await Task.Delay(180);model.Toasts.Items[0].CloseCommand.Execute(null);await Task.Delay(40);Check("原生通知保留 150ms 淡出帧",model.Toasts.Items.Count==1&&model.Toasts.Items[0].IsClosing&&toast.Opacity>0&&toast.Opacity<1);
         await Task.Delay(180);Check("手动退场后移除通知",model.Toasts.Items.Count==0);model.Toasts.Show("默认五秒自动消失");
         await Task.Delay(4750);Check("默认通知五秒前保留",model.Toasts.Items.Count==1&&!model.Toasts.Items[0].IsClosing);
