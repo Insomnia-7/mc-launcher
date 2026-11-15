@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.13)。
 
+[源码 72a8792](https://github.com/Insomnia-7/mc-launcher/commit/72a8792d0266ce43451d78909dc4a57f7598f250)。Windows 单文件 25768771 字节，SHA-256：`f2110d693c546ba3439888305cf8420e4d82627b41c89ac3ac78bde43711c0cb`。1554 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 新增 M8 开发预览页，集中检视按钮八态、五种变体、双主题与跟随系统、Tooltip、弹窗、四态通知、卡片和七段交错入场。
 - 仅在启动进程设置 `FANGYU_DEV_SHOWCASE=1` 时显示“UI 预览 (Dev)”与注册 `Ctrl+Shift+D`；普通模式不挂载页面，命令与快捷键不能进入。
 - 主题、动效和 240/72px 侧栏直接联动现有外壳，预览导航使用共享选中胶囊和指示条。

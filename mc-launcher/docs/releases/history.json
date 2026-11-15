@@ -523,5 +523,45 @@
       "nativeComponents": 17,
       "nativeShell": 16
     }
+  },
+  {
+    "version": "1.0.0-preview.13",
+    "date": "2026-11-15",
+    "title": "M8 开发预览页",
+    "tag": "desktop-v1.0.0-preview.13",
+    "sourceCommit": "72a8792d0266ce43451d78909dc4a57f7598f250",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/72a8792d0266ce43451d78909dc4a57f7598f250",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.13",
+    "changes": "M8 开发模式门控、实际组件展示与可重播动效。",
+    "platform": "Windows x64",
+    "bytes": 25768771,
+    "sha256": "f2110d693c546ba3439888305cf8420e4d82627b41c89ac3ac78bde43711c0cb",
+    "binaryProductVersion": "1.0.0-preview.13+72a8792d0266ce43451d78909dc4a57f7598f250",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "nativeShell": 16,
+      "showcase": 35,
+      "shell": 35,
+      "architecture": true,
+      "nativeSidebar": 8,
+      "trimmedAssemblies": true,
+      "singleFileStartup": true,
+      "empty": 6,
+      "total": 1554,
+      "nativePageMotion": 8,
+      "components": 29,
+      "showcaseInvalid": 7,
+      "nativeShowcase": 12,
+      "desktop": 344,
+      "nativeComponents": 17,
+      "home": 46,
+      "nativeHome": 15,
+      "pageMotion": 20,
+      "core": 880,
+      "multiplayer": 31,
+      "showcaseDisabled": 7,
+      "legacyTheme": 4,
+      "sidebar": 34
+    }
   }
 ]
