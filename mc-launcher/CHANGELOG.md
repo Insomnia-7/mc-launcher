@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.18 · 输入与弹出控件风格统一
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.18)。
+
+- 修复离线用户名、实例搜索及其他单行输入框的光标偏上；文字与占位提示垂直居中，多行/换行文本保留顶部对齐。
+- 账号、导入、实例更多操作及剪贴板菜单统一圆角面板和紫色交互状态；包含独立弹出窗口与子菜单。
+- 分组、版本、加载器、平台、排序、Java、主题与动画等下拉采用统一悬停、选中、焦点和禁用外观。
+- 同步统一账号/实例列表、收藏/连续滚动等勾选框及内存/分辨率数字框；修复数字框内外重复焦点描边。
+- 深浅主题和现有页面进行回归，检验范围见 docs/ui-controls-acceptance.md。发布构建、检查数量与远端结果随验收记录补录。
+
+
 ## 1.0.0-preview.17 · 无叠印整页转场与导航修复
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.17)。

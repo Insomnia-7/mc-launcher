@@ -78,6 +78,17 @@ public sealed class AppearanceManager : IDisposable
         SetBrush("PrimaryFillBrush", Color.Parse(colors["AccentFillBrush"]), duration);
         SetBrush("PrimaryHoverBrush", Color.Parse(colors["AccentHoverBrush"]), duration);
 
+        // Submenus are hosted in separate popup roots. Share the live palette brushes
+        // with Fluent's popup resources, including while a theme transition is running.
+        _resources["MenuFlyoutPresenterBackground"] = _brushes["CardBrush"];
+        _resources["MenuFlyoutPresenterBorderBrush"] = _brushes["LineBrush"];
+        _resources["ComboBoxDropDownBackground"] = _brushes["CardBrush"];
+        _resources["ComboBoxDropDownBorderBrush"] = _brushes["LineBrush"];
+        _resources["TextControlBackgroundFocused"] = _brushes["CardBrush"];
+        _resources["TextControlBackgroundPointerOver"] = _brushes["HoverBrush"];
+        _resources["RepeatButtonBackgroundPointerOver"] = _brushes["HoverBrush"];
+        _resources["RepeatButtonBackgroundPressed"] = _brushes["SelectedBrush"];
+
         var text = Color.Parse(colors["TextBrush"]);
         var accent = Color.Parse(colors["AccentBrush"]);
         _resources["GlassEdgeBrush"] = new LinearGradientBrush

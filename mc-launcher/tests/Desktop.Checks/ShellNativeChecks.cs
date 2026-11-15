@@ -19,7 +19,7 @@ internal static class ShellNativeChecks
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     private static nint Pack(PixelPoint point) => (nint)((point.X & 0xffff) | ((point.Y & 0xffff) << 16));
 
-    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false, bool navigation = false, bool preview = false)
+    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false, bool navigation = false, bool preview = false, bool controls = false)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This check uses Windows native hit testing.");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, "data"));
@@ -53,6 +53,7 @@ internal static class ShellNativeChecks
         {
             try
             {
+                if (controls) { await ControlStyleChecks.Run(model,window,root,ms=>Task.Delay(ms),Check,native:true); Console.WriteLine($"{passed} native control style checks passed");exit=0;return; }
                 if (navigation) { await NavigationFixChecks.RunNative(model,window,root); exit=0; return; }
                 if (preview) { await VerticalTransitionPreview.Record(model,window,root); exit=0; return; }
                 if (workbench) { await WorkbenchNativeChecks.Run(model,window,root); exit=0; return; }

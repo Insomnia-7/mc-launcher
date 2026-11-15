@@ -14,5 +14,6 @@
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Tokens.axaml" />
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Controls.axaml" />
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Workbench.axaml" />
+    <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Inputs.axaml" />
   </Application.Styles>
 </Application>

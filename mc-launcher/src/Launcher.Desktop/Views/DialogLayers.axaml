@@ -83,7 +83,7 @@
               </ListBox>
               <StackPanel Spacing="7">
                 <TextBlock Text="离线用户名" Classes="muted" />
-                <TextBox Text="{Binding OfflineName, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanManageAccounts}" />
+                <TextBox x:Name="OfflineNameInput" Text="{Binding OfflineName, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanManageAccounts}" AutomationProperties.Name="离线用户名" />
               </StackPanel>
               <TextBlock Text="{Binding AccountHint}" Classes="muted" TextWrapping="Wrap" />
               <TextBlock Text="{Binding LoginCode}" IsVisible="{Binding IsLoggingIn}" FontSize="24" Foreground="{DynamicResource AccentBrush}" />

@@ -44,6 +44,7 @@ internal static class Program
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
         if(args.Contains("--navigation-native"))return ShellNativeChecks.Start(root,navigation:true);
+        if(args.Contains("--controls-native"))return ShellNativeChecks.Start(root,controls:true);
         if(args.Contains("--motion-preview-native"))return ShellNativeChecks.Start(root,preview:true);
         if(args.Contains("--workbench-native"))return ShellNativeChecks.Start(root,workbench:true);
         if(args.Contains("--real-game"))return RealGameChecks.Start(root);
@@ -108,6 +109,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--controls")){var task=ControlStyleChecks.Run(model,window,root,ms=>{Pump(ms);return Task.CompletedTask;},Check);task.GetAwaiter().GetResult();Check("控件样式无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} control style checks passed");return 0;}
             if(args.Contains("--navigation-fixes")){NavigationFixChecks.Run(model,window,Pump,Check,Capture);PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("导航修复无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation fix checks passed");return 0;}
             if(args.Contains("--workbench-consistency")){WorkbenchChecks.Consistency(model,window,Pump,Check,Capture);Check("所有A页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench consistency checks passed");return 0;}
             if(args.Contains("--workbench-manage")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);MaintenanceUiChecks.Run(window,Pump,Check,Capture);ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例管理无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench management checks passed");return 0;}
