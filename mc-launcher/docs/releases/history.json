@@ -703,5 +703,40 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.18",
+    "date": "2026-11-16",
+    "title": "输入与弹出控件风格统一",
+    "tag": "desktop-v1.0.0-preview.18",
+    "sourceCommit": "7287a2a40dc3ed65abc09b1b7355d1ef3d35ce0c",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/7287a2a40dc3ed65abc09b1b7355d1ef3d35ce0c",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.18",
+    "changes": "修复离线/搜索及共用单行输入光标，统一菜单/子菜单/下拉/列表/勾选/数字控件。深浅主题和实际发布包验收通过；保留300ms转场及跨设备待测项。",
+    "platform": "Windows x64",
+    "bytes": 28978193,
+    "sha256": "00d0f530f0008ae0968d7ab0a82f830fd6a147d3953e9d11cfe98ce69c780080",
+    "binaryProductVersion": "1.0.0-preview.18+7287a2a40dc3ed65abc09b1b7355d1ef3d35ce0c",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 880,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 9,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1410.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

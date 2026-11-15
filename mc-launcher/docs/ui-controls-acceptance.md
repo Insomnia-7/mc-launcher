@@ -1,6 +1,6 @@
 # 输入与弹出控件统一验收 · preview.18
 
-状态：针对性验收通过，整机页面回归、实际发布包与远端发布验证进行中。
+状态：M0–M5 与实际发布包通过，远端发布验证进行中。
 
 本批针对用户反馈的离线用户名 / 搜索光标偏上、账号菜单默认灰色方框、分组下拉黑色悬停框，审查共用控件及各页面实例。保持现有启动、登录、安装和 300ms 整页转场。
 
@@ -32,3 +32,9 @@
 Windows 10、其他真实缩放比例、输入法组合过程与人工窗口手势继续列为待测；本批不改动系统文件选择器等原生系统对话框。真实游戏与远端联机不是控件样式检查的替代项。
 
 模板依据：[TextBox](https://github.com/AvaloniaUI/Avalonia/blob/12.1.4/src/Avalonia.Themes.Fluent/Controls/TextBox.xaml)、[ComboBox](https://github.com/AvaloniaUI/Avalonia/blob/12.1.4/src/Avalonia.Themes.Fluent/Controls/ComboBox.xaml)、[MenuFlyoutPresenter](https://github.com/AvaloniaUI/Avalonia/blob/12.1.4/src/Avalonia.Themes.Fluent/Controls/MenuFlyoutPresenter.xaml)。
+
+## 实际构建记录
+
+1,410项检查通过（Core 880、控件52、原生控件47、其他页面/原生回归431），另通过架构护栏。相关530项UI检查使用实际裁剪后的启动器程序集运行。单文件启动与正常退出、受信签名、生产更新版本判断通过。
+
+构建源码：7287a2a40dc3ed65abc09b1b7355d1ef3d35ce0c。Windows单文件：28978193字节。SHA-256：00d0f530f0008ae0968d7ab0a82f830fd6a147d3953e9d11cfe98ce69c780080。
