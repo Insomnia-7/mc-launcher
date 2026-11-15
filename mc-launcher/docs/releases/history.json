@@ -453,5 +453,39 @@
       "nativePageMotion": 8,
       "singleFileStartup": true
     }
+  },
+  {
+    "version": "1.0.0-preview.11",
+    "date": "2026-11-15",
+    "title": "M6 首页与真实业务卡片",
+    "tag": "desktop-v1.0.0-preview.11",
+    "sourceCommit": "6080a7f6d4af1f680ea9a24b63b86f701a829b1a",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/6080a7f6d4af1f680ea9a24b63b86f701a829b1a",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.11",
+    "changes": "M6 默认主页、真实业务卡片、紧凑实例列表与七段入场。",
+    "platform": "Windows x64",
+    "bytes": 25748314,
+    "sha256": "0d316df97b5b47bb9ab49d9a005b79d97caf635dfdc61458330c74467f861ea7",
+    "binaryProductVersion": "1.0.0-preview.11+6080a7f6d4af1f680ea9a24b63b86f701a829b1a",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "legacyTheme": 4,
+      "nativeShell": 16,
+      "total": 1447,
+      "trimmedAssemblies": true,
+      "multiplayer": 31,
+      "desktop": 344,
+      "core": 880,
+      "pageMotion": 20,
+      "nativePageMotion": 8,
+      "sidebar": 34,
+      "shell": 35,
+      "nativeHome": 15,
+      "empty": 6,
+      "singleFileStartup": true,
+      "home": 46,
+      "nativeSidebar": 8,
+      "architecture": true
+    }
   }
 ]

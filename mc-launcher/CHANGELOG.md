@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.11)。
 
+[源码 6080a7f](https://github.com/Insomnia-7/mc-launcher/commit/6080a7f6d4af1f680ea9a24b63b86f701a829b1a)。Windows 单文件 25748314 字节，SHA-256：`0d316df97b5b47bb9ab49d9a005b79d97caf635dfdc61458330c74467f861ea7`。1447 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 新增默认主页与独立导航，保留原完整游戏实例管理页。
 - 88px 横幅紧贴内容顶部，144px 快速启动与网络区域，下方实例列表填满剩余高度，常用六个入口始终可达。
 - 快速启动、实例选择、真实进度、行内启动和实例操作复用已有业务命令，主页不受管理页筛选条件影响。
