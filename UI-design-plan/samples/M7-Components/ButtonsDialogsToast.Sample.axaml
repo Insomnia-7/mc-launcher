@@ -1,0 +1,157 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Launcher.Desktop"
+        xmlns:icons="using:Launcher.Desktop.Controls"
+        xmlns:vm="using:Launcher.App.ViewModels">
+  <!--
+    遵循 UI.md §15 & §26：
+    1. 统一按钮 8 态（Normal / Hover / Pressed / Focused / Disabled / Loading / Success / Error）
+    2. Hover 120ms、Pressed 85ms (Scale 0.98)、Release 140ms
+    3. Tooltip 延迟 450ms，140ms 淡入与微位移
+    4. 弹窗圆角 16px，遮罩淡入 + Scale 0.97 -> 1.0 进退场
+    5. 右下角多条有序排列四态 Toast 样式
+  -->
+
+  <!-- 按钮基础与 8 态扩展 -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="14,7" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Release}">
+          <TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+        <BrushTransition Property="Background" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" />
+        <BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button:pressed">
+    <Setter Property="Background" Value="{DynamicResource PressedBrush}" />
+    <Setter Property="RenderTransform" Value="scale(0.98)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Pressed}" Easing="{x:Static local:MotionEasing.Linear}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+    <Setter Property="Transitions"><Transitions /></Setter>
+  </Style>
+  <Style Selector="Button.is-loading">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Opacity" Value="0.82" />
+  </Style>
+  <Style Selector="Button.is-success">
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+  </Style>
+  <Style Selector="Button.is-error">
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+  </Style>
+
+  <!-- Primary 主按钮：蓝紫强调色 -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource AccentFillBrush}" />
+    <Setter Property="Foreground" Value="#FFFFFF" />
+    <Setter Property="BorderBrush" Value="#26FFFFFF" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pressed">
+    <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+  </Style>
+
+  <!-- 首页快捷功能方块与紧凑实例行 -->
+  <Style Selector="Button.quick-tile">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,10" />
+  </Style>
+  <Style Selector="Border.instance-row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" />
+        <BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.instance-row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+  </Style>
+
+  <!-- Tooltip（延迟 450ms，140ms 淡入 + 轻微上浮） -->
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <!-- 模态弹窗容器（圆角 16px，打开时 Scale 0.97 -> 1 + Opacity 0 -> 1） -->
+  <Style Selector="Border.modal-surface">
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="24" />
+    <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 20 60 0 #48000000" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(0.97) translateY(6px)" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Dialog}">
+          <TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+        <DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Dialog}" Easing="{x:Static local:MotionEasing.Linear}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.modal-surface.open">
+    <Setter Property="RenderTransform" Value="scale(1) translateY(0px)" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- 右下角 Toast 通知条目卡片样式 -->
+  <Style Selector="Border.toast-item">
+    <Setter Property="Width" Value="340" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="0 8 24 0 #2E000000" />
+  </Style>
+</Styles>

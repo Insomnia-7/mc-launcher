@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.App.ViewModels"
+             xmlns:icons="using:Launcher.Desktop.Controls"
+             x:DataType="vm:MainViewModel"
+             x:Class="Launcher.Desktop.Views.Shell.ToastHost"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Bottom"
+             Margin="0,0,20,20"
+             ZIndex="30">
+  <!--
+    遵循 UI.md §15 Toast：
+    从主窗口右下方进入，多条通知按序排列，支持成功/失败/警告/普通信息四态、动作回调与手动关闭。
+  -->
+  <ItemsControl ItemsSource="{Binding Toasts.Items}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Spacing="8" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:ToastItem">
+        <Border Classes="toast-item">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+            <icons:UiIcon Kind="{Binding IconKind}"
+                          Width="18"
+                          Height="18"
+                          Foreground="{Binding LevelBrush}"
+                          VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding Message}"
+                       FontSize="13"
+                       MaxLines="2"
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="2"
+                    Classes="ghost"
+                    MinHeight="26"
+                    Padding="8,2"
+                    FontSize="12"
+                    Content="{Binding ActionLabel}"
+                    IsVisible="{Binding HasAction}"
+                    Command="{Binding InvokeActionCommand}" />
+            <Button Grid.Column="3"
+                    Classes="ghost"
+                    Width="26"
+                    Height="26"
+                    MinHeight="26"
+                    Padding="0"
+                    Content="×"
+                    Command="{Binding CloseCommand}"
+                    AutomationProperties.Name="关闭通知" />
+          </Grid>
+        </Border>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

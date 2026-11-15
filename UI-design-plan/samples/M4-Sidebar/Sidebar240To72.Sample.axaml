@@ -1,0 +1,210 @@
+<Border xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Launcher.App.ViewModels"
+        xmlns:icons="using:Launcher.Desktop.Controls"
+        x:Name="SidebarPanel"
+        x:DataType="vm:MainViewModel"
+        Width="240"
+        Background="{DynamicResource PanelBrush}"
+        BorderBrush="{DynamicResource BorderSubtleBrush}"
+        BorderThickness="0,0,1,0"
+        Padding="12,14,12,12">
+  <!--
+    遵循 UI.md §6 & §23：
+    - 展开态宽度严格 240px，收起态宽度严格 72px
+    - 原始启动器草方块 Logo 始终保留，收起态居中不偏移、不裁切
+    - 导航项高度 38px（位于 36-42px 规范区间），单一连续指示条 NavIndicator 平滑滑动
+    - 完整映射工程已有业务模块（主页 / 游戏实例 / 联机大厅 / 下载中心 / 角色衣柜 / 任务中心 / 设置）
+  -->
+  <DockPanel LastChildFill="True">
+    <!-- 顶部品牌与折叠按钮区 -->
+    <Grid x:Name="SidebarBrandHeader" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" MinHeight="40" Margin="4,0,2,14">
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <Image x:Name="SidebarAppIcon"
+               Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png"
+               Width="30"
+               Height="30"
+               VerticalAlignment="Center" />
+        <StackPanel x:Name="SidebarBrandTextHost" Spacing="1" VerticalAlignment="Center">
+          <StackPanel.RenderTransform>
+            <TranslateTransform X="0" Y="0" />
+          </StackPanel.RenderTransform>
+          <TextBlock Text="方隅" FontSize="15" FontWeight="SemiBold" />
+          <TextBlock Text="Minecraft 启动器" FontSize="11" Foreground="{DynamicResource FaintBrush}" />
+        </StackPanel>
+      </StackPanel>
+
+      <ToggleButton x:Name="SidebarToggle"
+                    Grid.Column="1"
+                    Width="32"
+                    Height="32"
+                    CornerRadius="8"
+                    IsChecked="{Binding !IsSidebarExpanded, Mode=TwoWay}"
+                    ToolTip.Tip="收起 / 展开侧边栏"
+                    ToolTip.ShowDelay="450"
+                    AutomationProperties.Name="收起或展开侧边栏">
+        <Path Data="M 9,3 L 4,8 9,13"
+              Stroke="{Binding $parent[ToggleButton].Foreground}"
+              StrokeThickness="1.5"
+              Width="14"
+              Height="14" />
+      </ToggleButton>
+    </Grid>
+
+    <!-- 底部账号与启动器更新提示 -->
+    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
+      <Button x:Name="LauncherUpdateNotice"
+              Classes="ghost"
+              IsVisible="{Binding HasUpdate}"
+              Command="{Binding OpenLauncherUpdatesCommand}"
+              ToolTip.Tip="发现新版本，点击查看更新"
+              ToolTip.ShowDelay="450">
+        <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+          <icons:UiIcon Kind="ActionUpdate" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Grid.Column="1" Classes="sidebar-label" Text="有可用更新" FontSize="12" Foreground="{DynamicResource AccentBrush}" />
+        </Grid>
+      </Button>
+
+      <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="4,2" />
+
+      <Button x:Name="SidebarAccountButton"
+              Classes="nav"
+              MinHeight="44"
+              Command="{Binding OpenAccountsCommand}"
+              ToolTip.Tip="{Binding AccountText}"
+              ToolTip.ShowDelay="450"
+              AutomationProperties.Name="管理游戏身份">
+        <Grid ColumnDefinitions="28,*" ColumnSpacing="10">
+          <Border Width="28" Height="28" CornerRadius="8" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+            <Grid>
+              <icons:UiIcon Kind="{Binding HasAccount, Converter={StaticResource AccountIcon}}" IsVisible="{Binding !HasSkinHead}" Width="24" Height="24" />
+              <Image Source="{Binding SkinHead}" IsVisible="{Binding HasSkinHead}" Stretch="UniformToFill" />
+            </Grid>
+          </Border>
+          <StackPanel Grid.Column="1" Classes="sidebar-label" Spacing="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding AccountText}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding InstanceCountText}" FontSize="11" Foreground="{DynamicResource FaintBrush}" />
+          </StackPanel>
+        </Grid>
+      </Button>
+    </StackPanel>
+
+    <!-- 主导航列表 + 单一共享平滑选中条 -->
+    <Grid>
+      <StackPanel x:Name="NavList" Spacing="4">
+        <Button x:Name="HomeNav"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsHomePage}"
+                Command="{Binding ShowHomeCommand}"
+                ToolTip.Tip="主页"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="主页">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="ActionWindow" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="主页" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="LibraryNav"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsLibraryPage}"
+                Command="{Binding ShowInstancesCommand}"
+                ToolTip.Tip="游戏实例"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="游戏实例">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="NavVersions" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="游戏实例" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="MultiplayerNav"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsMultiplayerPage}"
+                Command="{Binding OpenMultiplayerCommand}"
+                ToolTip.Tip="联机大厅"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="联机大厅">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="ActionGlobe" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="联机大厅" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="DiscoverNav"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsDiscoverPage}"
+                Command="{Binding ShowDownloadsCommand}"
+                ToolTip.Tip="下载中心"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="下载中心">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="NavDownload" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="下载中心" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="WardrobeEntry"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsRolePage}"
+                Command="{Binding OpenWardrobeCommand}"
+                ToolTip.Tip="角色衣柜"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="角色衣柜">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="ActionLogin" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="角色衣柜" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="TaskCenterEntry"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsTaskPage}"
+                Command="{Binding OpenTaskCenterCommand}"
+                ToolTip.Tip="下载任务"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="下载任务">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="ActionCloudDownload" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="下载任务" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+
+        <Button x:Name="SettingsEntry"
+                Classes="nav"
+                MinHeight="38"
+                Classes.active="{Binding IsSettingsPage}"
+                Command="{Binding OpenAppearanceCommand}"
+                ToolTip.Tip="设置（外观 / 网络与连接 / 存储）"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="设置">
+          <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+            <icons:UiIcon Kind="ActionSettings" Width="18" Height="18" />
+            <TextBlock Grid.Column="1" Classes="sidebar-label" Text="设置" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+
+      <!-- 单一连续指示条：高度 20px、宽 3px，随选中项平滑滑动 190ms -->
+      <Border x:Name="NavIndicator"
+              Width="3"
+              Height="20"
+              CornerRadius="2"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Background="{DynamicResource AccentBrush}"
+              IsHitTestVisible="False"
+              IsVisible="False">
+        <Border.RenderTransform>
+          <TranslateTransform X="-6" Y="0" />
+        </Border.RenderTransform>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Border>

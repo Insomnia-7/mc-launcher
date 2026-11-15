@@ -1,0 +1,125 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.App.ViewModels"
+             xmlns:icons="using:Launcher.Desktop.Controls"
+             x:DataType="vm:MainViewModel"
+             x:Class="Launcher.Desktop.Views.Shell.CustomTitleBar"
+             Height="38">
+  <!--
+    遵循 UI.md §0.1 #8 & §4.2 & §22：
+    1. 保留原始草方块品牌 Logo（Assets/Brand/fangyu.png），不使用设计图占位图标
+    2. 顶栏高度压缩为 38px，合并显示当前页面名称，为下方横幅上移 24-40px 释放空间
+    3. 空白区使用 WindowDecorationProperties.ElementRole="TitleBar" 原生支持拖拽与双击最大化
+    4. 交互按钮区标记 ElementRole="User" 及对应系统按钮角色，兼容 Windows 11 Snap Layouts
+  -->
+  <Border Background="{DynamicResource PanelBrush}"
+          BorderBrush="{DynamicResource BorderSubtleBrush}"
+          BorderThickness="0,0,0,1">
+    <Grid ColumnDefinitions="*,Auto">
+      <!-- 可拖拽区域（双击空白最大化/还原由系统原生接管） -->
+      <Border x:Name="TitleDragRegion"
+              Background="Transparent"
+              WindowDecorationProperties.ElementRole="TitleBar">
+        <StackPanel Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="14,0,0,0"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False">
+          <Image x:Name="TitleAppIcon"
+                 Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png"
+                 Width="20"
+                 Height="20"
+                 IsVisible="{Binding !IsSidebarExpanded}" />
+          <TextBlock x:Name="TitleText"
+                     Text="方隅"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding !IsSidebarExpanded}" />
+          <Border Width="1"
+                  Height="12"
+                  Background="{DynamicResource LineBrush}"
+                  Margin="4,0"
+                  IsVisible="{Binding !IsSidebarExpanded}" />
+          <TextBlock x:Name="CurrentPageBreadcrumb"
+                     Text="{Binding CurrentPageTitle}"
+                     FontSize="13"
+                     FontWeight="Medium"
+                     Foreground="{DynamicResource MutedBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- 右侧功能与窗口控制按钮组（不触发窗口拖动） -->
+      <StackPanel x:Name="CaptionButtons"
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  Spacing="2"
+                  VerticalAlignment="Center"
+                  WindowDecorationProperties.ElementRole="User">
+        <!-- 主题三态快速切换入口（Dark / Light / System） -->
+        <Button x:Name="ThemeSwitchButton"
+                Classes="caption"
+                Width="36"
+                Command="{Binding CycleThemeModeCommand}"
+                ToolTip.Tip="{Binding ThemeModeTooltip}"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="{Binding ThemeModeTooltip}">
+          <Path Data="{Binding ThemeModeIconGeometry}"
+                Stroke="{Binding $parent[Button].Foreground}"
+                StrokeThickness="1.4"
+                Width="15"
+                Height="15"
+                Stretch="Uniform"
+                IsHitTestVisible="False" />
+        </Button>
+
+        <Border Width="1" Height="14" Background="{DynamicResource BorderSubtleBrush}" Margin="4,0" VerticalAlignment="Center" />
+
+        <Button x:Name="MinimizeButton"
+                Classes="caption"
+                Click="OnMinimizeClicked"
+                WindowDecorationProperties.ElementRole="MinimizeButton"
+                ToolTip.Tip="最小化"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="最小化">
+          <Path Data="M 2,7 L 12,7"
+                Stroke="{Binding $parent[Button].Foreground}"
+                StrokeThickness="1.2"
+                Width="14"
+                Height="14"
+                IsHitTestVisible="False" />
+        </Button>
+
+        <Button x:Name="MaximizeButton"
+                Classes="caption"
+                Click="OnMaximizeRestoreClicked"
+                WindowDecorationProperties.ElementRole="MaximizeButton"
+                ToolTip.Tip="最大化"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="最大化">
+          <Path x:Name="MaximizeGlyph"
+                Data="M 2,2 L 12,2 12,12 2,12 Z"
+                Stroke="{Binding $parent[Button].Foreground}"
+                StrokeThickness="1.2"
+                Width="14"
+                Height="14"
+                IsHitTestVisible="False" />
+        </Button>
+
+        <Button x:Name="CloseWindowButton"
+                Classes="caption close"
+                Click="OnCloseClicked"
+                WindowDecorationProperties.ElementRole="CloseButton"
+                ToolTip.Tip="关闭"
+                ToolTip.ShowDelay="450"
+                AutomationProperties.Name="关闭窗口">
+          <icons:UiIcon Kind="ActionClose"
+                        Width="14"
+                        Height="14"
+                        Foreground="{Binding $parent[Button].Foreground}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>
