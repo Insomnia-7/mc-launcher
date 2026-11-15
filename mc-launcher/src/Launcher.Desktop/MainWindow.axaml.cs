@@ -17,6 +17,7 @@ using Avalonia.VisualTree;
 using Launcher.App.ViewModels;
 using Launcher.Desktop.Controls;
 using Launcher.Desktop.Views;
+using Launcher.Desktop.Views.Dev;
 
 namespace Launcher.Desktop;
 
@@ -33,6 +34,8 @@ public sealed partial class MainWindow : Window
     private PreferencesView? _preferences;
     private GameDetailView? _detail;
     private MultiplayerView? _multiplayer;
+    private UiShowcaseView? _showcase;
+    private KeyBinding? _showcaseShortcut;
     private MainViewModel? _model;
     private bool _closingAfterPause;
     private SidebarState _sidebarState = SidebarState.Expanded;
@@ -65,7 +68,15 @@ public sealed partial class MainWindow : Window
         DataContextChanged += (_, _) =>
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
+            _showcase?.Dispose();_showcase=null;
+            if(_showcaseShortcut is not null)KeyBindings.Remove(_showcaseShortcut);
+            _showcaseShortcut=null;
             _model = DataContext as MainViewModel;
+            if(_model?.IsDevShowcaseEnabled==true)
+            {
+                _showcaseShortcut=new KeyBinding{Gesture=KeyGesture.Parse("Ctrl+Shift+D"),Command=_model.OpenShowcaseCommand};
+                KeyBindings.Add(_showcaseShortcut);
+            }
             _library.DataContext = _model;
             _home.DataContext = _model;
             if (_discover is not null) _discover.DataContext=_model;
@@ -103,6 +114,7 @@ public sealed partial class MainWindow : Window
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
             _model?.Toasts.Dispose();
+            _showcase?.Dispose();
             PageHost.FinishTransition();
             _sidebarCts?.Cancel(); _sidebarCts?.Dispose(); _sidebarCts = null;
         };
@@ -178,6 +190,7 @@ public sealed partial class MainWindow : Window
         if (_model is null) return;
         PageHost.Content = _model.ShellPage switch
         {
+            "showcase" when _model.IsDevShowcaseEnabled => _showcase ??= new UiShowcaseView {DataContext=new UiShowcaseViewModel(_model)},
             "home" => _home,
             "discover" => _discover ??= new DiscoverView { DataContext = _model },
             "experience" => _experience ??= new ExperienceView { DataContext = _model },

@@ -56,10 +56,11 @@ public sealed partial class MainViewModel
     public ObservableCollection<string> LibraryGroups {get;}=["全部分组","未分组"];
     public string LibraryResultText=>$"{LibraryEntries.Count} / {Instances.Count}";
     public bool LibraryHasNoResults=>LibraryEntries.Count==0&&HasInstances;
-    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsHomeSection?"home":IsInstanceSection?"library":"discover";
+    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsDevShowcaseEnabled&&IsShowcaseOpen?"showcase":IsHomeSection?"home":IsInstanceSection?"library":"discover";
     public string ShellPageTitle => ShellPage switch
     {
         "home" => "主页",
+        "showcase" => "UI 预览 · Dev",
         "settings" => "设置",
         "experience" => ExperiencePageTitle,
         "multiplayer" => "联机大厅",
@@ -136,7 +137,7 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsShowcasePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()

@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:shell="using:Launcher.Desktop.Views" x:Class="Launcher.Desktop.Views.Dev.UiShowcaseView" x:DataType="vm:UiShowcaseViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.sample-label"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
+    <Style Selector="StackPanel.sample"><Setter Property="Spacing" Value="8"/><Setter Property="Margin" Value="6"/></Style>
+  </UserControl.Styles>
+  <Grid>
+    <ScrollViewer x:Name="ShowcaseScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="0,0,20,24" Spacing="16">
+        <StackPanel Spacing="6"><TextBlock Text="UI 预览 · Dev" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="集中检查组件与动效。所有示例操作只改变预览状态。" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+        <Border Classes="card" Padding="16">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="外壳与主题" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="{Binding Host.ThemeModeLabel}" Classes="muted"/></Grid>
+            <WrapPanel>
+              <Button x:Name="ShowcaseLight" Content="浅色" Command="{Binding SetThemeCommand}" CommandParameter="light" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseDark" Content="深色" Command="{Binding SetThemeCommand}" CommandParameter="dark" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseSystem" Content="跟随系统" Command="{Binding SetThemeCommand}" CommandParameter="system" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseSidebar" Content="侧栏 240 / 72" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,8"/>
+              <ComboBox x:Name="ShowcaseMotion" ItemsSource="{Binding Host.MotionChoices}" SelectedItem="{Binding Host.SelectedMotion, Mode=TwoWay}" MinWidth="140" Margin="0,0,0,8"/>
+            </WrapPanel>
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="8">
+              <Border Height="28" Background="{DynamicResource BgBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="6"/>
+              <Border Grid.Column="1" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="6"/>
+              <Border Grid.Column="2" Background="{DynamicResource PrimaryFillBrush}" CornerRadius="6"/>
+              <Border Grid.Column="3" Background="{DynamicResource SuccessBrush}" CornerRadius="6"/>
+              <Border Grid.Column="4" Background="{DynamicResource DangerBrush}" CornerRadius="6"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="16">
+          <StackPanel Spacing="10">
+            <TextBlock Text="按钮八态 · 共用实际组件样式" FontWeight="SemiBold"/>
+            <UniformGrid Columns="4" Rows="2">
+              <StackPanel Classes="sample"><TextBlock Text="Normal · 常规" Classes="sample-label"/><Button x:Name="ShowcaseNormal" Content="常规按钮"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Hover · 悬停" Classes="sample-label"/><Button x:Name="ShowcaseHover" Content="悬停样本" IsHitTestVisible="False" Focusable="False"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Pressed · 按下" Classes="sample-label"/><Button x:Name="ShowcasePressed" Content="按下样本" IsHitTestVisible="False" Focusable="False"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Focused · 焦点" Classes="sample-label"/><Button x:Name="ShowcaseFocused" Content="焦点样本" IsHitTestVisible="False" Focusable="False"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Disabled · 禁用" Classes="sample-label"/><Button x:Name="ShowcaseDisabled" Content="不可用" IsEnabled="False"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Loading · 加载" Classes="sample-label"/><Button x:Name="ShowcaseLoading" Content="加载样本" Classes="is-loading" icons:ButtonFeedback.TrackCommand="False"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Success · 成功" Classes="sample-label"/><Button x:Name="ShowcaseSuccess" Content="操作成功" Classes="is-success"/></StackPanel>
+              <StackPanel Classes="sample"><TextBlock Text="Error · 错误" Classes="sample-label"/><Button x:Name="ShowcaseError" Content="重试操作" Classes="is-error"/></StackPanel>
+            </UniformGrid>
+            <WrapPanel>
+              <Button x:Name="ShowcasePrimary" Classes="primary" Margin="0,0,8,8" ToolTip.Tip="提示在 450ms 后出现，140ms 淡入。"><TextBlock Text="主要操作" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+              <Button Content="次要操作" Margin="0,0,8,8"/><Button Content="轻量操作" Classes="ghost" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseIcon" Classes="quiet icon" Margin="0,0,8,8" ToolTip.Tip="图标按钮" AutomationProperties.Name="预览图标按钮"><icons:UiIcon Kind="ActionRefresh"/></Button>
+              <Button Classes="danger-solid" Margin="0,0,0,8"><TextBlock Text="危险确认" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+            </WrapPanel>
+            <TextBlock Text="可用鼠标与 Tab 检查实际交互；上方悬停、按下和焦点为固定状态样本。" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+            <WrapPanel><Button x:Name="ShowcaseRun" Classes="primary" Classes.is-success="{Binding DemoSucceeded}" Classes.is-error="{Binding DemoFailed}" Command="{Binding RunDemoCommand}" Margin="0,0,12,8"><TextBlock Text="运行预览操作" Foreground="{Binding $parent[Button].Foreground}"/></Button><CheckBox Content="模拟失败" IsChecked="{Binding SimulateFailure}" Margin="0,0,0,8"/></WrapPanel>
+            <TextBlock Text="{Binding DemoStatus}" Classes="muted" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="16">
+          <StackPanel Spacing="12"><TextBlock Text="通知、Tooltip 与弹窗" FontWeight="SemiBold"/>
+            <WrapPanel>
+              <Button x:Name="ShowcaseToastInfo" Content="提示" Command="{Binding ShowToastCommand}" CommandParameter="info" Margin="0,0,8,8"/>
+              <Button Content="成功" Command="{Binding ShowToastCommand}" CommandParameter="success" Margin="0,0,8,8"/>
+              <Button Content="警告" Command="{Binding ShowToastCommand}" CommandParameter="warning" Margin="0,0,8,8"/>
+              <Button Content="错误" Command="{Binding ShowToastCommand}" CommandParameter="error" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseAllToasts" Content="四态通知" Command="{Binding ShowAllToastsCommand}" Margin="0,0,8,8"/>
+              <Button x:Name="ShowcaseDialogButton" Content="打开预览弹窗" Command="{Binding OpenDialogCommand}" Margin="0,0,0,8"/>
+            </WrapPanel>
+            <TextBlock Text="通知最多四条，默认五秒消失；弹窗使用 180 / 220 / 150ms 动画。" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <Border Classes="card" Padding="16"><StackPanel Spacing="8"><TextBlock Text="普通卡片" FontWeight="SemiBold"/><TextBlock Text="12px 圆角 · 1px 描边" Classes="muted"/></StackPanel></Border>
+          <Grid x:Name="ShowcaseHoverCard" Grid.Column="1" Classes="library-tile">
+            <Border x:Name="TileHover" IsHitTestVisible="False"/>
+            <Border x:Name="TileSurface" Padding="16"><StackPanel Spacing="8"><TextBlock Text="悬停卡片" FontWeight="SemiBold"/><TextBlock Text="悬停上移 2px" Classes="muted"/></StackPanel></Border>
+          </Grid>
+        </Grid>
+        <Border Classes="card" Padding="16"><StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Text="交错入场 · 220ms / 40ms" FontWeight="SemiBold" VerticalAlignment="Center"/><Button x:Name="ShowcaseReplay" Grid.Column="1" Content="重播" Click="ReplayEntrance"/></Grid>
+          <WrapPanel>
+            <Border x:Name="Stage1" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="01" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage2" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="02" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage3" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="03" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage4" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="04" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage5" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="05" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage6" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="06" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+            <Border x:Name="Stage7" Width="68" Height="56" Padding="8" Classes="card" Margin="0,0,8,8"><TextBlock Text="07" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+          </WrapPanel>
+        </StackPanel></Border>
+      </StackPanel>
+    </ScrollViewer>
+    <icons:AnimatedDialog x:Name="ShowcaseDialog" Classes="modal" IsOpen="{Binding IsDialogOpen}" ZIndex="20">
+      <Border Classes="modal-surface" Width="440"><StackPanel Spacing="16"><TextBlock Text="预览弹窗" FontSize="22" FontWeight="SemiBold"/><TextBlock Text="确认后显示一条预览通知。" TextWrapping="Wrap"/><TextBox x:Name="ShowcaseDialogInput" Text="{Binding DialogText}"/><Grid ColumnDefinitions="*,Auto"><Button x:Name="ShowcaseDialogCancel" Content="取消" Command="{Binding CloseDialogCommand}" HorizontalAlignment="Left"/><Button x:Name="ShowcaseDialogConfirm" Grid.Column="1" Classes="primary" Command="{Binding ConfirmDialogCommand}"><TextBlock Text="确认预览" Foreground="{Binding $parent[Button].Foreground}"/></Button></Grid></StackPanel></Border>
+    </icons:AnimatedDialog>
+    <shell:ToastHost x:Name="ShowcaseNotifications" DataContext="{Binding Toasts}" Width="360" Margin="20" HorizontalAlignment="Right" VerticalAlignment="Bottom" ZIndex="30"/>
+  </Grid>
+</UserControl>

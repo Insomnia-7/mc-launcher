@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.13 · M8 开发预览页
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.13)。
+
+- 新增 M8 开发预览页，集中检视按钮八态、五种变体、双主题与跟随系统、Tooltip、弹窗、四态通知、卡片和七段交错入场。
+- 仅在启动进程设置 `FANGYU_DEV_SHOWCASE=1` 时显示“UI 预览 (Dev)”与注册 `Ctrl+Shift+D`；普通模式不挂载页面，命令与快捷键不能进入。
+- 主题、动效和 240/72px 侧栏直接联动现有外壳，预览导航使用共享选中胶囊和指示条。
+- 演示使用独立通知队列、弹窗和可取消的模拟异步命令；成功/失败反馈仅表示演示结果，不调用游戏、安装、账号或联机服务。
+- 七段交错动效支持重播、快速重播与中途减少动画；离页清理模拟操作、通知和弹窗，缓存页面保留滚动与输入。
+- 新增普通模式/无效开关各 7 项门控检查、35 项预览界面检查和 12 项 Windows 原生检查。下一阶段为 M9 最终验收。
+
 ## 1.0.0-preview.12 · M7 全局组件
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.12)。

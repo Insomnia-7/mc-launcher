@@ -38,8 +38,12 @@ internal static class Program
             bool? accepted = saved is null ? null : AppPaths.TrySetGameRoot(saved);
             Console.WriteLine(JsonSerializer.Serialize(new { AppPaths.GameRoot, AppPaths.IsGameRootConfirmed, GameCreated=Directory.Exists(AppPaths.GameRoot), Accepted=accepted })); return 0;
         }
+        if(args.Contains("--showcase")||args.Contains("--showcase-native"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","1");
+        if(args.Contains("--showcase-disabled"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE",null);
+        if(args.Contains("--showcase-invalid"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","true");
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--showcase-native"))return ShellNativeChecks.Start(root,showcase:true);
         if(args.Contains("--components-native"))return ShellNativeChecks.Start(root, components: true);
         if(args.Contains("--home-native"))return ShellNativeChecks.Start(root, home: true);
         if(args.Contains("--page-motion-native"))return ShellNativeChecks.Start(root, pageMotion: true);
@@ -65,7 +69,7 @@ internal static class Program
         var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
-            if(args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
+            if(args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components") || args.Contains("--showcase")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -99,6 +103,8 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--showcase-disabled")||args.Contains("--showcase-invalid")){ShowcaseChecks.Disabled(model,window,Pump,Check);Check("正常模式无开发绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} showcase gate checks passed");return 0;}
+            if(args.Contains("--showcase")){ShowcaseChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture,Click,()=>http.Requests);Check("开发预览无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} showcase checks passed");return 0;}
             if(args.Contains("--components")){ComponentChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),Pump,Check,Capture);Check("全局组件无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} component checks passed");return 0;}
             if(args.Contains("--home")){HomeUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture,Click,()=>http.Requests,root);Check("首页无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} home checks passed");return 0;}
             if(args.Contains("--page-motion")){PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("页面动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} page motion checks passed");return 0;}

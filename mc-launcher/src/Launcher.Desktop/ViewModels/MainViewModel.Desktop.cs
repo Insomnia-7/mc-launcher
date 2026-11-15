@@ -34,6 +34,7 @@ public sealed partial class MainViewModel
         InitializeNotices();
         InitializeWorkspace();
         InitializeHome();
+        InitializeShowcase();
         PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(IsSetupOpen) or nameof(IsAccountsOpen) or nameof(IsAppearanceOpen) or nameof(IsNetworkOpen) or nameof(IsConfirmOpen)) OnPropertyChanged(nameof(HasOverlay));
