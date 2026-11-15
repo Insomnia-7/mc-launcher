@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls"
+             x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.HomeView">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.home-title"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="Button.home-link"><Setter Property="MinHeight" Value="22"/><Setter Property="Padding" Value="0"/><Setter Property="FontSize" Value="12"/></Style>
+    <Style Selector="Button.home-state"><Setter Property="MinHeight" Value="24"/><Setter Property="Padding" Value="0"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+    <Style Selector="TextBlock.home-state"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
+    <Style Selector="icons|UiIcon.home-state"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
+    <Style Selector="TextBlock.home-state.ready"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/></Style>
+    <Style Selector="icons|UiIcon.home-state.ready"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/></Style>
+    <Style Selector="TextBlock.home-state.online"><Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/></Style>
+    <Style Selector="icons|UiIcon.home-state.online"><Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/></Style>
+    <Style Selector="TextBlock.home-state.slow"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/></Style>
+    <Style Selector="icons|UiIcon.home-state.slow"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/></Style>
+    <Style Selector="Button.home-shortcut"><Setter Property="Padding" Value="8,5"/><Setter Property="MinHeight" Value="42"/><Setter Property="MaxHeight" Value="72"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Left"/></Style>
+    <Style Selector="Grid.home-instance:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}"/></Style>
+  </UserControl.Styles>
+  <ScrollViewer x:Name="HomeScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <Grid Height="{Binding #HomeScroll.Viewport.Height}" MinHeight="540">
+      <Grid x:Name="HomeLayout" RowDefinitions="88,144,*,28" RowSpacing="16" Margin="24,8,24,12">
+        <Border x:Name="HomeHeroBanner" CornerRadius="12" ClipToBounds="True" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+          <Border.Background><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#292440" Offset="0"/><GradientStop Color="#191C28" Offset="0.65"/><GradientStop Color="#241E38" Offset="1"/></LinearGradientBrush></Border.Background>
+          <Grid ColumnDefinitions="*,220">
+            <StackPanel VerticalAlignment="Center" Spacing="6" Margin="22,0" ZIndex="1">
+              <TextBlock Text="专注于更好的 MC 联机体验" FontSize="20" FontWeight="SemiBold" Foreground="#F6F7FB" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="更稳定 · 更便捷 · 更流畅" FontSize="12" Foreground="#C5C8D9"/>
+            </StackPanel>
+            <icons:WorldArt Grid.Column="1" Width="220" Height="112" Opacity="0.9" IsHitTestVisible="False" Margin="0,0,8,0"/>
+          </Grid>
+        </Border>
+        <Grid x:Name="HomeTopRow" Grid.Row="1" ColumnDefinitions="1.65*,1*" ColumnSpacing="16">
+          <Border x:Name="HomeQuickLaunchCard" Classes="card" Padding="18,14">
+            <Grid RowDefinitions="Auto,44,*" RowSpacing="10">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBlock Text="快速启动 Minecraft" Classes="home-title" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Text="{Binding SelectedGameStatus}" FontSize="11" Classes="muted" MaxWidth="150" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+              </Grid>
+              <Grid Grid.Row="1" ColumnDefinitions="*,136" ColumnSpacing="12">
+                <ComboBox x:Name="QuickInstanceSelector" ItemsSource="{Binding HomeEntries}" SelectedItem="{Binding SelectedHomeEntry, Mode=TwoWay}" IsEnabled="{Binding HasInstances}" PlaceholderText="先新建或导入实例" MinHeight="42" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="选择要启动的游戏实例">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry">
+                    <Grid ColumnDefinitions="26,*,Auto" ColumnSpacing="8">
+                      <Grid Width="24" Height="24"><Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="24" Height="24" IsVisible="{Binding !HasCover}"/></Grid>
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="2" Text="{Binding VersionBadgeText}" FontSize="11" Classes="muted" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button x:Name="HomeLaunchButton" Grid.Column="1" Classes="primary" Command="{Binding LaunchCommand}" IsVisible="{Binding HasInstances}" Height="42" Padding="12,6" AutomationProperties.Name="启动游戏"><icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" IconSize="18" FontSize="14" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+                <Button x:Name="HomeCreateFirstButton" Grid.Column="1" Classes="primary" Command="{Binding OpenSetupCommand}" IsVisible="{Binding !HasInstances}" Height="42" Padding="12,6" Content="新建首个实例"/>
+              </Grid>
+              <TextBlock Grid.Row="2" Text="{Binding AccountText}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" IsVisible="{Binding !IsBusy}"/>
+              <Grid x:Name="HomeLaunchProgress" Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding IsBusy}">
+                <Grid RowDefinitions="*,3" RowSpacing="3"><TextBlock Text="{Binding StatusText}" FontSize="11" Classes="muted" TextTrimming="CharacterEllipsis"/><ProgressBar Grid.Row="1" Value="{Binding ProgressPercent}" Maximum="100" Height="3"/></Grid>
+                <Button x:Name="HomeCancelLaunch" Grid.Column="1" Classes="quiet home-link" Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}"/>
+              </Grid>
+            </Grid>
+          </Border>
+          <Border x:Name="HomeNetworkStatusCard" Grid.Column="1" Classes="card" Padding="18,14">
+            <Grid RowDefinitions="Auto,*,*,*" RowSpacing="5">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"><TextBlock Text="联机与网络状态" Classes="home-title" TextTrimming="CharacterEllipsis"/><Button Grid.Column="1" Classes="quiet home-link" Command="{Binding OpenMultiplayerCommand}" Content="进入 ›" AutomationProperties.Name="打开联机大厅"/></Grid>
+              <Button x:Name="HomeMultiplayerEntry" Grid.Row="1" Classes="quiet home-state" Command="{Binding OpenMultiplayerCommand}">
+                <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="7">
+                  <icons:UiIcon Kind="{Binding HomeMultiplayerStatusIcon}" Classes="home-state" Classes.ready="{Binding Multiplayer.EngineInstalled}" Classes.online="{Binding Multiplayer.HasSession}" Width="14" Height="14"/>
+                  <TextBlock Grid.Column="1" Text="联机服务" Classes="muted" FontSize="12" VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="2" Text="{Binding HomeMultiplayerStateText}" Classes="home-state" Classes.ready="{Binding Multiplayer.EngineInstalled}" Classes.online="{Binding Multiplayer.HasSession}" FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button x:Name="HomeLatencyEntry" Grid.Row="2" Classes="quiet home-state" Command="{Binding OpenMultiplayerCommand}" ToolTip.Tip="显示最近一次游戏连接实测结果；在联机大厅检测连接">
+                <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="7">
+                  <icons:UiIcon Kind="{Binding HomeLatencyStatusIcon}" Classes="home-state" Classes.online="{Binding HomeHasLatency}" Classes.slow="{Binding HomeLatencyHigh}" Width="14" Height="14"/>
+                  <TextBlock Grid.Column="1" Text="连接延迟" Classes="muted" FontSize="12" VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="2" Text="{Binding HomeLatencyText}" Classes="home-state" Classes.online="{Binding HomeHasLatency}" Classes.slow="{Binding HomeLatencyHigh}" FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+              <Button x:Name="HomeNetworkEntry" Grid.Row="3" Classes="quiet home-state" Command="{Binding OpenNetworkCommand}" ToolTip.Tip="{Binding ActiveNetworkText}">
+                <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="7"><icons:UiIcon Kind="ActionGlobe" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}"/><TextBlock Grid.Column="1" Text="网络模式" Classes="muted" FontSize="12" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding HomeNetworkSummary}" Classes="muted" FontSize="11" VerticalAlignment="Center"/></Grid>
+              </Button>
+            </Grid>
+          </Border>
+        </Grid>
+        <Grid x:Name="HomeBottomRow" Grid.Row="2" ColumnDefinitions="1.65*,1*" ColumnSpacing="16">
+          <Border x:Name="HomeInstancesCard" Classes="card" Padding="16">
+            <Grid RowDefinitions="28,*" RowSpacing="8">
+              <Grid ColumnDefinitions="*,Auto"><TextBlock Text="游戏实例" Classes="home-title" VerticalAlignment="Center"/><Button x:Name="HomeAllInstances" Grid.Column="1" Classes="quiet home-link" Content="{Binding AllInstancesLinkText}" Command="{Binding ShowInstancesCommand}"/></Grid>
+              <ScrollViewer x:Name="HomeInstancesScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsVisible="{Binding HasInstances}">
+                <ItemsControl x:Name="HomeInstancesList" Margin="0,0,20,0" ItemsSource="{Binding HomeEntries}">
+                  <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry">
+                    <Grid Classes="home-instance" ColumnDefinitions="36,*,32,32" ColumnSpacing="10" Height="50" Background="Transparent">
+                      <Border Width="36" Height="36" CornerRadius="8" ClipToBounds="True" VerticalAlignment="Center"><Grid><Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="32" Height="32" IsVisible="{Binding !HasCover}"/></Grid></Border>
+                      <Button Grid.Column="1" Classes="quiet" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}" Padding="0" HorizontalContentAlignment="Stretch">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="3">
+                          <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="5"><Border Background="{DynamicResource FieldBrush}" CornerRadius="4" Padding="5,1"><TextBlock Text="{Binding VersionBadgeText}" FontSize="10" Classes="muted"/></Border><Border Background="{DynamicResource FieldBrush}" CornerRadius="4" Padding="5,1"><TextBlock Text="{Binding LoaderBadgeText}" FontSize="10" Classes="muted"/></Border></StackPanel>
+                        </Grid>
+                      </Button>
+                      <Button Grid.Column="2" Classes="quiet" Width="32" Height="32" MinHeight="32" Padding="6" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).QuickLaunchEntryCommand}" CommandParameter="{Binding}" ToolTip.Tip="启动此实例" AutomationProperties.Name="启动此实例"><icons:UiIcon Kind="ActionPlay" Width="18" Height="18"/></Button>
+                      <Button Grid.Column="3" Classes="quiet" Width="32" Height="32" MinHeight="32" Padding="0" Content="•••" Click="OpenEntryMenu" ToolTip.Tip="实例操作" AutomationProperties.Name="实例操作"/>
+                    </Grid>
+                  </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <StackPanel x:Name="HomeEmptyLibrary" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" IsVisible="{Binding !HasInstances}">
+                <icons:InstanceTypeIcon Kind="vanilla" Width="48" Height="48" HorizontalAlignment="Center"/>
+                <TextBlock Text="暂无游戏实例" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                <TextBlock Text="新建游戏，或导入已有整合包。" Classes="muted" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><Button Classes="primary" Command="{Binding OpenSetupCommand}" Content="新建实例"/><Button Command="{Binding ImportModpackCommand}" Content="导入整合包"/></StackPanel>
+              </StackPanel>
+            </Grid>
+          </Border>
+          <Border x:Name="HomeShortcutsCard" Grid.Column="1" Classes="card" Padding="16">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+              <TextBlock Text="快捷功能" Classes="home-title"/>
+              <TextBlock Grid.Row="1" Text="{Binding HomeSelectionText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis"/>
+              <Grid x:Name="HomeShortcuts" Grid.Row="2" ColumnDefinitions="*,*" RowDefinitions="*,*,*" ColumnSpacing="8" RowSpacing="8">
+                <Button x:Name="HomeNewInstance" Classes="home-shortcut" Command="{Binding OpenSetupCommand}"><icons:IconLabel Icon="ActionPlus" Text="新建实例" IconSize="18" FontSize="12"/></Button>
+                <Button x:Name="HomeImportModpack" Grid.Column="1" Classes="home-shortcut" Command="{Binding ImportModpackCommand}"><icons:IconLabel Icon="ActionImport" Text="导入整合包" IconSize="18" FontSize="12"/></Button>
+                <Button x:Name="HomeManageMods" Grid.Row="1" Classes="home-shortcut" Command="{Binding OpenSelectedModsCommand}"><icons:IconLabel Icon="NavVersions" Text="管理模组" IconSize="18" FontSize="12"/></Button>
+                <Button x:Name="HomeManageResources" Grid.Row="1" Grid.Column="1" Classes="home-shortcut" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks" IsEnabled="{Binding HasInstances}"><icons:IconLabel Icon="ActionFolder" Text="管理资源包" IconSize="18" FontSize="12"/></Button>
+                <Button x:Name="HomeOpenGameDirectory" Grid.Row="2" Classes="home-shortcut" Command="{Binding OpenGameDirectoryCommand}"><icons:IconLabel Icon="ActionFolder" Text="游戏目录" IconSize="18" FontSize="12"/></Button>
+                <Button x:Name="HomeDiagnostics" Grid.Row="2" Grid.Column="1" Classes="home-shortcut" Command="{Binding OpenSelectedDiagnosticsOrLogsCommand}"><icons:IconLabel Icon="ActionLogs" Text="日志与诊断" IconSize="18" FontSize="12"/></Button>
+              </Grid>
+            </Grid>
+          </Border>
+        </Grid>
+        <Grid x:Name="HomeFooter" Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18" VerticalAlignment="Center">
+          <TextBlock Text="{Binding HomeGameRootSummary}" ToolTip.Tip="{Binding GameRoot}" FontSize="11" Classes="muted" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Grid.Column="1" Text="{Binding HomeJavaSummary}" FontSize="11" Classes="muted"/>
+          <TextBlock Grid.Column="2" Text="{Binding HomeLastPlayedText}" FontSize="11" Classes="muted"/>
+        </Grid>
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

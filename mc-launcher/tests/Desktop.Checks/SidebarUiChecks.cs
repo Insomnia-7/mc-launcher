@@ -23,7 +23,7 @@ internal static class SidebarUiChecks
         double Y()=>((TranslateTransform)indicator.RenderTransform!).Y;
         double Target(string name)=>Find<Button>(name).TranslatePoint(new Point(0,(Find<Button>(name).Bounds.Height-20)/2),Find<StackPanel>("NavList"))!.Value.Y;
         bool Sample(Func<bool> predicate,int maxMs=180){for(var i=0;i<maxMs/10;i++){pump(10);if(predicate())return true;}return false;}
-        check("保留全部六个真实业务导航",new[]{"LibraryNav","DiscoverNav","MultiplayerNav","WardrobeEntry","TaskCenterEntry","SettingsEntry"}.All(n=>Find<Button>(n).Command is not null));
+        check("保留全部七个真实业务导航",new[]{"HomeNav","LibraryNav","DiscoverNav","MultiplayerNav","WardrobeEntry","TaskCenterEntry","SettingsEntry"}.All(n=>Find<Button>(n).Command is not null));
         check("展开态严格 240px 且显示品牌",sidebar.Width==240&&Find<Image>("SidebarAppIcon").IsEffectivelyVisible);
         check("展开态抑制重复模块提示",!ToolTip.GetServiceEnabled(nav));
         check("唯一共享指示条为 3×20",window.GetVisualDescendants().Count(c=>c.Name=="NavIndicator")==1&&indicator.Width==3&&indicator.Height==20);

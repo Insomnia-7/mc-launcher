@@ -12,8 +12,12 @@ public sealed partial class MainViewModel
     public bool IsMultiplayerPage=>ShellPage=="multiplayer";
     public void InitializeMultiplayer(ILanWorldDiscovery discovery,IGameServerStatusClient status,IRoomNetwork network)
     {
+        if (Multiplayer is not null) Multiplayer.PropertyChanged -= HomeMultiplayerChanged;
         Multiplayer=new(discovery,status,network){SelectedGame=()=> (SelectedInstance?.BaseVersion,SelectedInstance?.LoaderName),LaunchRequested=LaunchMultiplayerGameAsync};
+        Multiplayer.PropertyChanged += HomeMultiplayerChanged;
+        OnPropertyChanged(nameof(Multiplayer));NotifyHomeMultiplayer();
     }
+    private void HomeMultiplayerChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => NotifyHomeMultiplayer();
     private async Task LaunchMultiplayerGameAsync(ServerAddress address)
     {
         if(SelectedInstance is null){Multiplayer.ConnectionHint="请先添加并选择一个游戏实例。";return;}

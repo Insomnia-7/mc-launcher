@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     /// <summary>侧边栏四态（设计大纲 §3.2 B-1）。</summary>
     private enum SidebarState { Expanded, Compact, Minimal, Overlay }
 
+    private readonly HomeView _home = new();
     private readonly LibraryView _library = new();
     private DiscoverView? _discover;
     private DialogLayers? _dialogs;
@@ -66,6 +67,7 @@ public sealed partial class MainWindow : Window
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             _model = DataContext as MainViewModel;
             _library.DataContext = _model;
+            _home.DataContext = _model;
             if (_discover is not null) _discover.DataContext=_model;
             if (_dialogs is not null) _dialogs.DataContext=_model;
             if (_experience is not null) _experience.DataContext=_model;
@@ -175,6 +177,7 @@ public sealed partial class MainWindow : Window
         if (_model is null) return;
         PageHost.Content = _model.ShellPage switch
         {
+            "home" => _home,
             "discover" => _discover ??= new DiscoverView { DataContext = _model },
             "experience" => _experience ??= new ExperienceView { DataContext = _model },
             "settings" => _preferences ??= new PreferencesView { DataContext = _model },

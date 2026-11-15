@@ -16,6 +16,11 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     private readonly DispatcherTimer _timer=new(){Interval=TimeSpan.FromSeconds(5)};
     private CancellationTokenSource? _operation;
     private bool _querying,_disposed;
+    private long? _lastPingMs;
+    /// <summary>Most recent successful game-server status query; cleared on target change, failure or disconnect.</summary>
+    public long? LastPingMs => _lastPingMs;
+    private void SetLastPing(long? value) => SetProperty(ref _lastPingMs, value, nameof(LastPingMs));
+    partial void OnConnectAddressChanged(string value) => SetLastPing(null);
     public Func<(string? Version,string? Loader)>? SelectedGame {get;set;}
     public Func<ServerAddress,Task>? LaunchRequested {get;set;}
     public Func<string,Task> CopyText {get;set;}=PlatformUi.CopyTextAsync;
@@ -150,7 +155,7 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     [RelayCommand] private async Task CopySessionAddressAsync()
     {try{if(!HasSessionAddress)return;await CopyText(SessionAddress);Hint="游戏地址已复制："+SessionAddress;}catch(InvalidOperationException){Hint="剪贴板不可用，请手动复制地址。";}}
     [RelayCommand] private Task CheckConnectionAsync()=>Operation("检测连接",async ct=>
-    {var target=ServerAddress.Parse(ConnectAddress);ConnectionHint="正在检测游戏连接…";var status=await _status.QueryAsync(target,ct);ConnectionHint=Describe(status);});
+    {SetLastPing(null);var address=ConnectAddress;var target=ServerAddress.Parse(address);ConnectionHint="正在检测游戏连接…";var status=await _status.QueryAsync(target,ct);if(ConnectAddress==address){SetLastPing(status.ElapsedMilliseconds);ConnectionHint=Describe(status);}});
     [RelayCommand] private async Task LaunchGameAsync()
     {
         if(IsBusy)return;
@@ -163,6 +168,7 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
     private void UpdateNetwork()
     {
         if(_disposed)return;
+        SetLastPing(null);
         foreach(var property in new[]{nameof(HasSession),nameof(IsHost),nameof(EngineInstalled),nameof(EngineState),nameof(CurrentInvitation),nameof(SessionAddress),nameof(SessionGamePort),nameof(SessionPeer),nameof(SessionNetwork),nameof(HasSessionAddress)})OnPropertyChanged(property);
         NotifyRoomLabels();
         if(_network.Session is {} session){SessionTitle=session.Invitation.Name;SessionState=session.IsHost?"本机世界已共享，等待朋友连接。":"连接引擎运行中，正在检测游戏。";_timer.Start();}
@@ -173,9 +179,9 @@ public sealed partial class MultiplayerViewModel : ObservableObject,IDisposable
         if(_querying||_disposed||_network.Session is not {} session)return;
         if(session.Invitation.Expires<=DateTimeOffset.UtcNow){_network.Stop();Hint="房间邀请已过期，请重新创建房间。";ConnectionHint=Hint;return;}
         _querying=true;
-        try{var status=await _status.QueryAsync(session.Address);if(_network.Session==session){SessionState=Describe(status);if(!session.IsHost)ConnectionHint=SessionState;}}
+        try{var status=await _status.QueryAsync(session.Address);if(_network.Session==session){SetLastPing(status.ElapsedMilliseconds);SessionState=Describe(status);if(!session.IsHost)ConnectionHint=SessionState;}}
         catch(Exception ex)when(ex is IOException or InvalidDataException or System.Net.Sockets.SocketException or OperationCanceledException or System.Text.Json.JsonException)
-        {if(_network.Session==session){SessionState=session.IsHost?"本机世界暂不可连接，请检查游戏是否仍在开放局域网。":"等待房主世界…可能正在穿透网络或中继节点暂不可达。";if(!session.IsHost)ConnectionHint=SessionState;Hint=SessionState;}}
+        {if(_network.Session==session){SetLastPing(null);SessionState=session.IsHost?"本机世界暂不可连接，请检查游戏是否仍在开放局域网。":"等待房主世界…可能正在穿透网络或中继节点暂不可达。";if(!session.IsHost)ConnectionHint=SessionState;Hint=SessionState;}}
         finally{_querying=false;}
     }
     public void Dispose(){if(_disposed)return;_disposed=true;_operation?.Cancel();_timer.Stop();_network.Changed-=NetworkChanged;_network.Stop();}

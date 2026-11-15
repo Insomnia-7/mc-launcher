@@ -32,6 +32,7 @@ public sealed partial class MainViewModel
     private void InitializeDesktopShell()
     {
         InitializeWorkspace();
+        InitializeHome();
         PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(IsSetupOpen) or nameof(IsAccountsOpen) or nameof(IsAppearanceOpen) or nameof(IsNetworkOpen) or nameof(IsConfirmOpen)) OnPropertyChanged(nameof(HasOverlay));

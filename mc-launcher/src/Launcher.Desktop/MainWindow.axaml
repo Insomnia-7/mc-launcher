@@ -10,6 +10,7 @@
     <Style Selector="Window.mica Border#SidebarPanel.nav-overlay"><Setter Property="Background" Value="{DynamicResource PanelBrush}" /></Style>
     <Style Selector="Window.maximized Border#WindowOutline"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,12,32,16" /></Style>
+    <Style Selector="Grid#PageContent.home"><Setter Property="Margin" Value="0" /></Style>
     <Style Selector="Grid#PageContent.catalog"><Setter Property="Margin" Value="24,4,24,8" /></Style>
     <!-- Minimal 态侧栏收成 0，汉堡键浮在内容区左上，内容整体下让 44px 免得压住页标题（大纲 B-1） -->
     <Style Selector="Grid#PageContent.minimal"><Setter Property="Margin" Value="32,56,32,16" /></Style>
@@ -194,6 +195,7 @@
           <Grid>
             <Border x:Name="NavSelection" CornerRadius="8" Background="{DynamicResource NavSelectedBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False" IsVisible="False"><Border.RenderTransform><TranslateTransform /></Border.RenderTransform></Border>
             <StackPanel x:Name="NavList" Spacing="7">
+              <Button x:Name="HomeNav" Classes="nav" ToolTip.Tip="主页" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsHomePage}" Command="{Binding ShowHomeCommand}" AutomationProperties.Name="主页"><icons:IconLabel Icon="NavHome" Text="主页" /></Button>
               <Button x:Name="LibraryNav" Classes="nav" ToolTip.Tip="游戏实例" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏实例"><icons:IconLabel Icon="NavVersions" Text="游戏实例" /></Button>
               <Button x:Name="DiscoverNav" Classes="nav" ToolTip.Tip="下载中心" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="下载中心"><icons:IconLabel Icon="NavDownload" Text="下载中心" /></Button>
               <Button x:Name="MultiplayerNav" Classes="nav" ToolTip.Tip="联机大厅" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机大厅"><icons:IconLabel Icon="ActionGlobe" Text="联机大厅" /></Button>
@@ -216,7 +218,7 @@
     <Border x:Name="SidebarScrim" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{DynamicResource ScrimBrush}" IsVisible="False" ZIndex="8" PointerPressed="OnScrimPressed" />
 
     <!-- ③ 内容区 -->
-    <Grid x:Name="PageContent" Background="{DynamicResource BgBrush}" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
+    <Grid x:Name="PageContent" Background="{DynamicResource BgBrush}" Classes.home="{Binding IsHomePage}" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
       <!-- 实色底层始终可见，双层仅在页面过渡期间挂载。 -->
       <icons:AnimatedContentHost x:Name="PageHost" Background="{DynamicResource BgBrush}" />
     </Grid>

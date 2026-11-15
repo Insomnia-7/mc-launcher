@@ -9,6 +9,7 @@ internal static class IconCatalog
 {
     public static IReadOnlyDictionary<string,IconDefinition> Items { get; } = new Dictionary<string,IconDefinition>
     {
+        ["NavHome"] = new(24,true,[new("M3.8 10.7 L12 3.8 L20.2 10.7 M6 9.2 V20 H10 V14 H14 V20 H18 V9.2",null,null,1.75,1)]),
         ["NavVersions"] = new(24,true,[new("M12 3.6 L20.2 8 L12 12.4 L3.8 8 Z M3.8 8 V15.4 L12 19.8 V12.4 M20.2 8 V15.4 L12 19.8",null,null,1.75,1)]),
         ["NavDownload"] = new(24,true,[new("M4.4 15.6 V18.4 A1.6 1.6 0 0 0 6 20 H18 A1.6 1.6 0 0 0 19.6 18.4 V15.6 M12 4 V14.6 M8.2 10.9 L12 14.7 L15.8 10.9",null,null,1.75,1)]),
         ["ActionPlay"] = new(24,true,[new("M9.2 6.1 L18.6 12 L9.2 17.9 Z",null,null,1.75,1)]),

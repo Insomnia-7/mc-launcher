@@ -40,6 +40,7 @@ internal static class Program
         }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--home-native"))return ShellNativeChecks.Start(root, home: true);
         if(args.Contains("--page-motion-native"))return ShellNativeChecks.Start(root, pageMotion: true);
         if(args.Contains("--sidebar-native"))return ShellNativeChecks.Start(root, sidebar: true);
         if(args.Contains("--shell-native"))return ShellNativeChecks.Start(root);
@@ -51,7 +52,7 @@ internal static class Program
         File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--legacy-theme")
             ? """{"themeId":"custom","customTheme":{"schema":1,"name":"旧彩色主题","colors":{"BgBrush":"#FF0000"}},"wallpaperOpacity":0.35,"motionMode":"off"}"""
             : """{"themeId":"glacier","motionMode":"off"}""");
-        foreach (var id in args.Contains("--empty") ? [] : new[] { "1.21", "1.21.4", "26.3" })
+        foreach (var id in args.Contains("--empty") ? [] : args.Contains("--home") ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
         {
             var directory = Path.Combine(game, "versions", id); Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, id + ".json"), JsonSerializer.Serialize(new { id, type = "release", mainClass = "net.minecraft.client.main.Main", arguments = new { jvm = new[] { "-cp", "${classpath}" }, game = new[] { "--username", "${auth_player_name}" } }, libraries = Array.Empty<object>(), javaVersion = new { majorVersion = 21 } }));
@@ -63,7 +64,7 @@ internal static class Program
         var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
-            if(args.Contains("--multiplayer")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
+            if(args.Contains("--multiplayer") || args.Contains("--home")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -77,6 +78,8 @@ internal static class Program
         var model = services.GetRequiredService<MainViewModel>();
         var window = new MainWindow { DataContext = model, Width = 1180, Height = 800 }; PlatformUi.Window = window;
         window.Show(); Pump(120);
+        // Existing business suites retain their library fixtures; the home suite verifies the new default.
+        if (!args.Contains("--home") && !args.Contains("--empty")) { model.ShowInstancesCommand.Execute(null); Pump(150); }
         var readyMs = clock.Elapsed.TotalMilliseconds;
         var passed = 0;
         void Check(string name, bool condition) { if (!condition) throw new InvalidOperationException(name); passed++; Console.WriteLine("PASS " + name); }
@@ -95,6 +98,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--home")){HomeUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture,Click,()=>http.Requests,root);Check("首页无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} home checks passed");return 0;}
             if(args.Contains("--page-motion")){PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("页面动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} page motion checks passed");return 0;}
             if(args.Contains("--sidebar")){SidebarUiChecks.Run(model,window,Pump,Check,Capture,Click,data);Check("侧边栏无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} sidebar checks passed");return 0;}
             if(args.Contains("--shell")){ShellUiChecks.Run(model,window,Pump,Check,Capture,Click,data,root);Check("标题栏与主题无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} shell checks passed");return 0;}
@@ -119,7 +123,7 @@ internal static class Program
             }
             if(args.Contains("--empty"))
             {
-                Check("首次启动直接进入主页面、不自动弹安装向导", !model.IsSetupOpen && model.Instances.Count==0 && model.ShellPage=="library");
+                Check("首次启动直接进入主页面、不自动弹安装向导", !model.IsSetupOpen && model.Instances.Count==0 && model.ShellPage=="home");
                 Check("空游戏库也不阻塞首页联网", http.Requests==0);
                 Capture("empty-library");
                 // 向导改为手动入口：点「添加游戏」才打开，且内部滚动条不显示突兀的竖条

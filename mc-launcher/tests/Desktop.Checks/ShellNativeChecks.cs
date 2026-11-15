@@ -19,13 +19,22 @@ internal static class ShellNativeChecks
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     private static nint Pack(PixelPoint point) => (nint)((point.X & 0xffff) | ((point.Y & 0xffff) << 16));
 
-    public static int Start(string root, bool sidebar = false, bool pageMotion = false)
+    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This check uses Windows native hit testing.");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, "data"));
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", Path.Combine(root, "game"));
         AppBuilder.Configure<App>().UsePlatformDetect().SetupWithoutStarting();
         AppPaths.EnsureCreated();
+        if (home)
+        {
+            foreach (var number in Enumerable.Range(1,12))
+            {
+                var id="1.21."+number;var directory=Path.Combine(AppPaths.GameRoot,"versions",id);Directory.CreateDirectory(directory);
+                File.WriteAllText(Path.Combine(directory,id+".json"),JsonSerializer.Serialize(new{id,type="release",mainClass="net.minecraft.client.main.Main",libraries=Array.Empty<object>()}));
+                File.WriteAllBytes(Path.Combine(directory,id+".jar"),[80,75,3,4]);
+            }
+        }
         using var services = LauncherServices.Create();
         var model = services.GetRequiredService<MainViewModel>();
         using var stop = new CancellationTokenSource();
@@ -38,11 +47,13 @@ internal static class ShellNativeChecks
             passed++; Console.WriteLine("PASS " + name);
         }
         T Find<T>(string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(x => x.Name == name);
+        if (sidebar || pageMotion) model.ShowInstancesCommand.Execute(null);
         window.Show();
         Dispatcher.UIThread.Post(async () =>
         {
             try
             {
+                if (home) { await HomeNativeChecks.RunAsync(model,window,root); exit=0; return; }
                 await Task.Delay(350);
                 if (pageMotion) { await PageMotionChecks.RunNativeAsync(model, window, root); exit = 0; return; }
                 if (sidebar) { await SidebarUiChecks.RunNativeAsync(model, window, root); exit = 0; return; }

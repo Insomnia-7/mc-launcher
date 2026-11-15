@@ -154,6 +154,7 @@ public sealed partial class MainWindow
 
     private string? NavButtonName() => _model?.ShellPage switch
     {
+        "home" => "HomeNav",
         "library" or "detail" => "LibraryNav",
         "discover" => "DiscoverNav",
         "multiplayer" => "MultiplayerNav",

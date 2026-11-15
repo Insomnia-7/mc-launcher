@@ -56,9 +56,10 @@ public sealed partial class MainViewModel
     public ObservableCollection<string> LibraryGroups {get;}=["全部分组","未分组"];
     public string LibraryResultText=>$"{LibraryEntries.Count} / {Instances.Count}";
     public bool LibraryHasNoResults=>LibraryEntries.Count==0&&HasInstances;
-    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsInstanceSection?"library":"discover";
+    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsHomeSection?"home":IsInstanceSection?"library":"discover";
     public string ShellPageTitle => ShellPage switch
     {
+        "home" => "主页",
         "settings" => "设置",
         "experience" => ExperiencePageTitle,
         "multiplayer" => "联机大厅",
@@ -98,7 +99,7 @@ public sealed partial class MainViewModel
     private LibraryGamePreferences PreferencesFor(string id)=>_libraryPreferences.Games.GetValueOrDefault(id)??new();
     private void InitializeWorkspace()
     {
-        BeforeMainNavigation=()=>{IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
+        BeforeMainNavigation=()=>{IsHomeSection=false;IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
         // 删除成功后回到游戏库主页面：关详情页、复位标签、清理展示偏好/封面、提示结果（大纲 4.6/4.5）。
         InstanceDeleted=(id,name,shared)=>
         {
@@ -135,7 +136,7 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()
@@ -194,7 +195,7 @@ public sealed partial class MainViewModel
             if(recent is not null)SelectedInstance=recent.Instance;
             if(SelectedInstance is {} selected){var preferences=PreferencesFor(selected.InstanceId);GameDisplayName=preferences.Name;GameGroupName=preferences.Group;}
         }
-        _updatingLibrary=false;FilterLibrary();NotifySelectedGame();
+        _updatingLibrary=false;FilterLibrary();RefreshHomeEntries();NotifySelectedGame();
         foreach(var entry in previous)entry.Cover?.Dispose();
     }
     private void FilterLibrary()
