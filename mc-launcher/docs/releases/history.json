@@ -610,5 +610,35 @@
       "singleFileStartup": true,
       "trimmedAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.15",
+    "date": "2026-11-15",
+    "title": "A 方案 UI 全面重构 · M0–M6",
+    "tag": "desktop-v1.0.0-preview.15",
+    "sourceCommit": "aeb1992c7f0146ad8526b5356ab30ac88f8ab197",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/aeb1992c7f0146ad8526b5356ab30ac88f8ab197",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.15",
+    "changes": "专注 Minecraft 的 A 方案外壳、主页、实例、联机、资源、下载、账号与设置重构。M0–M6 当前环境通过，跨设备项目仍待测。",
+    "platform": "Windows x64",
+    "bytes": 25768714,
+    "sha256": "f8eb2d6863e0d0790725e1eca7de76198164279d044635b378f98eb6db3f439e",
+    "binaryProductVersion": "1.0.0-preview.15+aeb1992c7f0146ad8526b5356ab30ac88f8ab197",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 880,
+      "workbench-shell": 14,
+      "workbench": 19,
+      "workbench-manage": 71,
+      "workbench-catalog": 103,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1223.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

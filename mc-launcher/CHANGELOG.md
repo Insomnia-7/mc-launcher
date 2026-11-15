@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.15)。
 
+[源码 aeb1992](https://github.com/Insomnia-7/mc-launcher/commit/aeb1992c7f0146ad8526b5356ab30ac88f8ab197)。Windows 单文件 25768714 字节，SHA-256：`f8eb2d6863e0d0790725e1eca7de76198164279d044635b378f98eb6db3f439e`。1223 项检查通过，另通过架构护栏、裁剪程序集回归、单文件启动和生产更新验签。
+
 - 按用户选定的 A 方案重建应用外壳、导航与页面层级，保留现有启动器图标；专注 Minecraft 安装、实例管理与启动。
 - 主页改为当前实例、账号与启动的连续区域；最近实例最多四条，运行环境按需展开；实例页分离选择、管理与启动。
 - 实例详情采用局部导航与表单；联机、资源分类、任务、账号和设置重新布局，保留现有服务和数据格式。
