@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.14)。
 
+[源码 e3b2068](https://github.com/Insomnia-7/mc-launcher/commit/e3b206802aafef714ae4ea98f590c5ff892d9dde)。Windows 单文件 25768762 字节，SHA-256：`44abf8e858df8420c89ebcddde71d99842f04462c249da4cdeae82c76ca29f2d`。1844 项编号检查通过，另通过架构护栏、裁剪程序集回归与单文件启动。
+
 - 新增 M9 专项检查，验证 240/72px 侧栏、首页横幅、三种窗口尺寸、连续导航与主题切换、减少动画和未知主题兼容。
 - 当前 Windows 11 实测 8 个边角缩放命中、标题栏双击最大化/还原、实际 Mica 与实色回退；导出多倍率渲染图，明确区别真实系统 DPI。
 - 使用正式安装与进程适配器验证真实 Minecraft 1.20.1 的安装取消/重试、实例选择、启动、图形/音频初始化与退出码 0。
