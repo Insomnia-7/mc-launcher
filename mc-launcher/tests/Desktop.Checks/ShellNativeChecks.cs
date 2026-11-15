@@ -19,14 +19,14 @@ internal static class ShellNativeChecks
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     private static nint Pack(PixelPoint point) => (nint)((point.X & 0xffff) | ((point.Y & 0xffff) << 16));
 
-    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false)
+    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false, bool navigation = false, bool preview = false)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This check uses Windows native hit testing.");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, "data"));
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", Path.Combine(root, "game"));
         AppBuilder.Configure<App>().UsePlatformDetect().SetupWithoutStarting();
         AppPaths.EnsureCreated();
-        if (home || redesign || workbench)
+        if (home || redesign || workbench || navigation || preview)
         {
             foreach (var number in Enumerable.Range(1,12))
             {
@@ -53,6 +53,8 @@ internal static class ShellNativeChecks
         {
             try
             {
+                if (navigation) { await NavigationFixChecks.RunNative(model,window,root); exit=0; return; }
+                if (preview) { await VerticalTransitionPreview.Record(model,window,root); exit=0; return; }
                 if (workbench) { await WorkbenchNativeChecks.Run(model,window,root); exit=0; return; }
                 if (redesign) { await UiV11RedesignChecks.RunNativeAsync(model,window,root); exit=0; return; }
                 if (showcase) { await ShowcaseChecks.RunNativeAsync(model,window,root); exit=0; return; }

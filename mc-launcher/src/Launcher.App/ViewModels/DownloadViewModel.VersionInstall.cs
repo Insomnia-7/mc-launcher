@@ -15,6 +15,7 @@ public sealed partial class InstallLoaderChoice(LoaderKind kind, string title, s
     public string Title { get; } = title;
     public string Description { get; } = description;
     public string Icon { get; } = icon;
+    public string IllustrationKey => Kind.ToString().ToLowerInvariant();
     public System.Windows.Input.ICommand? SelectCommand { get; init; }
     [ObservableProperty] private bool _isSelected;
 }

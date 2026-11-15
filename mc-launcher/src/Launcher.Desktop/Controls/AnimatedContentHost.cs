@@ -3,19 +3,22 @@ using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace Launcher.Desktop.Controls;
 
-/// <summary>Opaque backing with at most two cached pages; only the incoming page accepts input.</summary>
+/// <summary>Adjacent opaque pages slide vertically; no cross-fade or text overlays.</summary>
 public sealed class AnimatedContentHost : Grid
 {
     public static readonly StyledProperty<Control?> ContentProperty =
         AvaloniaProperty.Register<AnimatedContentHost, Control?>(nameof(Content));
-    private readonly ContentPresenter _outgoing = new() { IsVisible = false, IsHitTestVisible = false };
-    private readonly ContentPresenter _incoming = new();
+    private readonly ContentPresenter _outgoing = new() { IsVisible = false, IsHitTestVisible = false, ClipToBounds = true };
+    private readonly ContentPresenter _incoming = new() { ClipToBounds = true };
     private CancellationTokenSource? _switchCts;
     private int _switchVersion;
     private bool _attached;
+    private bool _moving;
+    public int Direction { get; set; } = 1;
 
     public Control? Content { get => GetValue(ContentProperty); set => SetValue(ContentProperty, value); }
 
@@ -30,6 +33,7 @@ public sealed class AnimatedContentHost : Grid
     {
         base.OnPropertyChanged(change);
         if (change.Property == ContentProperty) SwitchPage(change.GetOldValue<Control?>(), change.GetNewValue<Control?>());
+        else if (change.Property == BoundsProperty && _moving) FinishTransition();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -55,6 +59,7 @@ public sealed class AnimatedContentHost : Grid
     public void FinishTransition()
     {
         ++_switchVersion;
+        _moving = false;
         _switchCts?.Cancel();
         _switchCts?.Dispose();
         _switchCts = null;
@@ -83,6 +88,8 @@ public sealed class AnimatedContentHost : Grid
         FinishTransition();
         Clear(_incoming);
         var animate = _attached && MotionPreferences.Enabled && previous is not null && next is not null;
+        _incoming.Background = Background;
+        _outgoing.Background = Background;
         if (animate)
         {
             _outgoing.Content = previous;
@@ -96,9 +103,21 @@ public sealed class AnimatedContentHost : Grid
         _switchCts = new CancellationTokenSource();
         var token = _switchCts.Token;
         var version = _switchVersion;
-        Move(_outgoing, 1, 0, 0, -4, MotionTokens.PageExit, MotionEasing.Exit);
-        Move(_incoming, 0, 1, 8, 0, MotionTokens.PageSwitch, MotionEasing.Entrance);
-        _ = CompleteAsync(version, token);
+        // Wait for the new page margin/layout before measuring a full page of travel.
+        // Until then the old opaque layer fills the viewport and the new page is outside it.
+        var direction = Direction < 0 ? -1 : 1;
+        _incoming.RenderTransform = new TranslateTransform(0,direction*10000);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (version != _switchVersion || token.IsCancellationRequested) return;
+            UpdateLayout();
+            if (Bounds.Height <= 0) { FinishTransition(); return; }
+            _moving = true;
+            var distance=direction*Bounds.Height;
+            Move(_outgoing,1,1,0,-distance,MotionTokens.PageSwitch,MotionEasing.PageSlide);
+            Move(_incoming,1,1,distance,0,MotionTokens.PageSwitch,MotionEasing.PageSlide);
+            _ = CompleteAsync(version,token);
+        }, DispatcherPriority.Loaded);
     }
 
     internal static void Move(Control control, double opacityFrom, double opacityTo, double yFrom, double yTo,
@@ -118,9 +137,7 @@ public sealed class AnimatedContentHost : Grid
     {
         try
         {
-            await Task.Delay(MotionTokens.PageExit, token);
-            if (version == _switchVersion) Clear(_outgoing);
-            await Task.Delay(MotionTokens.PageSwitch - MotionTokens.PageExit, token);
+            await Task.Delay(MotionTokens.PageSwitch, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         finally

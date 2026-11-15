@@ -43,6 +43,8 @@ internal static class Program
         if(args.Contains("--showcase-invalid"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","true");
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--navigation-native"))return ShellNativeChecks.Start(root,navigation:true);
+        if(args.Contains("--motion-preview-native"))return ShellNativeChecks.Start(root,preview:true);
         if(args.Contains("--workbench-native"))return ShellNativeChecks.Start(root,workbench:true);
         if(args.Contains("--real-game"))return RealGameChecks.Start(root);
         if(args.Contains("--redesign-native"))return ShellNativeChecks.Start(root,redesign:true);
@@ -60,7 +62,7 @@ internal static class Program
         File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--unknown-theme") ? """{"themeId":"missing-historical-preset","motionMode":"off"}""" : args.Contains("--legacy-theme")
             ? """{"themeId":"custom","customTheme":{"schema":1,"name":"旧彩色主题","colors":{"BgBrush":"#FF0000"}},"wallpaperOpacity":0.35,"motionMode":"off"}"""
             : """{"themeId":"glacier","motionMode":"off"}""");
-        foreach (var id in args.Contains("--empty") ? [] : (args.Contains("--home") || args.Contains("--redesign") || args.Contains("--workbench")) ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
+        foreach (var id in args.Contains("--empty") ? [] : (args.Contains("--home") || args.Contains("--navigation-fixes") || args.Contains("--redesign") || args.Contains("--workbench")) ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
         {
             var directory = Path.Combine(game, "versions", id); Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, id + ".json"), JsonSerializer.Serialize(new { id, type = "release", mainClass = "net.minecraft.client.main.Main", arguments = new { jvm = new[] { "-cp", "${classpath}" }, game = new[] { "--username", "${auth_player_name}" } }, libraries = Array.Empty<object>(), javaVersion = new { majorVersion = 21 } }));
@@ -106,6 +108,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--navigation-fixes")){NavigationFixChecks.Run(model,window,Pump,Check,Capture);PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("导航修复无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation fix checks passed");return 0;}
             if(args.Contains("--workbench-consistency")){WorkbenchChecks.Consistency(model,window,Pump,Check,Capture);Check("所有A页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench consistency checks passed");return 0;}
             if(args.Contains("--workbench-manage")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);MaintenanceUiChecks.Run(window,Pump,Check,Capture);ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例管理无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench management checks passed");return 0;}
             if(args.Contains("--workbench-catalog")){VersionInstallChecks.Run(model,window,installFixture,Pump,Check,Capture,Click);ResourceCenterChecks.Run(model,window,resourceFixture,Pump,Check,Capture,Click);CatalogScrollChecks.Run(model,window,resourceFixture,Pump,Check,Capture);Check("安装与资源无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench catalog checks passed");return 0;}

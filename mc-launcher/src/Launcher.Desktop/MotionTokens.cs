@@ -11,7 +11,7 @@ public static class MotionTokens
     public static TimeSpan TextFade => TimeSpan.FromMilliseconds(140);
     public static TimeSpan SidebarTextOut => Hover;
     public static TimeSpan SidebarTextDelay => TimeSpan.FromMilliseconds(80);
-    public static TimeSpan PageSwitch => TimeSpan.FromMilliseconds(200);
+    public static TimeSpan PageSwitch => TimeSpan.FromMilliseconds(300);
     public static TimeSpan PageExit => TimeSpan.FromMilliseconds(110);
     public static TimeSpan ContentEntrance => TimeSpan.FromMilliseconds(220);
     public static TimeSpan StaggerStep => TimeSpan.FromMilliseconds(40);

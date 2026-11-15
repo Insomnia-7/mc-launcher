@@ -72,7 +72,14 @@ internal static class VersionInstallChecks
         check("重新进入发现资源时收起全部抽屉", vm.VersionGroups.All(g => !g.IsExpanded) && vm.ResourceReleaseGroups.All(g => !g.IsExpanded));
         vm.SelectVersionCommand.Execute(new VersionItem("1.21.4","release",DateTimeOffset.UtcNow)); pump(100);
         check("选择游戏版本后进入加载器配置，默认原版",vm.IsVersionConfiguration && !vm.IsVersionList && vm.SelectedInstallLoader?.Kind==LoaderKind.Vanilla && vm.InstallVersionCommand.CanExecute(null));
-        check("加载器选项使用有效的原色图标",vm.InstallLoaders.All(c=>Launcher.Desktop.Controls.IconCatalog.Items.ContainsKey(c.Icon)));
+        check("加载器选项均使用有标识的矢量重绘图",vm.InstallLoaders.All(c=>Launcher.Desktop.Controls.LoaderIllustration.HasMark(c.IllustrationKey)));
+        var marks=window.GetVisualDescendants().OfType<Launcher.Desktop.Controls.LoaderIllustration>().ToArray();
+        check("五种安装方式显示56DIP高清图而非微缩占位符",marks.Length==5 && marks.All(c=>c.Bounds.Width==56 && c.Bounds.Height==56) && marks.Select(c=>c.Kind).Distinct().Count()==5);
+        var previousTheme=model.CurrentThemeMode;
+        model.SetThemeMode(Launcher.Application.Settings.ThemeMode.Dark);pump(240);
+        check("高清安装图跟随深色主题并保持真实选择目标",marks.All(c=>c.ActualThemeVariant==Avalonia.Styling.ThemeVariant.Dark) && vm.SelectedInstallLoader?.Kind==LoaderKind.Vanilla);
+        capture("install-loaders-dark",true);
+        model.SetThemeMode(previousTheme);pump(240);
         capture("install-vanilla",true);
         foreach(var kind in new[]{LoaderKind.Fabric,LoaderKind.Quilt,LoaderKind.Forge,LoaderKind.NeoForge})
         {

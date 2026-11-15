@@ -18,22 +18,28 @@ internal static class PageMotionChecks
     public static void Run(MainViewModel model, MainWindow window, Action<int> pump, Action<string,bool> check, Func<int> requests)
     {
         var host = window.GetVisualDescendants().OfType<AnimatedContentHost>().Single();
+        bool EndSettled()
+        {
+            for(var i=0;i<150 && !Settled(host);i++)pump(10);
+            return Settled(host);
+        }
         var library = (LibraryView)host.Content!;
         model.OpenAppearanceCommand.Execute(null);pump(250);var preferences=host.Content;model.ShowInstancesCommand.Execute(null);pump(250);
-        model.SelectedMotion = model.MotionChoices.Single(m => m.Id == "smooth"); pump(300);
+        model.SelectedMotion = model.MotionChoices.Single(m => m.Id == "smooth"); pump(380);
         var search = library.FindControl<TextBox>("LibrarySearch")!;
         search.Text = "1.21"; pump(100);
-        var scroll = library.FindControl<ScrollViewer>("LibraryScroll")!;
+        model.SetLibraryLayoutCommand.Execute("list");pump(40);
+        var scroll = library.FindControl<ListBox>("LibraryList")!.GetVisualDescendants().OfType<ScrollViewer>().First();
         scroll.Offset = new Vector(0, Math.Min(100, Math.Max(0,scroll.Extent.Height-scroll.Viewport.Height))); pump(30);
         var offset = scroll.Offset;
         var before = requests();
         // Inspect ownership synchronously: software rendering a full settings page can exceed 110ms.
         host.Content=preferences;
-        check("切页仅同时挂载旧页和新页", Layers(host).Count(x => x.Content is not null) == 2 && preferences is PreferencesView);
-        check("退场页不接收点击，入场页保持交互", !Layers(host)[0].IsHitTestVisible && Layers(host)[1].IsHitTestVisible);
+        check("整页滑动只挂载相邻两页", Layers(host).Count(x => x.Content is not null) == 2 && preferences is PreferencesView);
+        check("滑出页不接受输入，仅入场页接受交互", !Layers(host)[0].IsHitTestVisible && Layers(host)[1].IsHitTestVisible);
         check("宿主实色背景不随页面淡出", host.Background is ISolidColorBrush {Color.A:255} && host.Opacity == 1);
-        model.OpenAppearanceCommand.Execute(null);pump(300); check("过渡结束清空旧层并归位当前页", Settled(host));
-        model.ShowInstancesCommand.Execute(null); pump(300);
+        model.OpenAppearanceCommand.Execute(null);pump(380); check("过渡结束清空旧层并归位当前页", EndSettled());
+        model.ShowInstancesCommand.Execute(null); pump(380);
         check("游戏库复用同一视图且保留筛选", ReferenceEquals(host.Content,library) && search.Text=="1.21" && model.LibraryQuery=="1.21");
         check("游戏库往返保留滚动位置", scroll.Offset == offset);
         check("视觉切页不增加网络请求", requests()==before);
@@ -43,19 +49,19 @@ internal static class PageMotionChecks
             pump(5);
             if(Layers(host).Count(x=>x.Content is not null)>2)throw new InvalidOperationException("More than two pages attached");
         }
-        pump(320); check("30 次快速往返无重复父级且只保留当前页", ReferenceEquals(host.Content, library) && Settled(host));
+        pump(380); check("30 次快速往返无重复父级且只保留当前页", ReferenceEquals(host.Content, library) && EndSettled());
         model.OpenAppearanceCommand.Execute(null);pump(20);
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
         check("中途减少动画立即移除旧层、透明度与位移", Settled(host));
         model.ShowInstancesCommand.Execute(null);pump(20);
-        check("减少动画切页瞬时完成", ReferenceEquals(host.Content,library) && Settled(host));
+        check("减少动画切页瞬时完成", ReferenceEquals(host.Content,library) && EndSettled());
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");pump(20);
         model.OpenAppearanceCommand.Execute(null);pump(10);
         var parent=(Panel)host.Parent!;parent.Children.Remove(host);
         check("宿主卸载取消过渡并恢复可见状态", Settled(host));
-        parent.Children.Add(host);pump(300);
-        check("宿主重挂载仍保留当前缓存页", ReferenceEquals(preferences,host.Content) && Settled(host));
-        model.ShowInstancesCommand.Execute(null);pump(300);
+        parent.Children.Add(host);pump(380);
+        check("宿主重挂载仍保留当前缓存页", ReferenceEquals(preferences,host.Content) && EndSettled());
+        model.ShowInstancesCommand.Execute(null);pump(380);
         search.Text="";pump(50);
 
         var stages=Enumerable.Range(0,7).Select(i=>(Control)new Button {Content=$"stage {i}",Height=32}).ToArray();
@@ -87,9 +93,13 @@ internal static class PageMotionChecks
         var passed=0;
         void Check(string text,bool okay){if(!okay)throw new InvalidOperationException(text);passed++;Console.WriteLine("PASS "+text);}
         var host=window.GetVisualDescendants().OfType<AnimatedContentHost>().Single();
+        async Task WaitSettled()
+        {
+            for(var i=0;i<150 && !Settled(host);i++)await Task.Delay(10);
+        }
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
         model.OpenAppearanceCommand.Execute(null);await Task.Delay(250);model.ShowInstancesCommand.Execute(null);await Task.Delay(250);
-        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");await Task.Delay(300);
+        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");await Task.Delay(380);
         var library=host.Content;
         model.OpenAppearanceCommand.Execute(null);
         var layers=Layers(host);
@@ -97,23 +107,27 @@ internal static class PageMotionChecks
         for(var i=0;i<10;i++)
         {
             await Task.Delay(12);
-            if(layers[1].Opacity>0 && layers[1].Opacity<1)break;
+            if(Math.Abs(layers[1].RenderTransform!.Value.M32)>1 && Math.Abs(layers[1].RenderTransform!.Value.M32)<host.Bounds.Height)break;
         }
         Console.WriteLine($"Native page frame: incoming opacity={layers[1].Opacity:F3}, y={layers[1].RenderTransform!.Value.M32:F3}; outgoing opacity={layers[0].Opacity:F3}");
-        Check("真实窗口新页存在透明度中间帧",layers[1].Opacity>0 && layers[1].Opacity<1);
-        Check("真实窗口新页从 8px 回落",layers[1].RenderTransform!.Value.M32>0 && layers[1].RenderTransform!.Value.M32<8);
-        Check("真实窗口旧页向上淡出",layers[0].Opacity<1 && layers[0].RenderTransform!.Value.M32<0);
+        Check("真实窗口两页始终不透明不叠印",layers[1].Opacity==1 && layers[0].Opacity==1 && layers.All(x=>x.Background is ISolidColorBrush {Color.A:255}));
+        Check("真实窗口整页垂直滑动存在中间帧",Math.Abs(layers[1].RenderTransform!.Value.M32)>0 && Math.Abs(layers[1].RenderTransform!.Value.M32)<host.Bounds.Height);
+        Check("真实窗口两页衔接距离等于完整页高",Math.Abs(Math.Abs(layers[1].RenderTransform!.Value.M32-layers[0].RenderTransform!.Value.M32)-host.Bounds.Height)<1);
         Check("真实窗口始终有实色背景与可交互新页",host.Background is ISolidColorBrush {Color.A:255} && layers[1].IsHitTestVisible);
         using(var picture=new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96)))
         {picture.Render(window);picture.Save(Path.Combine(root,"page-transition.png"),PngBitmapEncoderOptions.Default);}
-        await Task.Delay(300);Check("真实过渡结束不残留退场页",Settled(host));
+        await Task.Delay(380);await WaitSettled();Check("真实过渡结束不残留退场页",Settled(host));
         for(var i=0;i<12;i++){if(i%2==0)model.ShowInstancesCommand.Execute(null);else model.OpenAppearanceCommand.Execute(null);await Task.Delay(10);}
-        model.ShowInstancesCommand.Execute(null);await Task.Delay(300);
+        model.ShowInstancesCommand.Execute(null);await Task.Delay(380);await WaitSettled();
         Check("真实窗口连续切页复用游戏库并归位",ReferenceEquals(library,host.Content) && Settled(host));
+        model.OpenAppearanceCommand.Execute(null);await Task.Delay(380);await WaitSettled();
+        model.ShowInstancesCommand.Execute(null);await Task.Delay(40);
+        Check("反向导航从上方进入且旧页向下退出",layers[1].RenderTransform!.Value.M32<0 && layers[0].RenderTransform!.Value.M32>0);
+        await Task.Delay(380);await WaitSettled();
         model.OpenAppearanceCommand.Execute(null);await Task.Delay(20);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
         Check("真实窗口中途关闭动画立即归位",Settled(host));
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");model.ShowInstancesCommand.Execute(null);await Task.Delay(20);
-        window.WindowState=WindowState.Minimized;await Task.Delay(300);window.WindowState=WindowState.Normal;await Task.Delay(100);
+        window.WindowState=WindowState.Minimized;await Task.Delay(380);window.WindowState=WindowState.Normal;await Task.Delay(100);
         Check("最小化中断后还原页面仍可见",Settled(host));
         Console.WriteLine($"{passed} native page motion checks passed");
     }

@@ -315,9 +315,9 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:InstallLoaderChoice">
-                  <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}" Width="148" MinHeight="116" Margin="0,0,8,8" HorizontalContentAlignment="Left">
+                  <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}" Width="164" MinHeight="184" Margin="0,0,8,8" HorizontalContentAlignment="Left">
                     <StackPanel Spacing="8">
-                      <icons:UiIcon Kind="{Binding Icon}" Width="32" Height="32" HorizontalAlignment="Left" />
+                      <Border Width="72" Height="72" Background="{DynamicResource CardBrush}" CornerRadius="14" HorizontalAlignment="Left" Padding="8"><icons:LoaderIllustration Kind="{Binding IllustrationKey}" Width="56" Height="56"/></Border>
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                       <TextBlock Text="{Binding Description}" Classes="muted" FontSize="13" />
                     </StackPanel>

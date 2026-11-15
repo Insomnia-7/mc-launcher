@@ -101,12 +101,13 @@ public sealed class EntranceEasing() : CubicBezierEasing(0, 0, 0, 1);
 /// <summary>退场：cubic-bezier(1,0,1,1)，慢出快入，并且永远比进场短。</summary>
 public sealed class ExitEasing() : CubicBezierEasing(1, 0, 1, 1);
 
-/// <summary>曲线只有三条（设计大纲 §4.2）。禁止 ease / ease-in-out / ease-out 与任何回弹曲线。</summary>
+/// <summary>通用进出场与颜色曲线；整页滑动采用用户于 2026-11-16 确认的三次减速曲线。</summary>
 public static class MotionEasing
 {
     public static Easing Entrance { get; } = new EntranceEasing();
     public static Easing Exit { get; } = new ExitEasing();
     public static Easing Linear { get; } = new LinearEasing();
+    public static Easing PageSlide { get; } = new CubicEaseOut();
 
     /// <summary>按「方向」取曲线：进场用 Entrance，退场用 Exit。</summary>
     public static Easing For(bool entering) => entering ? Entrance : Exit;

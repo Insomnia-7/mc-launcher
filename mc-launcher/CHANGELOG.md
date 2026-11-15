@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.17 · 无叠印整页转场与导航修复
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.17)。
+
+- 修复栏目切换时旧内容与新内容叠印；按用户确认采用约 300ms 的整页上下滑动，页面保持不透明，方向跟随导航顺序，转场结束清空旧页。
+- 修复“收起侧栏 → 切换栏目 → 展开”的指示条横向错位，补上横向滑动与完整按钮尺寸变化处理。
+- 安装方式改用 56 DIP 矢量重绘示意图：Fabric 布料、Quilt 拼布、Forge 铁砧、NeoForge 狐狸；保留原版和所有安装命令。
+- 完成 Horizon 原生客户端的第三方接入与授权风险调研。本版未集成 Horizon 引擎，详细资料见 docs/horizon-integration-assessment.md。
+- 当前设备完成 1,311 项相关检查及架构护栏；发布包与远端验证随构建记录补录，跨设备待测项见 docs/ui-navigation-acceptance.md。
+
+
 ## 1.0.0-preview.16 · 参考图首页与 MC 光影横条
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.16)。

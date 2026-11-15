@@ -185,10 +185,19 @@ public sealed partial class MainWindow : Window
     }
 
     private int _pageRevision;
+    private int _pageOrder;
 
     private void UpdatePage()
     {
         if (_model is null) return;
+        var order = _model.ShellPage switch
+        {
+            "home"=>0, "library" or "detail"=>1, "multiplayer"=>2,
+            "settings" when _model.IsNetworkSettingsPage=>3, "discover"=>4,
+            "experience" when _model.IsTaskPage=>5, "settings"=>6, _=>7
+        };
+        PageHost.Direction = order >= _pageOrder ? 1 : -1;
+        _pageOrder = order;
         PageHost.Content = _model.ShellPage switch
         {
             "showcase" when _model.IsDevShowcaseEnabled => _showcase ??= new UiShowcaseView {DataContext=new UiShowcaseViewModel(_model)},

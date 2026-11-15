@@ -17,7 +17,7 @@ public sealed partial class MainWindow
     private int _navIndicatorRevision;
     private bool _navIndicatorPlaced;
     private bool _navIndicatorAnimated;
-    private Point? _navPosition;
+    private Rect? _navBounds;
 
     private IEnumerable<Control> SidebarLabels()
     {
@@ -185,17 +185,20 @@ public sealed partial class MainWindow
         {
             foreach (var transform in new[] { indicator, selection })
                 transform.Transitions = animated
-                    ? [new DoubleTransition { Property = TranslateTransform.YProperty, Duration = MotionTiming.Navigation, Easing = MotionEasing.Entrance }]
+                    ? [new DoubleTransition { Property = TranslateTransform.XProperty, Duration = MotionTiming.Navigation, Easing = MotionEasing.Entrance },
+                       new DoubleTransition { Property = TranslateTransform.YProperty, Duration = MotionTiming.Navigation, Easing = MotionEasing.Entrance }]
                     : null;
             _navIndicatorAnimated = animated;
         }
-        if (_navPosition != origin || !animated)
+        var bounds = new Rect(origin, button.Bounds.Size);
+        // Expanding the sidebar changes width without changing the button's origin.
+        if (_navBounds != bounds || !animated)
         {
             indicator.X = origin.X + button.Bounds.Width - 3;
             indicator.Y = origin.Y + (button.Bounds.Height - NavIndicator.Height) / 2;
             selection.X = origin.X;
             selection.Y = origin.Y;
-            _navPosition = origin;
+            _navBounds = bounds;
         }
         NavSelection.Width = button.Bounds.Width;
         NavSelection.Height = button.Bounds.Height;
