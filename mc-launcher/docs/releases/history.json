@@ -670,5 +670,38 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.17",
+    "date": "2026-11-16",
+    "title": "整页滑动、导航修复与高清加载器图",
+    "tag": "desktop-v1.0.0-preview.17",
+    "sourceCommit": "ce9ce6ec7d2d0c79cd93d1b91606add131c6496d",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/ce9ce6ec7d2d0c79cd93d1b91606add131c6496d",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.17",
+    "changes": "300ms 不透明双向整页转场、侧栏指示条完整几何修复、高清加载器矢量图及 Horizon 授权调研。M0–M6 本机和发布包通过，跨设备项目待测。",
+    "platform": "Windows x64",
+    "bytes": 28955665,
+    "sha256": "99427e693b0bc8188e19effc622f22fc141f7a7b2d445f5c7588e4261531cd5f",
+    "binaryProductVersion": "1.0.0-preview.17+ce9ce6ec7d2d0c79cd93d1b91606add131c6496d",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 880,
+      "navigation-fixes": 38,
+      "page-motion-native": 9,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1311.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

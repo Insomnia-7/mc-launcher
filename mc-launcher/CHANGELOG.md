@@ -4,11 +4,13 @@
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.17)。
 
+[源码 ce9ce6e](https://github.com/Insomnia-7/mc-launcher/commit/ce9ce6ec7d2d0c79cd93d1b91606add131c6496d)。Windows 单文件 28955665 字节，SHA-256：99427e693b0bc8188e19effc622f22fc141f7a7b2d445f5c7588e4261531cd5f。1311 项检查通过，另通过架构护栏、裁剪程序集回归、单文件启动与生产更新验签。
+
 - 修复栏目切换时旧内容与新内容叠印；按用户确认采用约 300ms 的整页上下滑动，页面保持不透明，方向跟随导航顺序，转场结束清空旧页。
 - 修复“收起侧栏 → 切换栏目 → 展开”的指示条横向错位，补上横向滑动与完整按钮尺寸变化处理。
 - 安装方式改用 56 DIP 矢量重绘示意图：Fabric 布料、Quilt 拼布、Forge 铁砧、NeoForge 狐狸；保留原版和所有安装命令。
 - 完成 Horizon 原生客户端的第三方接入与授权风险调研。本版未集成 Horizon 引擎，详细资料见 docs/horizon-integration-assessment.md。
-- 当前设备完成 1,311 项相关检查及架构护栏；发布包与远端验证随构建记录补录，跨设备待测项见 docs/ui-navigation-acceptance.md。
+- 当前设备完成 1,311 项相关检查及架构护栏，裁剪程序集、单文件启动和受信签名验证通过；远端结果及跨设备待测项见 docs/ui-navigation-acceptance.md。
 
 
 ## 1.0.0-preview.16 · 参考图首页与 MC 光影横条
