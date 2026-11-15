@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.12)。
 
+[源码 9047b74](https://github.com/Insomnia-7/mc-launcher/commit/9047b74989c358a22a6391b4d39f6dcf28db3721)。Windows 单文件 25757289 字节，SHA-256：`e8100e2d02db2af2d46f8643cd68783cf4eadd9bb43efa0abc52d2185f167f9f`。1493 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 统一按钮八态：120ms 悬停、85ms 按下、140ms 松开，2px 键盘焦点环与瞬时 0.45 禁用态；异步命令执行中显示加载图标并阻止重复操作。
 - 成功与失败图标接入联机业务确认结果，不把异步命令结束直接当作成功；失败保留重试入口。
 - 四类模态弹窗统一使用 180ms 遮罩淡入、220ms 缩放与位移入场、150ms 退场；完成退场后才移除遮罩，支持快速反向、焦点恢复和减少动画。

@@ -487,5 +487,41 @@
       "nativeSidebar": 8,
       "architecture": true
     }
+  },
+  {
+    "version": "1.0.0-preview.12",
+    "date": "2026-11-15",
+    "title": "M7 全局组件",
+    "tag": "desktop-v1.0.0-preview.12",
+    "sourceCommit": "9047b74989c358a22a6391b4d39f6dcf28db3721",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/9047b74989c358a22a6391b4d39f6dcf28db3721",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.12",
+    "changes": "M7 按钮八态、弹窗动画、四态通知队列与 Tooltip。",
+    "platform": "Windows x64",
+    "bytes": 25757289,
+    "sha256": "e8100e2d02db2af2d46f8643cd68783cf4eadd9bb43efa0abc52d2185f167f9f",
+    "binaryProductVersion": "1.0.0-preview.12+9047b74989c358a22a6391b4d39f6dcf28db3721",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "legacyTheme": 4,
+      "empty": 6,
+      "nativePageMotion": 8,
+      "architecture": true,
+      "pageMotion": 20,
+      "multiplayer": 31,
+      "total": 1493,
+      "core": 880,
+      "desktop": 344,
+      "nativeHome": 15,
+      "trimmedAssemblies": true,
+      "components": 29,
+      "shell": 35,
+      "singleFileStartup": true,
+      "home": 46,
+      "nativeSidebar": 8,
+      "sidebar": 34,
+      "nativeComponents": 17,
+      "nativeShell": 16
+    }
   }
 ]
