@@ -57,9 +57,12 @@ internal static class SidebarUiChecks
         model.IsSidebarCollapsed=false;pump(350);
         check("连续反向切换最终展开且无残留透明文字",sidebar.Width==240&&text.Opacity==1&&navText.Opacity==1&&navText.IsEffectivelyVisible);
         check("最终展开偏好已写盘",!AppearanceStore.Read(data).SidebarCollapsed);
+        // Isolate sidebar timing from full-page software drawing. Native checks render both together.
+        var pageContent=Find<Grid>("PageContent");pageContent.IsVisible=false;
         var before=Y();model.OpenTaskCenterCommand.Execute(null);
         check("导航指示条实际滑过中间位置",Sample(()=>Y()>before+1&&Y()<Target("TaskCenterEntry")-1));pump(230);
         check("指示条与胶囊落在同一任务入口",Math.Abs(Y()-Target("TaskCenterEntry"))<1&&Math.Abs(((TranslateTransform)selection.RenderTransform!).Y-Find<Button>("TaskCenterEntry").Bounds.Y)<1);
+        pageContent.IsVisible=true;pump(250);
         model.OpenWardrobeCommand.Execute(null);pump(20);model.OpenAppearanceCommand.Execute(null);pump(20);model.ShowInstancesCommand.Execute(null);pump(300);
         check("快速导航后唯一指示条对准最终页面",model.IsLibraryPage&&Math.Abs(Y()-Target("LibraryNav"))<1);
         model.IsSidebarCollapsed=true;pump(35);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");pump(10);

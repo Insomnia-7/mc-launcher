@@ -100,6 +100,7 @@ public sealed partial class MainWindow : Window
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
+            PageHost.FinishTransition();
             _sidebarCts?.Cancel(); _sidebarCts?.Dispose(); _sidebarCts = null;
         };
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -152,7 +153,8 @@ public sealed partial class MainWindow : Window
         if (e.PropertyName == nameof(MainViewModel.HasOverlay)) UpdateOverlay();
         if (e.PropertyName == nameof(MainViewModel.IsSidebarCollapsed) || e.PropertyName == nameof(MainViewModel.ShellPage))
         {
-            UpdatePage();
+            var pageRevision = ++_pageRevision;
+            Dispatcher.UIThread.Post(() => { if (pageRevision == _pageRevision) UpdatePage(); }, DispatcherPriority.Background);
             if (e.PropertyName == nameof(MainViewModel.ShellPage) && _overlaySidebarOpen && _sidebarState == SidebarState.Overlay)
             {
                 _overlaySidebarOpen = false;
@@ -165,6 +167,8 @@ public sealed partial class MainWindow : Window
             Dispatcher.UIThread.Post(() => { if (revision == _navIndicatorRevision) UpdateNavIndicator(); }, DispatcherPriority.Background);
         }
     }
+
+    private int _pageRevision;
 
     private void UpdatePage()
     {

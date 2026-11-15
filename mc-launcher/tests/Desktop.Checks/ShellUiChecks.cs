@@ -16,7 +16,7 @@ internal static class ShellUiChecks
     {
         T Find<T>(string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(x => x.Name == name);
         var selected = model.SelectedInstance;
-        var page = Find<ContentControl>("PageHost").Content;
+        var page = Find<Launcher.Desktop.Controls.AnimatedContentHost>("PageHost").Content;
         var switcher = Find<Button>("ThemeSwitchButton");
         check("标题栏高 38px，保留原始品牌图标", Find<Border>("WindowHeader").Bounds.Height == 38 && Find<Image>("TitleAppIcon").Source is not null);
         check("标题栏显示真实游戏实例页面名称", Find<TextBlock>("TitleEdition").Text == "游戏实例");
@@ -32,7 +32,7 @@ internal static class ShellUiChecks
             click(switcher); pump(240);
             var key = mode.ToString().ToLowerInvariant();
             check($"标题栏切换到 {key} 并持久保存", model.CurrentThemeMode == mode && AppearanceStore.Read(data).ThemeMode == key);
-            check($"切换 {key} 保留实例、页面和窗口", ReferenceEquals(selected, model.SelectedInstance) && ReferenceEquals(page, Find<ContentControl>("PageHost").Content) && window.IsVisible);
+            check($"切换 {key} 保留实例、页面和窗口", ReferenceEquals(selected, model.SelectedInstance) && ReferenceEquals(page, Find<Launcher.Desktop.Controls.AnimatedContentHost>("PageHost").Content) && window.IsVisible);
             check($"切换 {key} 更新图标提示", ToolTip.GetTip(switcher)?.ToString() == model.ThemeModeTooltip);
         }
         model.IsInstanceSection = false; pump(50);

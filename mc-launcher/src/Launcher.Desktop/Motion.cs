@@ -17,28 +17,28 @@ namespace Launcher.Desktop;
 public static class MotionTiming
 {
     /// <summary>颜色、悬停、按下、文字消失、窗口控制按钮。</summary>
-    public const int FasterMs = 83;
+    public static int FasterMs => (int)MotionTokens.Pressed.TotalMilliseconds;
     /// <summary>小位移、图标交换、失焦降灰、文字出现。</summary>
-    public const int FastMs = 167;
+    public static int FastMs => (int)MotionTokens.TextFade.TotalMilliseconds;
     /// <summary>侧边栏、页面、设置面板。</summary>
-    public const int NormalMs = 250;
+    public static int NormalMs => (int)MotionTokens.Sidebar.TotalMilliseconds;
     /// <summary>卡片首次入场。</summary>
-    public const int SlowMs = 420;
+    public static int SlowMs => (int)MotionTokens.ContentEntrance.TotalMilliseconds;
 
     /// <summary>带内元素的错峰间隔。</summary>
-    public const int StaggerMs = 40;
+    public static int StaggerMs => (int)MotionTokens.StaggerStep.TotalMilliseconds;
 
     // UI redesign M4: text phases fit inside the 250ms sidebar width transition.
-    public const int SidebarTextOutMs = 120;
-    public const int SidebarTextDelayMs = 80;
-    public const int SidebarTextInMs = 140;
-    public static TimeSpan Navigation => TimeSpan.FromMilliseconds(190);
+    public static int SidebarTextOutMs => (int)MotionTokens.SidebarTextOut.TotalMilliseconds;
+    public static int SidebarTextDelayMs => (int)MotionTokens.SidebarTextDelay.TotalMilliseconds;
+    public static int SidebarTextInMs => (int)MotionTokens.TextFade.TotalMilliseconds;
+    public static TimeSpan Navigation => MotionTokens.NavIndicator;
 
     /// <summary>
     /// 大纲在 §3.2 B-1 与 §3.4 里单独点名了 200ms（浮层滑入、设置退场）。
-    /// 这是四档之外唯一被写明的例外，集中在这里；别的地方不要出现第五个数字。
+    /// 旧组件保留兼容别名，时长统一取自 MotionTokens；组件升级随 M7 接入角色命名。
     /// </summary>
-    public const int PanelMs = 200;
+    public static int PanelMs => (int)MotionTokens.PageSwitch.TotalMilliseconds;
 
     public static TimeSpan Faster => TimeSpan.FromMilliseconds(FasterMs);
     public static TimeSpan Fast => TimeSpan.FromMilliseconds(FastMs);
@@ -198,32 +198,44 @@ public static class Motion
         return animation.RunAsync(target, token);
     }
 
-    /// <summary>
-    /// 列表错峰入场（设计大纲 §3.3 C-3）：每项 opacity 0→1、translateY 12px→0，
-    /// 单次 420ms，项间 40ms，只在首次进入播放。宿主统一调度，逐项写会各写一套时长且无法统一停。
-    /// </summary>
-    public static async Task PlayStaggerAsync(IReadOnlyList<Control> items, CancellationToken token)
+    /// <summary>First entrance: 220ms per module, 40ms between modules; input stays enabled.</summary>
+    public static async Task PlayStaggerSequenceAsync(IReadOnlyList<Control> items, CancellationToken token)
     {
-        if (!MotionPreferences.Enabled)
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(token);
+        void Normalize()
         {
-            foreach (var item in items) { item.Opacity = 1; item.RenderTransform = TransformOperations.Identity; }
-            return;
+            foreach (var item in items)
+            {
+                item.Transitions = null;
+                item.Opacity = 1;
+                item.RenderTransform = new TranslateTransform();
+            }
         }
-        var running = new List<Task>();
+        void PreferenceChanged()
+        {
+            if (!MotionPreferences.Enabled) { cancel.Cancel(); Normalize(); }
+        }
+        if (!MotionPreferences.Enabled || token.IsCancellationRequested) { Normalize(); return; }
+        MotionPreferences.Changed += PreferenceChanged;
         try
         {
-            for (var index = 0; index < items.Count; index++) running.Add(StaggeredItem(items[index], index * MotionTiming.StaggerMs, token));
-            await Task.WhenAll(running);
+            foreach (var item in items)
+            {
+                item.Transitions = null;
+                item.Opacity = 0;
+                item.RenderTransform = new TranslateTransform(0, 8);
+            }
+            await Task.WhenAll(items.Select((item, index) => Enter(item, index)));
         }
-        catch (OperationCanceledException) { }
-    }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { }
+        finally { MotionPreferences.Changed -= PreferenceChanged; Normalize(); }
 
-    private static async Task StaggeredItem(Control item, int delayMs, CancellationToken token)
-    {
-        item.Opacity = 0;
-        if (delayMs > 0) await Task.Delay(delayMs, token);
-        await Task.WhenAll(
-            AnimateOpacity(item, 0, 1, MotionTiming.SlowMs, MotionEasing.Entrance, token),
-            AnimateTranslateY(item, 12, 0, MotionTiming.SlowMs, MotionEasing.Entrance, token));
+        async Task Enter(Control item, int index)
+        {
+            if (index > 0) await Task.Delay(MotionTokens.StaggerStep * index, cancel.Token);
+            cancel.Token.ThrowIfCancellationRequested();
+            Controls.AnimatedContentHost.Move(item, 0, 1, 8, 0, MotionTokens.ContentEntrance, MotionEasing.Entrance);
+            await Task.Delay(MotionTokens.ContentEntrance, cancel.Token);
+        }
     }
 }

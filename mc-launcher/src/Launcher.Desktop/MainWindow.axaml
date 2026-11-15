@@ -127,10 +127,10 @@
           </Grid>
         </Border>
         <StackPanel x:Name="CaptionButtons" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" WindowDecorationProperties.ElementRole="User">
-          <Button x:Name="HeaderTaskButton" Classes="caption" IsVisible="{Binding HasActivePersistentTask}" Command="{Binding OpenTaskCenterCommand}" ToolTip.Tip="查看正在进行的下载任务" ToolTip.ShowDelay="450" AutomationProperties.Name="查看正在进行的下载任务">
+          <Button x:Name="HeaderTaskButton" Classes="caption" IsVisible="{Binding HasActivePersistentTask}" Command="{Binding OpenTaskCenterCommand}" ToolTip.Tip="查看正在进行的下载任务" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" AutomationProperties.Name="查看正在进行的下载任务">
             <icons:UiIcon Kind="NavDownload" Width="15" Height="15" Foreground="{DynamicResource AccentBrush}" />
           </Button>
-          <Button x:Name="ThemeSwitchButton" Classes="caption" Command="{Binding CycleThemeModeCommand}" ToolTip.Tip="{Binding ThemeModeTooltip}" ToolTip.ShowDelay="450" AutomationProperties.Name="{Binding ThemeModeTooltip}">
+          <Button x:Name="ThemeSwitchButton" Classes="caption" Command="{Binding CycleThemeModeCommand}" ToolTip.Tip="{Binding ThemeModeTooltip}" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" AutomationProperties.Name="{Binding ThemeModeTooltip}">
             <Path Data="{Binding ThemeModeIconGeometry}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.4" Width="15" Height="15" Stretch="Uniform" IsHitTestVisible="False" />
           </Button>
           <Button x:Name="MinimizeButton" Classes="caption" Click="MinimizeWindow" WindowDecorationProperties.ElementRole="MinimizeButton" ToolTip.Tip="最小化" AutomationProperties.Name="最小化"><Path Data="M 2,7 L 12,7" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
@@ -181,8 +181,8 @@
           </Button>
         </StackPanel>
         <StackPanel x:Name="SidebarBottomCompact" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,12,0,0" IsVisible="False">
-          <Button x:Name="CompactUpdateNotice" Classes="quiet" Command="{Binding OpenLauncherUpdatesCommand}" IsVisible="{Binding HasUpdate}" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="方隅有新版本 · 查看更新" ToolTip.ShowDelay="450" AutomationProperties.Name="查看启动器更新"><icons:UiIcon Kind="ActionCloudDownload" Width="20" Height="20" /></Button>
-          <Button x:Name="SidebarAccountCompact" Classes="quiet" Command="{Binding OpenAccountsCommand}" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="{Binding AccountText}" ToolTip.ShowDelay="450" AutomationProperties.Name="管理游戏身份">
+          <Button x:Name="CompactUpdateNotice" Classes="quiet" Command="{Binding OpenLauncherUpdatesCommand}" IsVisible="{Binding HasUpdate}" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="方隅有新版本 · 查看更新" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" AutomationProperties.Name="查看启动器更新"><icons:UiIcon Kind="ActionCloudDownload" Width="20" Height="20" /></Button>
+          <Button x:Name="SidebarAccountCompact" Classes="quiet" Command="{Binding OpenAccountsCommand}" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="{Binding AccountText}" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" AutomationProperties.Name="管理游戏身份">
             <Grid Width="32" Height="32">
               <icons:UiIcon Kind="ActionLogin" IsVisible="{Binding !HasSkinHead}" Width="28" Height="28" />
               <Image Source="{Binding SkinHead}" IsVisible="{Binding HasSkinHead}" Stretch="UniformToFill" RenderOptions.BitmapInterpolationMode="None" />
@@ -194,12 +194,12 @@
           <Grid>
             <Border x:Name="NavSelection" CornerRadius="8" Background="{DynamicResource NavSelectedBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False" IsVisible="False"><Border.RenderTransform><TranslateTransform /></Border.RenderTransform></Border>
             <StackPanel x:Name="NavList" Spacing="7">
-              <Button x:Name="LibraryNav" Classes="nav" ToolTip.Tip="游戏实例" ToolTip.ShowDelay="450" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏实例"><icons:IconLabel Icon="NavVersions" Text="游戏实例" /></Button>
-              <Button x:Name="DiscoverNav" Classes="nav" ToolTip.Tip="下载中心" ToolTip.ShowDelay="450" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="下载中心"><icons:IconLabel Icon="NavDownload" Text="下载中心" /></Button>
-              <Button x:Name="MultiplayerNav" Classes="nav" ToolTip.Tip="联机大厅" ToolTip.ShowDelay="450" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机大厅"><icons:IconLabel Icon="ActionGlobe" Text="联机大厅" /></Button>
-              <Button x:Name="WardrobeEntry" Classes="nav" ToolTip.Tip="角色衣柜" ToolTip.ShowDelay="450" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色衣柜"><icons:IconLabel Icon="ActionLogin" Text="角色衣柜" /></Button>
-              <Button x:Name="TaskCenterEntry" Classes="nav" ToolTip.Tip="任务中心" ToolTip.ShowDelay="450" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="任务中心"><Grid><icons:IconLabel Icon="ActionCloudDownload" Text="任务中心" /><Border x:Name="SidebarTaskBadge" IsVisible="{Binding HasSidebarTasks}" Background="{DynamicResource AccentFillBrush}" CornerRadius="8" MinWidth="16" Height="16" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-5,0"><TextBlock Text="{Binding SidebarTaskCount}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></Grid></Button>
-              <Button x:Name="SettingsEntry" Classes="nav" ToolTip.Tip="设置" ToolTip.ShowDelay="450" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>
+              <Button x:Name="LibraryNav" Classes="nav" ToolTip.Tip="游戏实例" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏实例"><icons:IconLabel Icon="NavVersions" Text="游戏实例" /></Button>
+              <Button x:Name="DiscoverNav" Classes="nav" ToolTip.Tip="下载中心" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="下载中心"><icons:IconLabel Icon="NavDownload" Text="下载中心" /></Button>
+              <Button x:Name="MultiplayerNav" Classes="nav" ToolTip.Tip="联机大厅" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机大厅"><icons:IconLabel Icon="ActionGlobe" Text="联机大厅" /></Button>
+              <Button x:Name="WardrobeEntry" Classes="nav" ToolTip.Tip="角色衣柜" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsRolePage}" Command="{Binding OpenWardrobeCommand}" AutomationProperties.Name="角色衣柜"><icons:IconLabel Icon="ActionLogin" Text="角色衣柜" /></Button>
+              <Button x:Name="TaskCenterEntry" Classes="nav" ToolTip.Tip="任务中心" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="任务中心"><Grid><icons:IconLabel Icon="ActionCloudDownload" Text="任务中心" /><Border x:Name="SidebarTaskBadge" IsVisible="{Binding HasSidebarTasks}" Background="{DynamicResource AccentFillBrush}" CornerRadius="8" MinWidth="16" Height="16" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-5,0"><TextBlock Text="{Binding SidebarTaskCount}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></Grid></Button>
+              <Button x:Name="SettingsEntry" Classes="nav" ToolTip.Tip="设置" ToolTip.ShowDelay="{x:Static local:MotionTokens.TooltipDelayMs}" Classes.active="{Binding IsSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="ActionSettings" Text="设置" /></Button>
             </StackPanel>
             <!-- 共享蓝色指示条：整条导航只有这一条，切换页面时 translateY 到位（大纲 B-4） -->
             <Border x:Name="NavIndicator" Width="3" Height="20" CornerRadius="2" HorizontalAlignment="Left" VerticalAlignment="Top"
@@ -217,8 +217,8 @@
 
     <!-- ③ 内容区 -->
     <Grid x:Name="PageContent" Background="{DynamicResource BgBrush}" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
-      <!-- 页面容器只有一层：切页直接换内容，没有任何过渡，也就不存在残留、叠页、闪白。 -->
-      <ContentControl x:Name="PageHost" />
+      <!-- 实色底层始终可见，双层仅在页面过渡期间挂载。 -->
+      <icons:AnimatedContentHost x:Name="PageHost" Background="{DynamicResource BgBrush}" />
     </Grid>
 
     <!-- Minimal 态的汉堡键：钉在内容区左上，打开 Overlay 侧栏（大纲 B-1） -->

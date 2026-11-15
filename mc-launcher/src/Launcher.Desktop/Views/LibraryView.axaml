@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.LibraryView">
   <ScrollViewer x:Name="LibraryScroll" Focusable="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
     <StackPanel Spacing="20" Margin="0,0,0,12">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid x:Name="LibraryHeading" ColumnDefinitions="*,Auto">
         <StackPanel Spacing="5">
           <TextBlock Text="游戏库" FontSize="28" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding WorldCaption}" Classes="muted"/>
@@ -10,7 +10,7 @@
           <icons:IconLabel Icon="ActionPlus" Text="添加游戏" Foreground="{Binding $parent[Button].Foreground}"/>
         </Button>
       </Grid>
-      <Border Classes="card" Padding="24" MinHeight="216">
+      <Border x:Name="QuickLaunchCard" Classes="card" Padding="24" MinHeight="216">
         <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
           <StackPanel Spacing="8" ZIndex="1">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -53,7 +53,7 @@
           </Grid>
         </Grid>
       </Border>
-      <Border Classes="card" IsVisible="{Binding IsBusy}" Padding="18">
+      <Border x:Name="LaunchProgressCard" Classes="card" IsVisible="{Binding IsBusy}" Padding="18">
         <StackPanel Spacing="10">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"/>
@@ -64,7 +64,7 @@
           <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4"/>
         </StackPanel>
       </Border>
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <Grid x:Name="LibraryActions" ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Text="全部游戏" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
           <TextBlock Text="{Binding LibraryResultText}" Classes="muted" VerticalAlignment="Center"/>
@@ -83,7 +83,7 @@
           </Button>
         </StackPanel>
       </Grid>
-      <Grid ColumnDefinitions="*,160,Auto" ColumnSpacing="10">
+      <Grid x:Name="LibraryFilters" ColumnDefinitions="*,160,Auto" ColumnSpacing="10">
         <TextBox x:Name="LibrarySearch" Text="{Binding LibraryQuery}" PlaceholderText="搜索名称、游戏版本或加载器"/>
         <ComboBox Grid.Column="1" ItemsSource="{Binding LibraryGroups}" SelectedItem="{Binding LibraryGroup}" AutomationProperties.Name="游戏分组"/>
         <CheckBox Grid.Column="2" Content="仅收藏" IsChecked="{Binding LibraryFavoritesOnly}"/>
@@ -147,7 +147,7 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <Border IsVisible="{Binding HasGameRootProblem}" Classes="card">
+      <Border x:Name="GameRootStatus" IsVisible="{Binding HasGameRootProblem}" Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="{Binding GameRootProblem}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}"/>
           <Button Command="{Binding ChooseGameRootCommand}" HorizontalAlignment="Left" AutomationProperties.Name="更换游戏目录">

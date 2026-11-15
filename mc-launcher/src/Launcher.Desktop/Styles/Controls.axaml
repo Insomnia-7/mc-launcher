@@ -1,11 +1,11 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:local="using:Launcher.Desktop">
   <!--
     设计系统的落点（对应《方隅 Launcher · UI 动效设计大纲》§4）：
-      时长  MotionTiming.Faster 83 / Fast 167 / Normal 250 / Slow 420，全项目只有这四个
+      时长  MotionTokens 按交互角色统一；旧组件的 MotionTiming 仅为兼容别名
       曲线  进场 Entrance(0,0,0,1) / 退场 Exit(1,0,1,1) / 颜色 Linear；禁止 ease 与任何回弹曲线
       圆角  Control 8 / Card 12 / Pill 999；描边全项目只用 1px
       间距  只用 4 的倍数：4 / 8 / 12 / 16 / 24 / 32 / 48
-    这里出现的每个 Duration 必须引用 MotionTiming，不许写裸数字。
+    这里出现的每个 Duration 必须引用统一时长资源，不写裸数字。
   -->
   <Styles.Resources>
     <!-- 背景材质：纯色模式（Win10 / Linux / 鸿蒙）用实色 + 1px 描边；有 Mica 时卡片靠透明度分层。 -->
@@ -75,14 +75,14 @@
   <!-- 游戏库卡片：hover 抬 2px（167ms 进场），阴影走预渲染层切 opacity（大纲 §3.3 C-3） -->
   <Style Selector="Grid.library-tile">
     <Setter Property="Transitions">
-      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions>
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Release}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions>
     </Setter>
   </Style>
   <Style Selector="Grid.library-tile:pointerover"><Setter Property="RenderTransform" Value="translate(0px,-2px)" /></Style>
   <!-- 按下轻微收回：只动 RenderTransform，不动尺寸 -->
   <Style Selector="Grid.library-tile:pressed">
     <Setter Property="RenderTransform" Value="translate(0px,-2px) scale(0.99)" />
-    <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
+    <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
   </Style>
   <Style Selector="Grid.library-tile Border#TileSurface">
     <Setter Property="CornerRadius" Value="12" /><Setter Property="Background" Value="{DynamicResource CardBrush}" />
@@ -92,7 +92,7 @@
     <Setter Property="Opacity" Value="0" /><Setter Property="IsHitTestVisible" Value="False" />
     <Setter Property="CornerRadius" Value="12" /><Setter Property="Background" Value="{DynamicResource CardBrush}" />
     <Setter Property="BoxShadow" Value="0 6 18 0 #14000000" />
-    <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Fast}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Setter>
+    <Setter Property="Transitions"><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Release}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Setter>
   </Style>
   <Style Selector="Grid.library-tile:pointerover Border#TileHover"><Setter Property="Opacity" Value="1" /></Style>
 
@@ -121,25 +121,25 @@
     <Setter Property="RenderTransformOrigin" Value="50%,50%" /><Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions">
       <Transitions>
-        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition>
-        <DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Release}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition>
+        <DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" />
       </Transitions>
     </Setter>
     <Setter Property="Template"><ControlTemplate><Grid>
       <!-- 两层固定阴影交叉淡入，代替动画 BoxShadow -->
       <Border Name="AmbientShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 1 4 0 #18000000" Opacity="0.65" IsHitTestVisible="False">
-        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
       </Border>
       <Border Name="HoverShadow" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BoxShadow="0 5 12 0 #28000000" Opacity="0" IsHitTestVisible="False">
-        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Fast}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
+        <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Release}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
       </Border>
       <Border Name="FocusRing" Margin="-2" CornerRadius="10" BorderBrush="{DynamicResource AccentStrongBrush}" BorderThickness="2" IsVisible="False" IsHitTestVisible="False" />
       <Border Name="Surface" ClipToBounds="True" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
-        <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /><BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Border.Transitions>
+        <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /><BrushTransition Property="BorderBrush" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Border.Transitions>
         <Grid><Border Name="TopHighlight" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#25FFFFFF" BorderThickness="0,1,0,0" Margin="1" IsHitTestVisible="False" />
           <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="Center" />
           <Border Name="StateLayer" Background="{TemplateBinding Foreground}" Opacity="0" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False">
-            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
+            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Border.Transitions>
           </Border>
           <Canvas Name="RippleHost" ClipToBounds="True" IsHitTestVisible="False" />
         </Grid>
@@ -152,7 +152,7 @@
   <!-- 按下与松开走不同时长：:pressed 期间覆盖成 83ms，松开后回落到基类的 167ms -->
   <Style Selector="Button:pressed">
     <Setter Property="Transitions">
-      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions>
+      <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /><DoubleTransition Property="Opacity" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions>
     </Setter>
   </Style>
   <!-- 焦点环一律瞬时：键盘 Tab 时若淡入，会感觉系统在追我 -->
@@ -207,7 +207,7 @@
   <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
   <Style Selector="ListBoxItem">
     <Setter Property="Padding" Value="12" /><Setter Property="Margin" Value="0,3" /><Setter Property="CornerRadius" Value="8" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTiming.Faster}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
+    <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="{x:Static local:MotionTokens.Hover}" Easing="{x:Static local:MotionEasing.Linear}" /></Transitions></Setter>
   </Style>
   <Style Selector="ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
   <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /></Style>
@@ -241,7 +241,7 @@
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
           <ContentPresenter Name="HeaderContent" Background="Transparent" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
           <Path Name="Chevron" Grid.Column="1" Data="M 0,0 L 5,5 10,0" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.5" Width="10" Height="6" Stretch="Fill" VerticalAlignment="Center" RenderTransformOrigin="50%,50%" RenderTransform="rotate(0deg)">
-            <Path.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTiming.Fast}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions></Path.Transitions>
+            <Path.Transitions><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{x:Static local:MotionTokens.Release}"><TransformOperationsTransition.Easing><local:EntranceEasing /></TransformOperationsTransition.Easing></TransformOperationsTransition></Transitions></Path.Transitions>
           </Path>
         </Grid>
       </Border>

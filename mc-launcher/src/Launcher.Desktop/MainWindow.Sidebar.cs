@@ -81,7 +81,7 @@ public sealed partial class MainWindow
         // Keep the running transition so a second toggle reverses from the visible width.
         if (!fold) SidebarPanel.Transitions = null;
         else if (SidebarPanel.Transitions?.FirstOrDefault() is not DoubleTransition)
-            SidebarPanel.Transitions = [new DoubleTransition { Property = WidthProperty, Duration = MotionTiming.Normal, Easing = MotionEasing.Entrance }];
+            SidebarPanel.Transitions = [new DoubleTransition { Property = WidthProperty, Duration = MotionTokens.Sidebar, Easing = MotionEasing.Entrance }];
         SidebarPanel.Classes.Set("nav-minimal", state == SidebarState.Minimal);
         SidebarPanel.Classes.Set("nav-overlay", state == SidebarState.Overlay);
         Grid.SetColumnSpan(SidebarPanel, state == SidebarState.Overlay ? 2 : 1);
@@ -118,14 +118,14 @@ public sealed partial class MainWindow
                 SetSidebarLabels(false, MotionTiming.SidebarTextOutMs);
                 await Task.Delay(MotionTiming.SidebarTextOutMs, token);
                 ApplySidebarLayout(state);
-                await Task.Delay(MotionTiming.NormalMs - MotionTiming.SidebarTextOutMs, token);
+                await Task.Delay((int)MotionTokens.Sidebar.TotalMilliseconds - MotionTiming.SidebarTextOutMs, token);
             }
             else
             {
                 ApplySidebarLayout(state);
                 await Task.Delay(MotionTiming.SidebarTextDelayMs, token);
                 SetSidebarLabels(true, MotionTiming.SidebarTextInMs);
-                await Task.Delay(MotionTiming.NormalMs - MotionTiming.SidebarTextDelayMs, token);
+                await Task.Delay((int)MotionTokens.Sidebar.TotalMilliseconds - MotionTiming.SidebarTextDelayMs, token);
             }
             token.ThrowIfCancellationRequested();
             SetSidebarLabels(state == SidebarState.Expanded);

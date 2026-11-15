@@ -1,5 +1,15 @@
 # 方隅版本记录
 
+## 1.0.0-preview.10 · M5 页面动效
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.10)。
+
+- 统一页面、侧栏、文字和基础按钮的动效时长。
+- 页面切换增加旧页 110ms 上移淡出与新页 200ms 淡入；实色背景托底，完成后清除旧页。
+- 快速往返复用已有页面，保留筛选和滚动；中途关闭动画、卸载和最小化还原均可恢复。
+- 游戏库首次可见模块使用 220ms / 40ms 交错入场，启动入口始终可用。完整首页的七段业务布局随 M6 接入。
+- 通过页面、侧栏、标题栏、核心业务及桌面回归；本批为 M5 阶段预览，M6–M9 继续推进。
+
 ## 1.0.0-preview.9 · M4 侧边栏交互
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.9)。

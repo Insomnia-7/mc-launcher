@@ -40,6 +40,7 @@ internal static class Program
         }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--page-motion-native"))return ShellNativeChecks.Start(root, pageMotion: true);
         if(args.Contains("--sidebar-native"))return ShellNativeChecks.Start(root, sidebar: true);
         if(args.Contains("--shell-native"))return ShellNativeChecks.Start(root);
         if(args.Contains("--gpu-native"))return GpuPreviewChecks.Start(root);
@@ -94,6 +95,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--page-motion")){PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("页面动效无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} page motion checks passed");return 0;}
             if(args.Contains("--sidebar")){SidebarUiChecks.Run(model,window,Pump,Check,Capture,Click,data);Check("侧边栏无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} sidebar checks passed");return 0;}
             if(args.Contains("--shell")){ShellUiChecks.Run(model,window,Pump,Check,Capture,Click,data,root);Check("标题栏与主题无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} shell checks passed");return 0;}
             if(args.Contains("--multiplayer")){MultiplayerUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture);Check("联机页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} multiplayer UI checks passed");return 0;}
@@ -222,9 +224,9 @@ internal static class Program
             for(var i=0;i<8;i++) { model.IsInstanceSection=!model.IsInstanceSection; Pump(12); }
             model.IsInstanceSection=true; Pump(350);
             Check("开启动画时快速往返切页仍显示当前页面", Find<Button>("LaunchButton").IsEffectivelyVisible && Find<Button>("LaunchButton").IsEffectivelyEnabled);
-            // 切页是瞬时换内容：任何时候内容区只能挂着当前页，不允许残留上一页或叠页。
+            // 过渡期间最多两页，结束后只挂当前页。
             {
-                var host = Find<ContentControl>("PageHost");
+                var host = Find<Launcher.Desktop.Controls.AnimatedContentHost>("PageHost");
                 var pageTypes = new[] { "LibraryView", "DiscoverView", "ExperienceView", "PreferencesView", "GameDetailView", "MultiplayerView" };
                 int AttachedPageCount() => window.GetVisualDescendants().OfType<Control>()
                     .Count(c => pageTypes.Contains(c.GetType().Name));
@@ -238,12 +240,12 @@ internal static class Program
                 var attached = AttachedPageCount();
                 Check($"快速连续切页后只挂当前页（页面实例 {attached} 个）",
                     attached == 1 && host.Content is Launcher.Desktop.Views.LibraryView && Math.Abs(host.Opacity - 1) < 0.01);
-                Check("切页容器不参与透明度动画", host.Opacity >= 0.99);
+                Check("实色切页底层不参与透明度动画", host.Opacity >= 0.99);
 
                 model.OpenAppearanceCommand.Execute(null); Pump(80);
-                Check("切到设置后立刻只挂设置页", AttachedPageCount() == 1 && host.Content is Launcher.Desktop.Views.PreferencesView);
+                Check("切到设置时最多挂两页", AttachedPageCount() <= 2 && host.Content is Launcher.Desktop.Views.PreferencesView);
                 model.ShowInstancesCommand.Execute(null); Pump(80);
-                Check("切回游戏库后立刻只挂游戏库", AttachedPageCount() == 1 && host.Content is Launcher.Desktop.Views.LibraryView);
+                Check("切回游戏库时最多挂两页", AttachedPageCount() <= 2 && host.Content is Launcher.Desktop.Views.LibraryView);
             }
 
             model.OpenAppearanceCommand.Execute(null); model.CloseAppearanceCommand.Execute(null); model.OpenAccountsCommand.Execute(null); Pump(250);
