@@ -104,9 +104,9 @@ internal static class Program
             if(args.Contains("--mod-workbench")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);Check("模组工作台无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} mod workbench checks passed");return 0;}
             if(args.Contains("--legacy-theme"))
             {
-                Check("旧彩色主题迁移为日间白", model.IsLightTheme && model.SelectedTheme?.Id=="glacier" && model.ThemeChoices.Count==1);
+                Check("旧彩色主题迁移为深色主题", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);
                 var saved=Launcher.Application.Settings.AppearanceStore.Read(data);
-                Check("迁移保存日间白并清除旧配色", saved.ThemeId=="glacier" && saved.CustomTheme is null);
+                Check("迁移保存深色主题并清除旧配色", saved.ThemeId=="aurora" && saved.CustomTheme is null);
                 Check("迁移保留其他外观偏好", saved.MotionMode=="off" && saved.WallpaperOpacity==0.35);
                 Check("旧主题迁移后无绑定错误", log.Errors.Count==0);
                 return 0;
@@ -147,8 +147,8 @@ internal static class Program
                 Check("真实项目无绑定错误",log.Errors.Count==0);return 0;
             }
             Check("真实版本目录加载", model.Instances.Count == 3 && model.SelectedInstance is not null);
-            Check("外观仅提供日间白", model.ThemeChoices.Count==1 && model.ThemeChoices.Select(t=>t.Name).SequenceEqual(new[]{"日间 · 白"}));
-            Check("全部主题色均为灰阶", model.ThemeChoices.SelectMany(t=>t.Definition.Colors.Values).Select(Color.Parse).All(c=>c.R==c.G && c.G==c.B));
+            Check("外观提供深浅双主题", model.ThemeChoices.Count==2 && model.ThemeChoices.Select(t=>t.Id).SequenceEqual(new[]{"aurora","glacier"}));
+            Check("双主题均含非灰阶强调色", model.ThemeChoices.Select(t=>Color.Parse(t.Definition.Colors["AccentBrush"])).All(c=>c.R!=c.G || c.G!=c.B));
             Check("首页构造不联网", http.Requests == 0);
             // 底栏精简：默认「就绪」不占位，右下角 JAVA EDITION 已移除
             Check("默认状态不显示底部状态行", !model.HasStatusText);
@@ -180,7 +180,7 @@ internal static class Program
             Check("网络诊断快捷入口仍打开统一设置的网络选项", model.IsNetworkOpen && Find<Border>("PreferencesSurface").IsEffectivelyVisible && model.ProxyModeIndex==1);
             Click(Find<Button>("AppearanceSettingsTab"));
             Check("网络返回外观时仅显示一个设置面板", model.IsAppearanceOpen && !model.IsNetworkOpen && model.IsPreferencesOpen);
-            Check("主题列表只有日间白且已写盘", model.ThemeChoices.Select(t => t.Id).SequenceEqual(new[]{"glacier"})
+            Check("主题列表提供深浅双主题且已写盘", model.ThemeChoices.Select(t => t.Id).SequenceEqual(new[]{"aurora","glacier"})
                 && File.ReadAllText(Path.Combine(data, "appearance.json")).Contains("glacier"));
             Capture("appearance"); model.CloseAppearanceCommand.Execute(null); Pump(50); Capture("home-dark");
             if(OperatingSystem.IsWindows())
@@ -320,7 +320,7 @@ internal static class Program
             var dangerOk = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("danger-solid"));
             Check("删除版本的确认框弹出且确认按钮带危险样式", model.IsConfirmOpen && dangerOk is not null && dangerOk.Content as string == "删除");
             Check("删除确认按钮红底白字",
-                dangerOk!.Background is ISolidColorBrush redFill && redFill.Color == Color.Parse("#C42B1C")
+                dangerOk!.Background is ISolidColorBrush redFill && redFill.Color == ((ISolidColorBrush)Avalonia.Application.Current!.Resources["DangerFillBrush"]!).Color
                 && dangerOk.Foreground is ISolidColorBrush whiteText && whiteText.Color == Colors.White);
             Capture("confirm-delete-danger");
             model.ConfirmCancelCommand.Execute(null); Pump(120);
@@ -334,7 +334,7 @@ internal static class Program
             ToggleButton VisibleSidebarToggle() => window.GetVisualDescendants().OfType<ToggleButton>()
                 .First(t => t.Name is "SidebarToggle" or "SidebarToggleCollapsed" && t.IsEffectivelyVisible);
             var sidebarToggle = Find<ToggleButton>("SidebarToggle");
-            Check("侧边栏默认展开约 236px", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 236) < 1);
+            Check("侧边栏默认展开约 240px", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 240) < 1);
             var navText = Find<StackPanel>("SidebarNavText");
             // 必须用真实点击驱动 ToggleButton：代码直接赋 IsChecked 绕过了 Toggle()/Command 调用序列，
             // 测不出「TwoWay 绑定 + Command 双重翻转」这种 blocker（大纲 13.3-1/2）。
@@ -363,7 +363,7 @@ internal static class Program
             var navCenter = libraryNav.TranslatePoint(new Point(libraryNav.Bounds.Width / 2, libraryNav.Bounds.Height / 2), window)!.Value;
             Check("收起后导航图标仍可点击", navCenter.X > 0 && navCenter.X < sidebar.Bounds.Width + 40);
             Click(VisibleSidebarToggle()); Pump(350);
-            Check("真实点击再次展开恢复宽度且文字可见", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 236) < 1 && navText.Opacity > 0.9);
+            Check("真实点击再次展开恢复宽度且文字可见", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 240) < 1 && navText.Opacity > 0.9);
             Check("真实点击状态写入外观设置并被读回", !Launcher.Application.Settings.AppearanceStore.Read(data).SidebarCollapsed);
             Check("收起态导航项提供 ToolTip", ToolTip.GetTip(Find<Button>("LibraryNav")) as string == "游戏库");
 
@@ -373,20 +373,20 @@ internal static class Program
             Check("窄窗口自动收起为 Minimal 态", !sidebar.IsEffectivelyVisible && hamburger.IsEffectivelyVisible);
             Capture("home-minimal");
             Click(hamburger); Pump(280);
-            Check("汉堡键展开 Overlay 浮层侧栏", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-236)<1 && Find<Border>("SidebarScrim").IsEffectivelyVisible);
+            Check("汉堡键展开 Overlay 浮层侧栏", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-240)<1 && Find<Border>("SidebarScrim").IsEffectivelyVisible);
             Capture("home-overlay");
             var scrimPoint=new Point(window.ClientSize.Width-80,window.ClientSize.Height-80);
             window.MouseMove(scrimPoint); window.MouseDown(scrimPoint,MouseButton.Left); Pump(40); window.MouseUp(scrimPoint,MouseButton.Left); Pump(220);
             Check("点遮罩收起 Overlay 浮层", !sidebar.IsEffectivelyVisible && !Find<Border>("SidebarScrim").IsEffectivelyVisible);
             window.Width=1180; window.Height=800; Pump(260);
-            Check("恢复宽窗口回到 Expanded 态", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-236)<1);
+            Check("恢复宽窗口回到 Expanded 态", sidebar.IsEffectivelyVisible && Math.Abs(sidebar.Width-240)<1);
             // 共享蓝色指示条：随 ShellPage 平滑移动（大纲 7）
             var indicator = Find<Border>("NavIndicator");
             Check("首次进入游戏库指示条落位显示", indicator.IsVisible);
             var list = Find<StackPanel>("NavList");
             double IndicatorY() => (indicator.RenderTransform as TranslateTransform)?.Y ?? double.NaN;
             var beforeY = IndicatorY();
-            Check("指示条使用蓝色", indicator.Background is ISolidColorBrush b && b.Color == Color.Parse("#4C8DFF"));
+            Check("指示条使用强调色", indicator.Background is ISolidColorBrush b && b.Color == ((ISolidColorBrush)Avalonia.Application.Current!.Resources["NavAccentBrush"]!).Color);
             Check("指示条对准游戏库", Math.Abs(beforeY - Find<Button>("LibraryNav").TranslatePoint(new Point(0, 0), list)!.Value.Y - (Find<Button>("LibraryNav").Bounds.Height - indicator.Height) / 2) < 1);
             Find<Button>("MultiplayerNav").Command?.Execute(null); Pump(450);
             Check("切换到联机页指示条平滑移动到新位置",
