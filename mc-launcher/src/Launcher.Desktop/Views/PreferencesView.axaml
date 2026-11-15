@@ -1,173 +1,202 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:instances="using:Launcher.Application.Instances" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.PreferencesView">
-  <Border x:Name="PreferencesSurface" Classes="card" Padding="24">
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.PreferencesView" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:net="using:Launcher.Application.Multiplayer" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:instances="using:Launcher.Application.Instances">
+  <Border x:Name="PreferencesSurface" Classes="" Padding="0">
+    <Grid RowDefinitions="Auto,*" RowSpacing="24">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="4">
-          <TextBlock Text="设置" Classes="heading"/>
-          <TextBlock Text="调好外观，畅快连接。" Classes="muted"/>
+          <TextBlock Text="设置" Classes="page-title" />
+          <TextBlock Text="外观、存储和启动器偏好。" Classes="muted" />
         </StackPanel>
         <Button Classes="quiet" Command="{Binding CloseTopOverlayCommand}" Width="32" Height="32" MinHeight="32" Padding="7" HorizontalContentAlignment="Center" VerticalAlignment="Top" ToolTip.Tip="关闭设置" AutomationProperties.Name="关闭设置">
-          <icons:UiIcon Kind="ActionClose" Foreground="{Binding $parent[Button].Foreground}"/>
+          <icons:UiIcon Kind="ActionClose" Foreground="{Binding $parent[Button].Foreground}" />
         </Button>
       </Grid>
-      <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="4">
-        <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="4">
-          <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="外观">
-            <icons:IconLabel Icon="ActionSettings" Text="外观"/>
+      <Grid Grid.Row="1" ColumnDefinitions="148,*" ColumnSpacing="24" x:Name="PreferencesBody">
+        <StackPanel Spacing="4">
+          <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Left" AutomationProperties.Name="外观" HorizontalAlignment="Stretch">
+            <icons:IconLabel Icon="ActionSettings" Text="外观" />
           </Button>
-          <Button x:Name="NetworkSettingsTab" Grid.Column="1" Classes="nav" Classes.active="{Binding IsNetworkSettings}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Center" AutomationProperties.Name="网络">
-            <icons:IconLabel Icon="ActionGlobe" Text="网络"/>
+          <Button x:Name="NetworkSettingsTab" Classes="nav" Classes.active="{Binding IsNetworkSettings}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Left" AutomationProperties.Name="网络" HorizontalAlignment="Stretch">
+            <icons:IconLabel Icon="ActionGlobe" Text="网络" />
           </Button>
-          <Button x:Name="StorageSettingsTab" Grid.Column="2" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Center"/>
-          <Button x:Name="LauncherUpdateSettingsTab" Grid.Column="3" Classes="nav" Classes.active="{Binding ShowsLauncherUpdates}" Command="{Binding OpenLauncherUpdatesCommand}" Content="关于与更新" HorizontalContentAlignment="Center"/>
-          <Button x:Name="SettingsSyncTab" Grid.Column="4" Classes="nav" Classes.active="{Binding ShowsSettingsSync}" Command="{Binding OpenSettingsSyncCommand}" Content="游戏同步" HorizontalContentAlignment="Center"/>
-        </Grid>
-      </Border>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-        <StackPanel Spacing="16">
-          <StackPanel Spacing="8">
-            <TextBlock Text="主题模式" FontWeight="SemiBold"/>
-            <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="4">
-              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                <Button x:Name="ThemeModeDarkButton" Classes="nav" Classes.active="{Binding IsDarkModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="dark" Content="深色模式" HorizontalContentAlignment="Center"/>
-                <Button x:Name="ThemeModeLightButton" Grid.Column="1" Classes="nav" Classes.active="{Binding IsLightModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="light" Content="浅色模式" HorizontalContentAlignment="Center"/>
-                <Button x:Name="ThemeModeSystemButton" Grid.Column="2" Classes="nav" Classes.active="{Binding IsSystemModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="system" Content="跟随系统" HorizontalContentAlignment="Center"/>
-              </Grid>
-            </Border>
-          </StackPanel>
-          <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" MaxHeight="230">
-            <ListBox.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel/>
-              </ItemsPanelTemplate>
-            </ListBox.ItemsPanel>
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:ThemeChoice">
-                <StackPanel Width="128" Spacing="8">
-                  <Border CornerRadius="12" Height="46" Background="{Binding Swatch}" BorderBrush="{Binding Accent}" BorderThickness="1">
-                    <Border Width="28" Height="6" CornerRadius="3" Background="{Binding Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                  </Border>
-                  <TextBlock Text="{Binding Name}" FontSize="12" HorizontalAlignment="Center"/>
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-          <Grid ColumnDefinitions="*,12,*">
-            <Button Command="{Binding ImportWallpaperCommand}" AutomationProperties.Name="导入壁纸">
-              <icons:IconLabel Icon="ActionImport" Text="导入壁纸" Foreground="{Binding $parent[Button].Foreground}"/>
-            </Button>
-            <Button Grid.Column="2" Command="{Binding RemoveWallpaperCommand}" AutomationProperties.Name="恢复主题背景">
-              <icons:IconLabel Icon="ActionRefresh" Text="恢复主题背景" Foreground="{Binding $parent[Button].Foreground}"/>
-            </Button>
-          </Grid>
-          <StackPanel Spacing="6">
-            <TextBlock Text="壁纸显示强度" Classes="muted"/>
-            <Slider Value="{Binding WallpaperOpacity}" Minimum="0" Maximum="0.85" IsEnabled="{Binding CanEditAppearance}"/>
-          </StackPanel>
-          <StackPanel Spacing="7">
-            <TextBlock Text="动画" Classes="muted"/>
-            <ComboBox x:Name="MotionChoice" ItemsSource="{Binding MotionChoices}" SelectedItem="{Binding SelectedMotion}"/>
-          </StackPanel>
-          <TextBlock Text="{Binding AppearanceHint}" Classes="muted" TextWrapping="Wrap"/>
-          <Button Command="{Binding CloseAppearanceCommand}" HorizontalAlignment="Right" Classes="primary" AutomationProperties.Name="完成">
-            <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}"/>
-          </Button>
+          <Button x:Name="StorageSettingsTab" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
+          <Button x:Name="LauncherUpdateSettingsTab" Classes="nav" Classes.active="{Binding ShowsLauncherUpdates}" Command="{Binding OpenLauncherUpdatesCommand}" Content="关于与更新" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
+          <Button x:Name="SettingsSyncTab" Classes="nav" Classes.active="{Binding ShowsSettingsSync}" Command="{Binding OpenSettingsSyncCommand}" Content="游戏同步" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
         </StackPanel>
-      </ScrollViewer>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding IsNetworkSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-        <StackPanel Spacing="16">
-          <TextBlock Text="连接方式" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap"/>
-          <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}"/>
-          <TextBox Text="{Binding ProxyAddress}" PlaceholderText="http://127.0.0.1:7890" IsVisible="{Binding IsCustomProxy}"/>
-          <TextBlock Text="{Binding NetworkHint}" Classes="muted" TextWrapping="Wrap"/>
-          <Grid ColumnDefinitions="*,Auto">
-            <Button Command="{Binding CloseNetworkCommand}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
-              <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
-            </Button>
-            <Button Grid.Column="1" Classes="primary" Command="{Binding SaveNetworkCommand}" AutomationProperties.Name="保存">
-              <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}"/>
-            </Button>
-          </Grid>
-        </StackPanel>
-      </ScrollViewer>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsLauncherUpdates}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-        <StackPanel Spacing="16">
-          <TextBlock Text="方隅" FontSize="24" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding LauncherCurrentVersion, StringFormat='当前版本：{0}'}" Classes="muted"/>
-          <CheckBox x:Name="AutomaticLauncherUpdateToggle" Content="启动后在后台检查更新" IsChecked="{Binding AutomaticLauncherUpdates}"/>
-          <TextBlock Text="只在首屏显示后检查；发现新版会提示，由你确认后下载安装。" Classes="muted" TextWrapping="Wrap"/>
-          <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Padding="18">
-            <StackPanel Spacing="12">
-              <TextBlock x:Name="LauncherUpdateStatus" Text="{Binding UpdateText}" TextWrapping="Wrap" FontSize="15"/>
-              <TextBlock Text="{Binding LauncherUpdateCheckedAt, StringFormat='最近检查：{0}'}" Classes="muted"/>
-              <StackPanel IsVisible="{Binding HasUpdate}" Spacing="6">
-                <TextBlock Text="{Binding LauncherUpdateVersion, StringFormat='新版本：{0}'}" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding LauncherUpdateSize, StringFormat='下载大小：{0}'}" Classes="muted"/>
-                <TextBlock Text="更新说明" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap"/>
+        <Grid Grid.Column="1">
+          <ScrollViewer IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="主题模式" FontWeight="SemiBold" />
+                <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="4">
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                    <Button x:Name="ThemeModeDarkButton" Classes="nav" Classes.active="{Binding IsDarkModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="dark" Content="深色模式" HorizontalContentAlignment="Center" />
+                    <Button x:Name="ThemeModeLightButton" Grid.Column="1" Classes="nav" Classes.active="{Binding IsLightModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="light" Content="浅色模式" HorizontalContentAlignment="Center" />
+                    <Button x:Name="ThemeModeSystemButton" Grid.Column="2" Classes="nav" Classes.active="{Binding IsSystemModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="system" Content="跟随系统" HorizontalContentAlignment="Center" />
+                  </Grid>
+                </Border>
               </StackPanel>
-              <ProgressBar IsVisible="{Binding IsUpdating}" Value="{Binding ProgressPercent}" Height="4"/>
-              <WrapPanel>
-                <Button x:Name="CheckLauncherUpdateButton" Command="{Binding CheckUpdateCommand}" Content="检查更新" IsEnabled="{Binding CanCheckLauncherUpdate}" Margin="0,0,8,8"/>
-                <Button x:Name="InstallLauncherUpdateButton" Command="{Binding ConfirmLauncherUpdateCommand}" Classes="primary" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding CanInstallLauncherUpdate}" Margin="0,0,8,8"><TextBlock Text="下载并重启更新" Foreground="{Binding $parent[Button].Foreground}"/></Button>
-                <Button x:Name="CancelLauncherUpdateButton" Command="{Binding CancelLauncherUpdateCommand}" Content="取消下载" IsVisible="{Binding IsUpdating}" Margin="0,0,8,8"/>
-                <Button Command="{Binding OpenLauncherReleasePageCommand}" Content="打开发布页" Classes="quiet" Margin="0,0,0,8"/>
-              </WrapPanel>
-            </StackPanel>
-          </Border>
-          <TextBlock Text="{Binding LauncherUpdatePreviousResult}" TextWrapping="Wrap"/>
-          <TextBlock Text="Windows、Linux 与 macOS 安装包支持校验后替换并重启。macOS 请先把应用移出磁盘映像或下载临时目录；安装位置需要可写。0.6 及更早版本需先手动升级一次。" Classes="muted" TextWrapping="Wrap"/>
-        </StackPanel>
-      </ScrollViewer>
-      <ScrollViewer Grid.Row="2" IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-        <StackPanel Spacing="16">
-          <Grid ColumnDefinitions="*,Auto"><TextBlock Text="存储管理" FontSize="20" FontWeight="SemiBold"/><Button x:Name="ScanStorageButton" Grid.Column="1" Command="{Binding ScanStorageCommand}" Content="重新扫描" IsEnabled="{Binding CanManageStorage}"/></Grid>
-          <ProgressBar IsVisible="{Binding StorageBusy}" IsIndeterminate="True" Height="3"/>
-          <Button Command="{Binding CancelStorageScanCommand}" Content="停止扫描" IsVisible="{Binding StorageBusy}" HorizontalAlignment="Left"/>
-          <TextBlock Text="{Binding LocationSummary}" TextWrapping="Wrap"/>
-          <WrapPanel IsEnabled="{Binding !IsBusy}">
-            <Button Command="{Binding ChooseGameRootCommand}" Content="选择游戏位置" Margin="0,0,8,8"/>
-            <Button Command="{Binding UsePortableGameRootCommand}" Content="使用程序旁的游戏库" Margin="0,0,8,8"/>
-            <Button Command="{Binding CopyCurrentLibraryCommand}" Content="迁移当前游戏库…" Margin="0,0,8,8"/>
-            <Button Command="{Binding MoveLauncherDataCommand}" Content="迁移启动器数据…" Margin="0,0,8,8"/>
-            <Button Command="{Binding ManageStoredGamesCommand}" Content="管理游戏版本" Margin="0,0,8,8"/>
-          </WrapPanel>
-          <TextBlock Text="切换游戏位置不会搬移文件。迁移启动器数据包含 Java、缓存、账号配置与备份，游戏库的位置单独保留。" Classes="muted" TextWrapping="Wrap"/>
-          <TextBlock Text="{Binding DataMoveHint}" Classes="optional" TextWrapping="Wrap"/>
-          <Button Command="{Binding RestartForDataMoveCommand}" Content="退出并重新打开方隅" IsVisible="{Binding DataRestartRequired}" HorizontalAlignment="Left"/>
-          <WrapPanel>
-            <Button Command="{Binding AutoDetectGameRootCommand}" Content="查找已有游戏库" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}"/>
-            <Button Command="{Binding SearchLibraryFolderCommand}" Content="选择文件夹查找…" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}"/>
-            <Button Command="{Binding CancelLibrarySearchCommand}" Content="停止查找" Margin="0,0,8,8" IsVisible="{Binding IsToolBusy}"/>
-            <Button Command="{Binding CancelLocationCopyCommand}" Content="取消复制并清理" IsVisible="{Binding IsBusy}"/>
-          </WrapPanel>
-          <StackPanel IsVisible="{Binding ShowsLibraryDiscovery}" Spacing="10">
-            <TextBlock Text="{Binding LibraryDiscoveryHint}" TextWrapping="Wrap"/>
-            <ComboBox ItemsSource="{Binding LibraryCandidates}" SelectedItem="{Binding SelectedLibraryCandidate}" IsEnabled="{Binding !IsBusy}">
-              <ComboBox.ItemTemplate><DataTemplate x:DataType="instances:GameLibraryCandidate"><StackPanel Spacing="4"><TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Summary}" Classes="muted"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock Text="要复制的版本与原运行目录（请先打开核对存档和模组）" Classes="muted" TextWrapping="Wrap"/>
-            <ComboBox ItemsSource="{Binding ExternalVersions}" SelectedItem="{Binding ExternalVersion}" IsEnabled="{Binding !IsBusy}"/>
-            <ComboBox ItemsSource="{Binding ExternalRuntimes}" SelectedItem="{Binding ExternalRuntime}" PlaceholderText="请选择原运行目录" IsEnabled="{Binding !IsBusy}"/>
-            <WrapPanel IsEnabled="{Binding !IsBusy}">
-              <Button Command="{Binding OpenExternalRuntimeCommand}" Content="打开原运行目录" Margin="0,0,8,8"/>
-              <Button Command="{Binding CopyExternalLibraryCommand}" Content="复制导入到空文件夹…" IsEnabled="{Binding CanCopyExternalLibrary}" Margin="0,0,8,8"/>
-              <Button Command="{Binding UseFoundLibraryCommand}" Content="切换方隅游戏库" IsEnabled="{Binding CanUseFoundLibrary}" Margin="0,0,8,8"/>
-            </WrapPanel>
-          </StackPanel>
-          <TextBlock Text="{Binding StorageHint}" TextWrapping="Wrap"/>
-          <ItemsControl ItemsSource="{Binding StorageAreas}" IsEnabled="{Binding CanManageStorage}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="experience:StorageArea">
-            <Border Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,10">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                <StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="{Binding Summary}"/><TextBlock Text="{Binding Path}" Classes="muted" TextWrapping="Wrap"/><TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"/><Expander Header="跳过项详情（最多显示 50 项）" IsVisible="{Binding ShowsSkipped}"><ItemsControl ItemsSource="{Binding SkippedPaths}"/></Expander></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center"><Button Content="打开目录" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenStorageAreaCommand}" CommandParameter="{Binding}"/><Button Content="清理…" VerticalAlignment="Center" IsVisible="{Binding CanClean}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CleanStorageCommand}" CommandParameter="{Binding}"/></StackPanel>
+              <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" MaxHeight="230">
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ThemeChoice">
+                    <StackPanel Width="128" Spacing="8">
+                      <Border CornerRadius="12" Height="46" Background="{Binding Swatch}" BorderBrush="{Binding Accent}" BorderThickness="1">
+                        <Border Width="28" Height="6" CornerRadius="3" Background="{Binding Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding Name}" FontSize="12" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <Grid ColumnDefinitions="*,12,*">
+                <Button Command="{Binding ImportWallpaperCommand}" AutomationProperties.Name="导入壁纸">
+                  <icons:IconLabel Icon="ActionImport" Text="导入主页图片" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+                <Button Grid.Column="2" Command="{Binding RemoveWallpaperCommand}" AutomationProperties.Name="恢复主题背景">
+                  <icons:IconLabel Icon="ActionRefresh" Text="恢复默认插图" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
               </Grid>
-            </Border>
-          </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-        </StackPanel>
-      </ScrollViewer>
-      <ContentControl x:Name="SettingsSyncHost" Grid.Row="2" IsVisible="{Binding ShowsSettingsSync}"/>
+              <StackPanel Spacing="6">
+                <TextBlock Text="主页图片显示强度" Classes="muted" />
+                <Slider Value="{Binding WallpaperOpacity}" Minimum="0" Maximum="0.85" IsEnabled="{Binding CanEditAppearance}" />
+              </StackPanel>
+              <StackPanel Spacing="7">
+                <TextBlock Text="动画" Classes="muted" />
+                <ComboBox x:Name="MotionChoice" ItemsSource="{Binding MotionChoices}" SelectedItem="{Binding SelectedMotion}" />
+              </StackPanel>
+              <TextBlock Text="{Binding AppearanceHint}" Classes="muted" TextWrapping="Wrap" />
+              <Button Command="{Binding CloseAppearanceCommand}" HorizontalAlignment="Right" Classes="primary" AutomationProperties.Name="完成">
+                <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}" />
+              </Button>
+            </StackPanel>
+          </ScrollViewer>
+          <ScrollViewer IsVisible="{Binding IsNetworkSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <TextBlock Text="连接方式" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}" />
+              <TextBox Text="{Binding ProxyAddress}" PlaceholderText="http://127.0.0.1:7890" IsVisible="{Binding IsCustomProxy}" />
+              <TextBlock Text="{Binding NetworkHint}" Classes="muted" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto">
+                <Button Command="{Binding CloseNetworkCommand}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
+                  <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+                <Button Grid.Column="1" Classes="primary" Command="{Binding SaveNetworkCommand}" AutomationProperties.Name="保存">
+                  <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+          <ScrollViewer IsVisible="{Binding ShowsLauncherUpdates}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <TextBlock Text="方隅" FontSize="24" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding LauncherCurrentVersion, StringFormat='当前版本：{0}'}" Classes="muted" />
+              <CheckBox x:Name="AutomaticLauncherUpdateToggle" Content="启动后在后台检查更新" IsChecked="{Binding AutomaticLauncherUpdates}" />
+              <TextBlock Text="只在首屏显示后检查；发现新版会提示，由你确认后下载安装。" Classes="muted" TextWrapping="Wrap" />
+              <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Padding="18">
+                <StackPanel Spacing="12">
+                  <TextBlock x:Name="LauncherUpdateStatus" Text="{Binding UpdateText}" TextWrapping="Wrap" FontSize="15" />
+                  <TextBlock Text="{Binding LauncherUpdateCheckedAt, StringFormat='最近检查：{0}'}" Classes="muted" />
+                  <StackPanel IsVisible="{Binding HasUpdate}" Spacing="6">
+                    <TextBlock Text="{Binding LauncherUpdateVersion, StringFormat='新版本：{0}'}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding LauncherUpdateSize, StringFormat='下载大小：{0}'}" Classes="muted" />
+                    <TextBlock Text="更新说明" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <ProgressBar IsVisible="{Binding IsUpdating}" Value="{Binding ProgressPercent}" Height="4" />
+                  <WrapPanel>
+                    <Button x:Name="CheckLauncherUpdateButton" Command="{Binding CheckUpdateCommand}" Content="检查更新" IsEnabled="{Binding CanCheckLauncherUpdate}" Margin="0,0,8,8" />
+                    <Button x:Name="InstallLauncherUpdateButton" Command="{Binding ConfirmLauncherUpdateCommand}" Classes="primary" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding CanInstallLauncherUpdate}" Margin="0,0,8,8">
+                      <TextBlock Text="下载并重启更新" Foreground="{Binding $parent[Button].Foreground}" />
+                    </Button>
+                    <Button x:Name="CancelLauncherUpdateButton" Command="{Binding CancelLauncherUpdateCommand}" Content="取消下载" IsVisible="{Binding IsUpdating}" Margin="0,0,8,8" />
+                    <Button Command="{Binding OpenLauncherReleasePageCommand}" Content="打开发布页" Classes="quiet" Margin="0,0,0,8" />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+              <TextBlock Text="{Binding LauncherUpdatePreviousResult}" TextWrapping="Wrap" />
+              <TextBlock Text="Windows、Linux 与 macOS 安装包支持校验后替换并重启。macOS 请先把应用移出磁盘映像或下载临时目录；安装位置需要可写。0.6 及更早版本需先手动升级一次。" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </ScrollViewer>
+          <ScrollViewer IsVisible="{Binding ShowsStorage}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="存储管理" FontSize="20" FontWeight="SemiBold" />
+                <Button x:Name="ScanStorageButton" Grid.Column="1" Command="{Binding ScanStorageCommand}" Content="重新扫描" IsEnabled="{Binding CanManageStorage}" />
+              </Grid>
+              <ProgressBar IsVisible="{Binding StorageBusy}" IsIndeterminate="True" Height="3" />
+              <Button Command="{Binding CancelStorageScanCommand}" Content="停止扫描" IsVisible="{Binding StorageBusy}" HorizontalAlignment="Left" />
+              <TextBlock Text="{Binding LocationSummary}" TextWrapping="Wrap" />
+              <WrapPanel IsEnabled="{Binding !IsBusy}">
+                <Button Command="{Binding ChooseGameRootCommand}" Content="选择游戏位置" Margin="0,0,8,8" />
+                <Button Command="{Binding UsePortableGameRootCommand}" Content="使用程序旁的游戏库" Margin="0,0,8,8" />
+                <Button Command="{Binding CopyCurrentLibraryCommand}" Content="迁移当前游戏库…" Margin="0,0,8,8" />
+                <Button Command="{Binding MoveLauncherDataCommand}" Content="迁移启动器数据…" Margin="0,0,8,8" />
+                <Button Command="{Binding ManageStoredGamesCommand}" Content="管理游戏版本" Margin="0,0,8,8" />
+              </WrapPanel>
+              <TextBlock Text="切换游戏位置不会搬移文件。迁移启动器数据包含 Java、缓存、账号配置与备份，游戏库的位置单独保留。" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding DataMoveHint}" Classes="optional" TextWrapping="Wrap" />
+              <Button Command="{Binding RestartForDataMoveCommand}" Content="退出并重新打开方隅" IsVisible="{Binding DataRestartRequired}" HorizontalAlignment="Left" />
+              <WrapPanel>
+                <Button Command="{Binding AutoDetectGameRootCommand}" Content="查找已有游戏库" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}" />
+                <Button Command="{Binding SearchLibraryFolderCommand}" Content="选择文件夹查找…" Margin="0,0,8,8" IsEnabled="{Binding !IsToolBusy}" />
+                <Button Command="{Binding CancelLibrarySearchCommand}" Content="停止查找" Margin="0,0,8,8" IsVisible="{Binding IsToolBusy}" />
+                <Button Command="{Binding CancelLocationCopyCommand}" Content="取消复制并清理" IsVisible="{Binding IsBusy}" />
+              </WrapPanel>
+              <StackPanel IsVisible="{Binding ShowsLibraryDiscovery}" Spacing="10">
+                <TextBlock Text="{Binding LibraryDiscoveryHint}" TextWrapping="Wrap" />
+                <ComboBox ItemsSource="{Binding LibraryCandidates}" SelectedItem="{Binding SelectedLibraryCandidate}" IsEnabled="{Binding !IsBusy}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="instances:GameLibraryCandidate">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Summary}" Classes="muted" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="要复制的版本与原运行目录（请先打开核对存档和模组）" Classes="muted" TextWrapping="Wrap" />
+                <ComboBox ItemsSource="{Binding ExternalVersions}" SelectedItem="{Binding ExternalVersion}" IsEnabled="{Binding !IsBusy}" />
+                <ComboBox ItemsSource="{Binding ExternalRuntimes}" SelectedItem="{Binding ExternalRuntime}" PlaceholderText="请选择原运行目录" IsEnabled="{Binding !IsBusy}" />
+                <WrapPanel IsEnabled="{Binding !IsBusy}">
+                  <Button Command="{Binding OpenExternalRuntimeCommand}" Content="打开原运行目录" Margin="0,0,8,8" />
+                  <Button Command="{Binding CopyExternalLibraryCommand}" Content="复制导入到空文件夹…" IsEnabled="{Binding CanCopyExternalLibrary}" Margin="0,0,8,8" />
+                  <Button Command="{Binding UseFoundLibraryCommand}" Content="切换方隅游戏库" IsEnabled="{Binding CanUseFoundLibrary}" Margin="0,0,8,8" />
+                </WrapPanel>
+              </StackPanel>
+              <TextBlock Text="{Binding StorageHint}" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding StorageAreas}" IsEnabled="{Binding CanManageStorage}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="experience:StorageArea">
+                    <Border Background="{DynamicResource FieldBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,10">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Spacing="5">
+                          <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Summary}" />
+                          <TextBlock Text="{Binding Path}" Classes="muted" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                          <Expander Header="跳过项详情（最多显示 50 项）" IsVisible="{Binding ShowsSkipped}">
+                            <ItemsControl ItemsSource="{Binding SkippedPaths}" />
+                          </Expander>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                          <Button Content="打开目录" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenStorageAreaCommand}" CommandParameter="{Binding}" />
+                          <Button Content="清理…" VerticalAlignment="Center" IsVisible="{Binding CanClean}" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CleanStorageCommand}" CommandParameter="{Binding}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+          <ContentControl x:Name="SettingsSyncHost" IsVisible="{Binding ShowsSettingsSync}" />
+        </Grid>
+      </Grid>
     </Grid>
   </Border>
 </UserControl>

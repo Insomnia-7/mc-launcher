@@ -100,7 +100,7 @@ public sealed partial class MainViewModel
         set => IsSidebarCollapsed = !value;
     }
 
-    public double SidebarWidth => IsSidebarCollapsed ? 72 : 240;
+    public double SidebarWidth => IsSidebarCollapsed ? 64 : 216;
 
     private void InitializeAppearance()
     {

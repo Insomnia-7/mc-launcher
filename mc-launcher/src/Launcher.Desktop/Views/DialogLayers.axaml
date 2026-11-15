@@ -1,58 +1,58 @@
-<UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns:motion="using:Launcher.Desktop" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:vm="using:Launcher.App.ViewModels" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience">
   <Grid>
     <icons:AnimatedDialog x:Name="SetupDialog" Classes="modal" IsOpen="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620">
         <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Spacing="15">
-            <TextBlock Text="开始你的 Minecraft" Classes="heading"/>
-            <TextBlock Text="选好版本与身份，其余交给启动器。" Classes="muted"/>
+            <TextBlock Text="开始你的 Minecraft" Classes="heading" />
+            <TextBlock Text="选好版本与身份，其余交给启动器。" Classes="muted" />
             <StackPanel Spacing="7" IsEnabled="{Binding CanEditSetup}">
-              <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap"/>
-              <TextBlock Text="游戏版本"/>
+              <TextBlock Text="{Binding GameRoot}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="游戏版本" />
               <ComboBox ItemsSource="{Binding SetupVersions}" SelectedItem="{Binding SetupVersion}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="versions:ManifestEntry">
-                    <TextBlock Text="{Binding Id}"/>
+                    <TextBlock Text="{Binding Id}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
               <Button Command="{Binding ReloadSetupVersionsCommand}" HorizontalAlignment="Left" Classes="quiet" AutomationProperties.Name="刷新版本列表">
-                <icons:IconLabel Icon="ActionRefresh" Text="刷新版本列表" Foreground="{Binding $parent[Button].Foreground}"/>
+                <icons:IconLabel Icon="ActionRefresh" Text="刷新版本列表" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
             </StackPanel>
             <Grid ColumnDefinitions="*,14,*" IsEnabled="{Binding CanEditSetup}">
               <StackPanel Spacing="7">
-                <TextBlock Text="内存（MB）"/>
-                <TextBox Text="{Binding SetupMemoryText}"/>
+                <TextBlock Text="内存（MB）" />
+                <TextBox Text="{Binding SetupMemoryText}" />
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="7">
-                <TextBlock Text="离线用户名"/>
-                <TextBox Text="{Binding SetupOfflineName}" IsReadOnly="{Binding HasAccount}"/>
+                <TextBlock Text="离线用户名" />
+                <TextBox Text="{Binding SetupOfflineName}" IsReadOnly="{Binding HasAccount}" />
               </StackPanel>
             </Grid>
-            <TextBlock Text="{Binding SetupIdentityText}" Classes="muted" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding SetupIdentityText}" Classes="muted" TextWrapping="Wrap" />
             <Button Command="{Binding OpenAccountsCommand}" HorizontalAlignment="Left" AutomationProperties.Name="选择 / 添加账号">
-              <icons:IconLabel Icon="ActionLogin" Text="选择 / 添加账号" Foreground="{Binding $parent[Button].Foreground}"/>
+              <icons:IconLabel Icon="ActionLogin" Text="选择 / 添加账号" Foreground="{Binding $parent[Button].Foreground}" />
             </Button>
-            <CheckBox Content="安装完成后启动游戏" IsChecked="{Binding SetupLaunchAfterInstall}"/>
-            <TextBlock Text="{Binding SetupError}" Classes="optional" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
-            <TextBlock Text="{Binding SetupStatus}" Classes="muted" TextWrapping="Wrap"/>
-            <ProgressBar IsVisible="{Binding IsSetupBusy}" Value="{Binding ProgressPercent}" Height="4"/>
+            <CheckBox Content="安装完成后启动游戏" IsChecked="{Binding SetupLaunchAfterInstall}" />
+            <TextBlock Text="{Binding SetupError}" Classes="optional" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SetupStatus}" Classes="muted" TextWrapping="Wrap" />
+            <ProgressBar IsVisible="{Binding IsSetupBusy}" Value="{Binding ProgressPercent}" Height="4" />
             <WrapPanel>
               <Button Command="{Binding ChooseGameRootCommand}" Margin="0,0,8,8" AutomationProperties.Name="选择游戏目录">
-                <icons:IconLabel Icon="ActionFolder" Text="选择游戏目录" Foreground="{Binding $parent[Button].Foreground}"/>
+                <icons:IconLabel Icon="ActionFolder" Text="选择游戏目录" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
               <Button Command="{Binding OpenNetworkCommand}" Margin="0,0,8,8" AutomationProperties.Name="网络设置">
-                <icons:IconLabel Icon="ActionGlobe" Text="网络设置" Foreground="{Binding $parent[Button].Foreground}"/>
+                <icons:IconLabel Icon="ActionGlobe" Text="网络设置" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
             </WrapPanel>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-              <Button Content="稍后设置" Command="{Binding CloseSetupCommand}" HorizontalAlignment="Left"/>
+              <Button Content="稍后设置" Command="{Binding CloseSetupCommand}" HorizontalAlignment="Left" />
               <Button Grid.Column="1" Command="{Binding CancelCommand}" IsVisible="{Binding IsSetupBusy}" AutomationProperties.Name="取消">
-                <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
+                <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
               <Button x:Name="InstallSetupButton" Grid.Column="2" Classes="primary" Command="{Binding InstallSetupCommand}" AutomationProperties.Name="一键安装">
-                <icons:IconLabel Icon="ActionCloudDownload" Text="一键安装" Foreground="{Binding $parent[Button].Foreground}"/>
+                <icons:IconLabel Icon="ActionCloudDownload" Text="一键安装" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
             </Grid>
           </StackPanel>
@@ -60,71 +60,81 @@
       </Border>
     </icons:AnimatedDialog>
     <icons:AnimatedDialog x:Name="AccountsDialog" Classes="modal" IsOpen="{Binding IsAccountsOpen}">
-      <Border Classes="modal-surface" Width="580" MaxHeight="620">
-        <ScrollViewer>
-          <StackPanel Spacing="16">
-            <TextBlock Text="游戏身份" Classes="heading"/>
-            <TextBlock Text="选择一个身份，用于下一次出发。" Classes="muted"/>
-            <ListBox ItemsSource="{Binding AccountChoices}" SelectedItem="{Binding SelectedAccountChoice}" IsEnabled="{Binding CanManageAccounts}" MaxHeight="220" AutomationProperties.Name="已保存的游戏身份">
-              <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:AccountChoice">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="5">
-                      <TextBlock Text="{Binding Title}" FontWeight="Medium"/>
-                      <TextBlock Text="{Binding Detail}" Classes="muted"/>
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Text="使用中" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsCurrent}" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                  </Grid>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
-            <StackPanel Spacing="7">
-              <TextBlock Text="离线用户名" Classes="muted"/>
-              <TextBox Text="{Binding OfflineName, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanManageAccounts}"/>
-            </StackPanel>
-            <TextBlock Text="{Binding AccountHint}" Classes="muted" TextWrapping="Wrap"/>
-            <TextBlock Text="{Binding LoginCode}" IsVisible="{Binding IsLoggingIn}" FontSize="24" Foreground="{DynamicResource AccentBrush}"/>
-            <TextBlock Text="{Binding LoginHint}" IsVisible="{Binding IsLoggingIn}" Classes="muted" TextWrapping="Wrap"/>
-            <WrapPanel>
-              <Button Classes="primary" Command="{Binding UseAccountCommand}" Margin="0,0,8,8" AutomationProperties.Name="使用此身份">
-                <icons:IconLabel Icon="ActionCheck" Text="使用此身份" Foreground="{Binding $parent[Button].Foreground}"/>
-              </Button>
-              <Button Command="{Binding LoginCommand}" Margin="0,0,8,8" AutomationProperties.Name="添加微软账号">
-                <icons:IconLabel Icon="ActionLogin" Text="添加微软账号" Foreground="{Binding $parent[Button].Foreground}"/>
-              </Button>
-              <Button Classes="danger" Command="{Binding RemoveAccountCommand}" Margin="0,0,8,8" AutomationProperties.Name="移除账号">
-                <icons:IconLabel Icon="ActionDelete" Text="移除账号" Foreground="{Binding $parent[Button].Foreground}"/>
-              </Button>
-              <Button Command="{Binding LoginCancelCommand}" IsVisible="{Binding IsLoggingIn}" Margin="0,0,8,8" AutomationProperties.Name="取消登录">
-                <icons:IconLabel Icon="ActionClose" Text="取消登录" Foreground="{Binding $parent[Button].Foreground}"/>
-              </Button>
-            </WrapPanel>
-            <Button Command="{Binding OpenWardrobeCommand}" Content="角色衣柜 · 皮肤与披风" HorizontalAlignment="Left"/>
-            <Button Command="{Binding CloseAccountsCommand}" HorizontalAlignment="Right" AutomationProperties.Name="完成">
-              <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}"/>
-            </Button>
+      <Border Classes="modal-surface" Width="580" MaxHeight="540" Padding="28">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
+          <StackPanel Spacing="6">
+            <TextBlock Text="账号与角色" Classes="heading" />
+            <TextBlock Text="选择用于启动 Minecraft 的账号。" Classes="muted" />
           </StackPanel>
-        </ScrollViewer>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16">
+              <ListBox ItemsSource="{Binding AccountChoices}" SelectedItem="{Binding SelectedAccountChoice}" IsEnabled="{Binding CanManageAccounts}" MaxHeight="220" AutomationProperties.Name="已保存的游戏身份">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AccountChoice">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="{Binding Title}" FontWeight="Medium" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="使用中" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsCurrent}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Spacing="7">
+                <TextBlock Text="离线用户名" Classes="muted" />
+                <TextBox Text="{Binding OfflineName, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanManageAccounts}" />
+              </StackPanel>
+              <TextBlock Text="{Binding AccountHint}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding LoginCode}" IsVisible="{Binding IsLoggingIn}" FontSize="24" Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="{Binding LoginHint}" IsVisible="{Binding IsLoggingIn}" Classes="muted" TextWrapping="Wrap" />
+              <WrapPanel>
+                <Button Command="{Binding LoginCommand}" Margin="0,0,8,8" AutomationProperties.Name="添加微软账号">
+                  <icons:IconLabel Icon="ActionLogin" Text="添加微软账号" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+                <Button Classes="danger" Command="{Binding RemoveAccountCommand}" Margin="0,0,8,8" AutomationProperties.Name="移除账号">
+                  <icons:IconLabel Icon="ActionDelete" Text="移除账号" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+                <Button Command="{Binding LoginCancelCommand}" IsVisible="{Binding IsLoggingIn}" Margin="0,0,8,8" AutomationProperties.Name="取消登录">
+                  <icons:IconLabel Icon="ActionClose" Text="取消登录" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+              </WrapPanel>
+              <Button Command="{Binding OpenWardrobeCommand}" Content="角色衣柜 · 皮肤与披风" HorizontalAlignment="Left" />
+            </StackPanel>
+          </ScrollViewer>
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Button Classes="primary" Command="{Binding UseAccountCommand}" Margin="0" AutomationProperties.Name="使用此身份" HorizontalAlignment="Left">
+              <icons:IconLabel Icon="ActionCheck" Text="使用此身份" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+            <Button Command="{Binding CloseAccountsCommand}" HorizontalAlignment="Right" AutomationProperties.Name="完成" Grid.Column="1">
+              <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+          </Grid>
+        </Grid>
       </Border>
     </icons:AnimatedDialog>
     <icons:AnimatedDialog x:Name="ConfirmDialog" Classes="modal" ZIndex="50" IsOpen="{Binding IsConfirmOpen}">
       <Border Classes="modal-surface" Width="540">
         <StackPanel Spacing="16">
-          <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap"/>
-          <TextBlock Text="{Binding ConfirmMessage}" TextWrapping="Wrap"/>
-          <TextBlock Text="{Binding ConfirmDetail}" Classes="muted" IsVisible="{Binding HasConfirmDetail}" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ConfirmMessage}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ConfirmDetail}" Classes="muted" IsVisible="{Binding HasConfirmDetail}" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto">
             <Button Command="{Binding ConfirmCancelCommand}" IsVisible="{Binding ConfirmShowCancel}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
-              <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}"/>
+              <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" />
             </Button>
-            <Button Grid.Column="1" Content="{Binding ConfirmOkText}" Command="{Binding ConfirmOkCommand}" Classes="primary" Classes.danger-solid="{Binding ConfirmIsDanger}"/>
+            <Button Grid.Column="1" Content="{Binding ConfirmOkText}" Command="{Binding ConfirmOkCommand}" Classes="primary" Classes.danger-solid="{Binding ConfirmIsDanger}" />
           </Grid>
         </StackPanel>
       </Border>
     </icons:AnimatedDialog>
     <icons:AnimatedDialog x:Name="RestartDialog" Classes="modal" IsOpen="{Binding DataRestartRequired}">
       <Border Classes="modal-surface" Width="560">
-        <StackPanel Spacing="18"><TextBlock Text="数据已迁移，请重新打开方隅" Classes="heading"/><TextBlock Text="{Binding DataMoveHint}" TextWrapping="Wrap"/><Button Classes="primary" Command="{Binding RestartForDataMoveCommand}" Content="退出方隅（请重新打开）"/></StackPanel>
+        <StackPanel Spacing="18">
+          <TextBlock Text="数据已迁移，请重新打开方隅" Classes="heading" />
+          <TextBlock Text="{Binding DataMoveHint}" TextWrapping="Wrap" />
+          <Button Classes="primary" Command="{Binding RestartForDataMoveCommand}" Content="退出方隅（请重新打开）" />
+        </StackPanel>
       </Border>
     </icons:AnimatedDialog>
   </Grid>

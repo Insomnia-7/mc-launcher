@@ -58,7 +58,6 @@
     <Setter Property="Background" Value="{DynamicResource BgBrush}" />
   </Style>
 
-  <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /><Setter Property="FontSize" Value="13" /></Style>
   <Style Selector="TextBlock.eyebrow"><Setter Property="FontSize" Value="10" /><Setter Property="LetterSpacing" Value="2" /><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
   <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="22" /><Setter Property="FontWeight" Value="SemiBold" /></Style>

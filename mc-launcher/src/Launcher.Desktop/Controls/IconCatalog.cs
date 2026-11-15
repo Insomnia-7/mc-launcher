@@ -9,6 +9,13 @@ internal static class IconCatalog
 {
     public static IReadOnlyDictionary<string,IconDefinition> Items { get; } = new Dictionary<string,IconDefinition>
     {
+        ["ResourceGame"] = new(24,true,[new("M12 3 L21 8 V17 L12 22 L3 17 V8 Z M3 8 L12 13 L21 8 M12 13 V22",null,null,1.75,1)]),
+        ["ResourceMod"] = new(24,true,[new("M5 4 H10 V7 A3 3 0 0 0 16 7 V4 H20 V10 H17 A3 3 0 0 0 17 16 H20 V20 H14 V17 A3 3 0 0 0 8 17 V20 H4 V14 H7 A3 3 0 0 0 7 8 H4 V4 Z",null,null,1.75,1)]),
+        ["ResourcePack"] = new(24,true,[new("M3 7 L12 3 L21 7 L12 11 Z M3 12 L12 16 L21 12 M3 17 L12 21 L21 17",null,null,1.75,1)]),
+        ["ResourceTexture"] = new(24,true,[new("M4 4 H20 V20 H4 Z M4 12 H20 M12 4 V20",null,null,1.75,1)]),
+        ["ResourceData"] = new(24,true,[new("M5 4 H19 V20 H5 Z M8 8 H16 M8 12 H16 M8 16 H13",null,null,1.75,1)]),
+        ["ResourceShader"] = new(24,true,[new("M8 12 A4 4 0 1 0 16 12 A4 4 0 1 0 8 12 M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 17 L19 19 M5 19 L7 17 M17 7 L19 5",null,null,1.75,1)]),
+        ["ActionMenu"] = new(24,true,[new("M5 6 H19 M5 12 H19 M5 18 H19",null,null,1.75,1)]),
         ["NavHome"] = new(24,true,[new("M3.8 10.7 L12 3.8 L20.2 10.7 M6 9.2 V20 H10 V14 H14 V20 H18 V9.2",null,null,1.75,1)]),
         ["NavVersions"] = new(24,true,[new("M12 3.6 L20.2 8 L12 12.4 L3.8 8 Z M3.8 8 V15.4 L12 19.8 V12.4 M20.2 8 V15.4 L12 19.8",null,null,1.75,1)]),
         ["NavDownload"] = new(24,true,[new("M4.4 15.6 V18.4 A1.6 1.6 0 0 0 6 20 H18 A1.6 1.6 0 0 0 19.6 18.4 V15.6 M12 4 V14.6 M8.2 10.9 L12 14.7 L15.8 10.9",null,null,1.75,1)]),

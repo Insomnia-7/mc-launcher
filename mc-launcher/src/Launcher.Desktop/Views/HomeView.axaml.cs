@@ -12,18 +12,29 @@ public sealed partial class HomeView : UserControl
     public HomeView()
     {
         InitializeComponent();
+        SizeChanged += (_, _) => UpdateLayoutMode();
         Loaded += async (_, _) =>
         {
             if (_entered) return;
             _entered = true;
             _entrance = new CancellationTokenSource();
-            var pageMark = (TopLevel.GetTopLevel(this) as Window)?.FindControl<TextBlock>("TitleEdition");
-            var stages = new List<Control>();
-            if (pageMark is not null) stages.Add(pageMark);
-            stages.AddRange([HomeHeroBanner, HomeQuickLaunchCard, HomeNetworkStatusCard, HomeInstancesCard, HomeShortcutsCard, HomeFooter]);
+            var stages = new List<Control> { HomeQuickLaunchCard, HomeInstancesCard, HomeShortcuts };
             await Motion.PlayStaggerSequenceAsync(stages, _entrance.Token);
         };
         Unloaded += (_, _) => { _entrance?.Cancel(); _entrance?.Dispose(); _entrance = null; };
+    }
+    private bool _runtimeOpen;
+    private void ToggleRuntime(object? sender, RoutedEventArgs e)
+    {
+        if (Bounds.Width < 880 && DataContext is MainViewModel model)
+        { model.OpenGameCommand.Execute(null); model.SelectDetailTabCommand.Execute("3"); return; }
+        _runtimeOpen = !_runtimeOpen; UpdateLayoutMode();
+    }
+    private void UpdateLayoutMode()
+    {
+        Classes.Set("compact", Bounds.Width < 880);
+        HomeLaunchContent.ColumnDefinitions = new ColumnDefinitions(Bounds.Width < 880 ? "*,0" : "1.45*,1*");
+        HomeRuntimePanel.IsVisible = _runtimeOpen && Bounds.Width >= 880;
     }
     private void OpenEntryMenu(object? sender, RoutedEventArgs e)
     {

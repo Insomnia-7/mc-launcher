@@ -43,6 +43,7 @@ internal static class Program
         if(args.Contains("--showcase-invalid"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","true");
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--workbench-native"))return ShellNativeChecks.Start(root,workbench:true);
         if(args.Contains("--real-game"))return RealGameChecks.Start(root);
         if(args.Contains("--redesign-native"))return ShellNativeChecks.Start(root,redesign:true);
         if(args.Contains("--showcase-native"))return ShellNativeChecks.Start(root,showcase:true);
@@ -59,7 +60,7 @@ internal static class Program
         File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--unknown-theme") ? """{"themeId":"missing-historical-preset","motionMode":"off"}""" : args.Contains("--legacy-theme")
             ? """{"themeId":"custom","customTheme":{"schema":1,"name":"旧彩色主题","colors":{"BgBrush":"#FF0000"}},"wallpaperOpacity":0.35,"motionMode":"off"}"""
             : """{"themeId":"glacier","motionMode":"off"}""");
-        foreach (var id in args.Contains("--empty") ? [] : (args.Contains("--home") || args.Contains("--redesign")) ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
+        foreach (var id in args.Contains("--empty") ? [] : (args.Contains("--home") || args.Contains("--redesign") || args.Contains("--workbench")) ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
         {
             var directory = Path.Combine(game, "versions", id); Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, id + ".json"), JsonSerializer.Serialize(new { id, type = "release", mainClass = "net.minecraft.client.main.Main", arguments = new { jvm = new[] { "-cp", "${classpath}" }, game = new[] { "--username", "${auth_player_name}" } }, libraries = Array.Empty<object>(), javaVersion = new { majorVersion = 21 } }));
@@ -71,7 +72,7 @@ internal static class Program
         var http = new OfflineHandler(); var launch = new TestLauncher(); var installFixture = new VersionInstallFixture(); var resourceFixture = new ResourceFixture(); var appearanceFixture=new AppearanceFixture();var workbenchFixture=new WorkbenchFixture();
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
-            if(args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components") || args.Contains("--showcase")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
+            if(args.Contains("--workbench") || args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components") || args.Contains("--showcase")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
             if(args.Contains("--live-catalog"))
             {
                 var handler=new HttpClientHandler();
@@ -105,6 +106,12 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--workbench-consistency")){WorkbenchChecks.Consistency(model,window,Pump,Check,Capture);Check("所有A页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench consistency checks passed");return 0;}
+            if(args.Contains("--workbench-manage")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);MaintenanceUiChecks.Run(window,Pump,Check,Capture);ModpackUpgradeUiChecks.Run(model,window,Pump,Check,Capture,root);SettingsSyncUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例管理无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench management checks passed");return 0;}
+            if(args.Contains("--workbench-catalog")){VersionInstallChecks.Run(model,window,installFixture,Pump,Check,Capture,Click);ResourceCenterChecks.Run(model,window,resourceFixture,Pump,Check,Capture,Click);CatalogScrollChecks.Run(model,window,resourceFixture,Pump,Check,Capture);Check("安装与资源无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench catalog checks passed");return 0;}
+            if(args.Contains("--workbench-account")){ExperienceUiChecks.Run(model,window,appearanceFixture,resourceFixture,Pump,Check,Capture,root);SkinPreviewChecks.Run(root,Check,Pump);LauncherUpdateUiChecks.Run(window,Pump,Check,Capture);Check("账号与设置无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench account checks passed");return 0;}
+            if(args.Contains("--workbench")){WorkbenchChecks.Home(model,window,launch,Pump,Check,Capture,Click,root);Check("A 主页和实例无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench home checks passed");return 0;}
+            if(args.Contains("--workbench-shell")){WorkbenchChecks.Shell(model,window,Pump,Check,Capture,Click);Check("A 外壳无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench shell checks passed");return 0;}
             if(args.Contains("--showcase-disabled")||args.Contains("--showcase-invalid")){ShowcaseChecks.Disabled(model,window,Pump,Check);Check("正常模式无开发绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} showcase gate checks passed");return 0;}
             if(args.Contains("--showcase")){ShowcaseChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture,Click,()=>http.Requests);Check("开发预览无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} showcase checks passed");return 0;}
             if(args.Contains("--components")){ComponentChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),Pump,Check,Capture);Check("全局组件无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} component checks passed");return 0;}

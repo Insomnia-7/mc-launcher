@@ -1,27 +1,30 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 namespace Launcher.Desktop.Views;
 public sealed partial class LibraryView : UserControl
 {
-    private bool _entered;
-    private CancellationTokenSource? _entrance;
-
+    private bool _showInspector = true;
+    private Launcher.App.ViewModels.MainViewModel? _model;
     public LibraryView()
     {
         InitializeComponent();
-        Loaded += async (_, _) =>
+        SizeChanged += (_, _) => UpdateInspector();
+        Loaded += (_, _) => UpdateInspector();
+        DataContextChanged += (_, _) =>
         {
-            if (_entered) return;
-            _entered = true;
-            _entrance = new CancellationTokenSource();
-            await Motion.PlayStaggerSequenceAsync(new Control[] { LibraryHeading, QuickLaunchCard, LaunchProgressCard,
-                LibraryActions, LibraryFilters, LibraryCards, LibraryList, GameRootStatus }.Where(c => c.IsVisible).ToArray(), _entrance.Token);
+            if (_model is not null) _model.PropertyChanged -= ModelChanged;
+            _model = DataContext as Launcher.App.ViewModels.MainViewModel;
+            if (_model is not null) _model.PropertyChanged += ModelChanged;
+            UpdateInspector();
         };
-        Unloaded += (_, _) => { _entrance?.Cancel(); _entrance?.Dispose(); _entrance = null; };
     }
-
-    private void SelectGameFromList(object? sender,SelectionChangedEventArgs e)
+    private void ModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if(sender is ListBox list&&list.SelectedItem is Launcher.App.ViewModels.LibraryEntry entry&&DataContext is Launcher.App.ViewModels.MainViewModel model)
-        {model.OpenGameCommand.Execute(entry);list.SelectedItem=null;}
+        if (e.PropertyName == nameof(Launcher.App.ViewModels.MainViewModel.HasInstances)) UpdateInspector();
+    }
+    private void ToggleInspector(object? sender, RoutedEventArgs e) { _showInspector = !_showInspector; UpdateInspector(); }
+    private void UpdateInspector()
+    {
+        LibraryInspector.IsVisible = _showInspector && Bounds.Width >= 880 && DataContext is Launcher.App.ViewModels.MainViewModel { HasInstances: true };
     }
 }

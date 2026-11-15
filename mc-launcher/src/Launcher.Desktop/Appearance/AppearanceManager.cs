@@ -70,28 +70,13 @@ public sealed class AppearanceManager : IDisposable
         SetBrush("DangerFillHoverBrush", Color.Parse(light ? "#B2303F" : "#BA3947"), duration);
         SetBrush("MicaShellTintBrush", Color.Parse(light ? "#ECF7F8FA" : "#E6101114"), duration);
         SetBrush("MicaSidebarBrush", Color.Parse(light ? "#E6F1F2F5" : "#DE14161B"), duration);
-        SetBrush("PrimaryTextBrush", Colors.White, TimeSpan.Zero);
+        SetBrush("PrimaryTextBrush", light ? Colors.White : Color.Parse("#171326"), TimeSpan.Zero);
 
         if (Avalonia.Application.Current is { } app)
             app.RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
 
-        var fillTop = Color.Parse(colors["AccentHoverBrush"]);
-        var fillBottom = Color.Parse(colors["AccentFillBrush"]);
-        var hoverTop = light ? Color.Parse("#7B6EE6") : Color.Parse("#A498FF");
-        var hoverBottom = Color.Parse(colors["AccentHoverBrush"]);
-
-        _resources["PrimaryFillBrush"] = new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-            GradientStops = [new(fillTop, 0), new(fillBottom, 1)]
-        };
-        _resources["PrimaryHoverBrush"] = new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-            GradientStops = [new(hoverTop, 0), new(hoverBottom, 1)]
-        };
+        SetBrush("PrimaryFillBrush", Color.Parse(colors["AccentFillBrush"]), duration);
+        SetBrush("PrimaryHoverBrush", Color.Parse(colors["AccentHoverBrush"]), duration);
 
         var text = Color.Parse(colors["TextBrush"]);
         var accent = Color.Parse(colors["AccentBrush"]);

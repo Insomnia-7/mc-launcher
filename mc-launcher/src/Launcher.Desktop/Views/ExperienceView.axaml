@@ -1,130 +1,141 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:conv="using:Avalonia.Data.Converters" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.ExperienceView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.ExperienceView" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience">
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
-        <TextBlock Text="{Binding ExperiencePageTitle}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="{Binding ExperiencePageCaption}" Classes="muted"/>
+        <TextBlock Text="{Binding ExperiencePageTitle}" FontSize="28" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding ExperiencePageCaption}" Classes="muted" />
       </StackPanel>
-      <Button Grid.Column="1" x:Name="CloseExperienceButton" Classes="quiet" Command="{Binding CloseExperienceCommand}" Content="返回游戏库" AutomationProperties.Name="返回游戏库"/>
+      <Button Grid.Column="1" x:Name="CloseExperienceButton" Classes="quiet" Command="{Binding CloseExperienceCommand}" Content="返回实例" AutomationProperties.Name="返回实例" />
     </Grid>
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" IsVisible="{Binding IsWardrobeTab}">
       <StackPanel Spacing="12">
-        <Grid ColumnDefinitions="1*,1.3*,1.5*" ColumnSpacing="16" IsEnabled="{Binding CanEditWardrobe}">
-          <StackPanel Spacing="9">
-            <TextBlock Text="当前身份" FontWeight="SemiBold"/>
+        <Grid ColumnDefinitions="280,*" ColumnSpacing="16" IsEnabled="{Binding CanEditWardrobe}" RowDefinitions="Auto,Auto" RowSpacing="20">
+          <StackPanel Spacing="9" Grid.Column="1" Grid.Row="0">
+            <TextBlock Text="当前身份" FontWeight="SemiBold" />
             <ComboBox ItemsSource="{Binding AccountChoices}" SelectedItem="{Binding SelectedAccountChoice}" AutomationProperties.Name="衣柜账号">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:AccountChoice">
-                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <Button Command="{Binding UseAccountCommand}" Content="使用此身份"/>
-            <TextBlock Text="本地方案" FontWeight="SemiBold" Margin="0,8,0,0"/>
-            <ListBox x:Name="WardrobeLooksList" ItemsSource="{Binding WardrobeLooks}" SelectedItem="{Binding SelectedLook}" MinHeight="140" MaxHeight="205">
+            <Button Command="{Binding UseAccountCommand}" Content="使用此身份" />
+            <TextBlock Text="本地方案" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <ListBox x:Name="WardrobeLooksList" ItemsSource="{Binding WardrobeLooks}" SelectedItem="{Binding SelectedLook}" MinHeight="72" MaxHeight="100">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="accounts:WardrobeLook">
-                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
-            <Button Classes="quiet" Command="{Binding DeleteWardrobeLookCommand}" Content="移除本地方案"/>
+            <Button Classes="quiet" Command="{Binding DeleteWardrobeLookCommand}" Content="移除本地方案" />
           </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="8">
+          <StackPanel Grid.Column="0" Spacing="8" Grid.Row="0" Grid.RowSpan="2">
             <Border Background="{DynamicResource FieldBrush}" CornerRadius="18" Padding="8">
-              <icons:PlayerPreview x:Name="WardrobePlayerPreview" Skin="{Binding PreviewSkin}" Cape="{Binding PreviewCape}" Slim="{Binding PreviewSlim}" OuterLayer="{Binding PreviewOuterLayer}" Animate="{Binding PreviewAnimate}" PreviewActive="{Binding PreviewActive}" Height="320" AutomationProperties.Name="拖动或使用方向键旋转角色预览"/>
+              <icons:PlayerPreview x:Name="WardrobePlayerPreview" Skin="{Binding PreviewSkin}" Cape="{Binding PreviewCape}" Slim="{Binding PreviewSlim}" OuterLayer="{Binding PreviewOuterLayer}" Animate="{Binding PreviewAnimate}" PreviewActive="{Binding PreviewActive}" Height="320" AutomationProperties.Name="拖动或使用方向键旋转角色预览" />
             </Border>
-            <TextBlock Text="拖动旋转 · 滚轮缩放" HorizontalAlignment="Center" Classes="muted" FontSize="12"/>
+            <TextBlock Text="拖动旋转 · 滚轮缩放" HorizontalAlignment="Center" Classes="muted" FontSize="12" />
             <WrapPanel>
-              <Button Classes="quiet" Content="查看背面" Click="BackPreview" Padding="8,4" MinHeight="28"/>
-              <Button Classes="quiet" Content="复位视角" Click="ResetPreview" Padding="8,4" MinHeight="28"/>
+              <Button Classes="quiet" Content="查看背面" Click="BackPreview" Padding="8,4" MinHeight="28" />
+              <Button Classes="quiet" Content="复位视角" Click="ResetPreview" Padding="8,4" MinHeight="28" />
             </WrapPanel>
           </StackPanel>
-          <StackPanel Grid.Column="2" Spacing="9">
-            <TextBlock Text="皮肤与披风" FontWeight="SemiBold"/>
-            <TextBox Text="{Binding LookName}" PlaceholderText="给皮肤方案命名"/>
-            <Button x:Name="ImportWardrobeSkinButton" Command="{Binding ImportWardrobeSkinCommand}" Content="导入 PNG 皮肤"/>
+          <StackPanel Grid.Column="1" Spacing="9" Grid.Row="1">
+            <TextBlock Text="皮肤与披风" FontWeight="SemiBold" />
+            <TextBox Text="{Binding LookName}" PlaceholderText="给皮肤方案命名" />
+            <Button x:Name="ImportWardrobeSkinButton" Command="{Binding ImportWardrobeSkinCommand}" Content="导入 PNG 皮肤" />
             <StackPanel Spacing="8" IsVisible="{Binding HasAccount}">
               <Button x:Name="UploadSkinButton" Classes="primary" Command="{Binding UploadWardrobeSkinCommand}">
-                <TextBlock Text="上传到当前账号" Foreground="{Binding $parent[Button].Foreground}"/>
+                <TextBlock Text="上传到当前账号" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
-              <Button Command="{Binding ResetOfficialSkinCommand}" Content="恢复官方默认皮肤"/>
-              <TextBlock Text="账号已拥有的披风" Classes="muted"/>
+              <Button Command="{Binding ResetOfficialSkinCommand}" Content="恢复官方默认皮肤" />
+              <TextBlock Text="账号已拥有的披风" Classes="muted" />
               <ComboBox ItemsSource="{Binding OwnedCapes}" SelectedItem="{Binding SelectedOwnedCape}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="accounts:OwnedCape">
-                    <TextBlock Text="{Binding Name}"/>
+                    <TextBlock Text="{Binding Name}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
               <WrapPanel>
-                <Button Command="{Binding ApplyOwnedCapeCommand}" Content="使用披风" Margin="0,0,6,6"/>
-                <Button Command="{Binding HideOfficialCapeCommand}" Content="隐藏披风" Margin="0,0,0,6"/>
+                <Button Command="{Binding ApplyOwnedCapeCommand}" Content="使用披风" Margin="0,0,6,6" />
+                <Button Command="{Binding HideOfficialCapeCommand}" Content="隐藏披风" Margin="0,0,0,6" />
               </WrapPanel>
             </StackPanel>
             <StackPanel Spacing="8" IsVisible="{Binding !HasAccount}">
-              <Button Command="{Binding ImportWardrobeCapeCommand}" Content="导入本地披风"/>
-              <Button Command="{Binding InstallOfflineSkinComponentCommand}" Content="安装离线皮肤组件"/>
+              <Button Command="{Binding ImportWardrobeCapeCommand}" Content="导入本地披风" />
+              <Button Command="{Binding InstallOfflineSkinComponentCommand}" Content="安装离线皮肤组件" />
               <Button Classes="primary" Command="{Binding UseLocalLookCommand}">
-                <TextBlock Text="应用本地外观" Foreground="{Binding $parent[Button].Foreground}"/>
+                <TextBlock Text="应用本地外观" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
-              <Button Classes="quiet" Command="{Binding DisableLocalLookCommand}" Content="停用游戏内本地外观"/>
+              <Button Classes="quiet" Command="{Binding DisableLocalLookCommand}" Content="停用游戏内本地外观" />
             </StackPanel>
             <WrapPanel>
-              <CheckBox Content="自然摆动" ToolTip.Tip="遵循设置中的动画开关；切换页面、最小化或窗口失焦时暂停。" IsChecked="{Binding PreviewAnimate}" Margin="0,0,10,0"/>
-              <CheckBox Content="细手臂（Alex）" IsChecked="{Binding PreviewSlim}" Margin="0,0,10,0"/>
-              <CheckBox Content="皮肤外层" IsChecked="{Binding PreviewOuterLayer}"/>
+              <CheckBox Content="自然摆动" ToolTip.Tip="遵循设置中的动画开关；切换页面、最小化或窗口失焦时暂停。" IsChecked="{Binding PreviewAnimate}" Margin="0,0,10,0" />
+              <CheckBox Content="细手臂（Alex）" IsChecked="{Binding PreviewSlim}" Margin="0,0,10,0" />
+              <CheckBox Content="皮肤外层" IsChecked="{Binding PreviewOuterLayer}" />
             </WrapPanel>
-            <Button Classes="quiet" Command="{Binding RefreshWardrobeCommand}" Content="刷新官方资料" IsVisible="{Binding HasAccount}"/>
+            <Button Classes="quiet" Command="{Binding RefreshWardrobeCommand}" Content="刷新官方资料" IsVisible="{Binding HasAccount}" />
           </StackPanel>
         </Grid>
-        <TextBlock Text="{Binding LocalSkinHint}" Classes="muted" TextWrapping="Wrap"/>
-        <TextBlock x:Name="WardrobeStatus" Text="{Binding WardrobeHint}" TextWrapping="Wrap"/>
-        <ProgressBar IsVisible="{Binding WardrobeBusy}" IsIndeterminate="True" Height="3"/>
+        <TextBlock Text="{Binding LocalSkinHint}" Classes="muted" TextWrapping="Wrap" />
+        <TextBlock x:Name="WardrobeStatus" Text="{Binding WardrobeHint}" TextWrapping="Wrap" />
+        <ProgressBar IsVisible="{Binding WardrobeBusy}" IsIndeterminate="True" Height="3" />
       </StackPanel>
     </ScrollViewer>
-    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" IsVisible="{Binding IsToolsTab}">
-      <StackPanel Spacing="16">
-        <TextBlock Text="暂停保留断点；恢复沿用安装参数。取消会清理未完成文件。关闭程序时会保存正在运行的任务。" Classes="muted" TextWrapping="Wrap"/>
+    <Grid RowDefinitions="Auto,*" RowSpacing="20" Grid.Row="1" IsVisible="{Binding IsToolsTab}">
+      <StackPanel Spacing="12">
+        <TextBlock Text="暂停保留断点；恢复沿用安装参数。取消会清理未完成文件。关闭程序时会保存正在运行的任务。" Classes="muted" TextWrapping="Wrap" />
         <WrapPanel>
-          <Button Classes="nav" Classes.active="{Binding !ShowsTaskHistory}" Command="{Binding ShowActiveTasksCommand}" Content="进行中" Margin="0,0,8,4"/>
-          <Button Classes="nav" Classes.active="{Binding ShowsTaskHistory}" Command="{Binding ShowTaskHistoryCommand}" Content="历史记录" Margin="0,0,8,4"/>
-          <Button Classes="quiet" Command="{Binding ClearTaskHistoryCommand}" Content="清空已完成与已取消记录" IsVisible="{Binding ShowsTaskHistory}"/>
+          <Button Classes="nav" Classes.active="{Binding !ShowsTaskHistory}" Command="{Binding ShowActiveTasksCommand}" Content="进行中" Margin="0,0,8,4" />
+          <Button Classes="nav" Classes.active="{Binding ShowsTaskHistory}" Command="{Binding ShowTaskHistoryCommand}" Content="历史记录" Margin="0,0,8,4" />
+          <Button Classes="quiet" Command="{Binding ClearTaskHistoryCommand}" Content="清空已完成与已取消记录" IsVisible="{Binding ShowsTaskHistory}" />
         </WrapPanel>
-        <TextBlock Text="{Binding TaskListHint}" Classes="muted" TextWrapping="Wrap"/>
-        <CheckBox x:Name="AutoContinueDownloadsChoice" IsChecked="{Binding AutoContinueDownloads}" Content="完成后自动开始下一个等待任务（暂停或失败时停止接续）"/>
-        <Border Classes="card" IsVisible="{Binding !HasDurableTasks}" Padding="32"><StackPanel Spacing="12"><icons:UiIcon Kind="ActionCloudDownload" Width="40" Height="40" HorizontalAlignment="Left" /><TextBlock Text="此列表暂无任务" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="去发现资源，为你的世界添加新内容。" Classes="muted" /><Button Command="{Binding ShowDownloadsCommand}" Content="浏览资源" HorizontalAlignment="Left" /></StackPanel></Border>
-        <ItemsControl x:Name="DurableTasksList" ItemsSource="{Binding VisibleDurableTasks}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:DurableTaskRow">
-              <Border Classes="card" Padding="12" Margin="0,0,0,8">
-                <StackPanel Spacing="7">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="muted"/>
-                  </Grid>
-                  <TextBlock Text="{Binding ContextText}" Classes="muted" TextWrapping="Wrap"/>
-                  <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="13"/>
-                  <ProgressBar Value="{Binding Percent}" Height="3" IsVisible="{Binding !IsHistory}"/>
-                  <WrapPanel>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskUpCommand}" CommandParameter="{Binding}" Content="提前" IsVisible="{Binding CanReorder}" Margin="0,0,6,0"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskDownCommand}" CommandParameter="{Binding}" Content="延后" IsVisible="{Binding CanReorder}" Margin="0,0,6,0"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ResumeDurableTaskCommand}" CommandParameter="{Binding}" Content="开始 / 恢复 / 重试" IsVisible="{Binding CanResume}" Margin="0,0,6,0"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).PauseDurableTaskCommand}" CommandParameter="{Binding}" Content="暂停" IsVisible="{Binding CanPause}" Margin="0,0,6,0"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CancelDurableTaskCommand}" CommandParameter="{Binding}" Content="取消并清理" IsVisible="{Binding CanCancel}"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenTaskResultCommand}" CommandParameter="{Binding}" Content="打开文件位置" IsVisible="{Binding IsHistory}" Margin="0,0,6,0"/>
-                    <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RemoveTaskHistoryCommand}" CommandParameter="{Binding}" Content="移除记录" IsVisible="{Binding IsHistory}"/>
-                  </WrapPanel>
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <TextBlock Text="{Binding TaskListHint}" Classes="muted" TextWrapping="Wrap" />
+        <CheckBox x:Name="AutoContinueDownloadsChoice" IsChecked="{Binding AutoContinueDownloads}" Content="完成后自动开始下一个等待任务（暂停或失败时停止接续）" />
       </StackPanel>
-    </ScrollViewer>
+      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
+          <Border Classes="card" IsVisible="{Binding !HasDurableTasks}" Padding="32">
+            <StackPanel Spacing="12">
+              <icons:UiIcon Kind="ActionCloudDownload" Width="40" Height="40" HorizontalAlignment="Left" />
+              <TextBlock Text="此列表暂无任务" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Text="去发现资源，为你的世界添加新内容。" Classes="muted" />
+              <Button Command="{Binding ShowDownloadsCommand}" Content="浏览资源" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <ItemsControl x:Name="DurableTasksList" ItemsSource="{Binding VisibleDurableTasks}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DurableTaskRow">
+                <Border Classes="" Padding="16" Margin="0,0,0,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LineBrush}">
+                  <StackPanel Spacing="7">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding StateText}" Classes="muted" />
+                    </Grid>
+                    <TextBlock Text="{Binding ContextText}" Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="13" />
+                    <ProgressBar Value="{Binding Percent}" Height="3" IsVisible="{Binding !IsHistory}" />
+                    <WrapPanel>
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskUpCommand}" CommandParameter="{Binding}" Content="提前" IsVisible="{Binding CanReorder}" Margin="0,0,6,0" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).MoveDurableTaskDownCommand}" CommandParameter="{Binding}" Content="延后" IsVisible="{Binding CanReorder}" Margin="0,0,6,0" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ResumeDurableTaskCommand}" CommandParameter="{Binding}" Content="开始 / 恢复 / 重试" IsVisible="{Binding CanResume}" Margin="0,0,6,0" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).PauseDurableTaskCommand}" CommandParameter="{Binding}" Content="暂停" IsVisible="{Binding CanPause}" Margin="0,0,6,0" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CancelDurableTaskCommand}" CommandParameter="{Binding}" Content="取消并清理" IsVisible="{Binding CanCancel}" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenTaskResultCommand}" CommandParameter="{Binding}" Content="打开文件位置" IsVisible="{Binding IsHistory}" Margin="0,0,6,0" />
+                      <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RemoveTaskHistoryCommand}" CommandParameter="{Binding}" Content="移除记录" IsVisible="{Binding IsHistory}" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
     <StackPanel Grid.Row="2" Spacing="7">
-      <ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3"/>
-      <TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="13" TextWrapping="Wrap" MaxHeight="50"/>
+      <ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3" />
+      <TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="13" TextWrapping="Wrap" MaxHeight="50" />
     </StackPanel>
   </Grid>
 </UserControl>

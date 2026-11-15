@@ -61,7 +61,7 @@ public sealed partial class MainWindow
         SidebarBrandCollapsed.IsVisible = state == SidebarState.Compact;
         SidebarBottomCompact.IsVisible = state == SidebarState.Compact;
         SidebarBottomText.IsVisible = expanded;
-        foreach (var button in NavList.Children.OfType<Button>())
+        foreach (var button in NavList.GetVisualDescendants().OfType<Button>())
             ToolTip.SetServiceEnabled(button, !expanded);
     }
 
@@ -86,7 +86,7 @@ public sealed partial class MainWindow
         SidebarPanel.Classes.Set("nav-overlay", state == SidebarState.Overlay);
         Grid.SetColumnSpan(SidebarPanel, state == SidebarState.Overlay ? 2 : 1);
         SidebarPanel.HorizontalAlignment = state == SidebarState.Overlay ? Avalonia.Layout.HorizontalAlignment.Left : Avalonia.Layout.HorizontalAlignment.Stretch;
-        SidebarPanel.Width = state switch { SidebarState.Expanded or SidebarState.Overlay => 240, SidebarState.Compact => 72, _ => 0 };
+        SidebarPanel.Width = state switch { SidebarState.Expanded or SidebarState.Overlay => 216, SidebarState.Compact => 64, _ => 0 };
         SidebarScrim.IsVisible = state == SidebarState.Overlay;
         SidebarHamburger.IsVisible = state == SidebarState.Minimal;
         PageContent.Classes.Set("minimal", state == SidebarState.Minimal);
@@ -160,13 +160,13 @@ public sealed partial class MainWindow
         "discover" => "DiscoverNav",
         "multiplayer" => "MultiplayerNav",
         "settings" => "SettingsEntry",
-        "experience" => _model.IsRolePage ? "WardrobeEntry" : _model.IsTaskPage ? "TaskCenterEntry" : null,
+        "experience" => _model.IsRolePage ? null : _model.IsTaskPage ? "TaskCenterEntry" : null,
         _ => null
     };
 
     private void UpdateNavIndicator(bool animate = true)
     {
-        if (NavButtonName() is not { } name || this.FindControl<Button>(name) is not { } button
+        if (NavButtonName() is not { } name || this.FindControl<Button>(name) is not { } button || !button.IsEffectivelyVisible
             || button.TranslatePoint(default, NavList) is not { } origin)
         {
             NavIndicator.IsVisible = NavSelection.IsVisible = false;
@@ -185,7 +185,7 @@ public sealed partial class MainWindow
         }
         if (_navPosition != origin || !animated)
         {
-            indicator.X = origin.X - 10;
+            indicator.X = origin.X + 3;
             indicator.Y = origin.Y + (button.Bounds.Height - NavIndicator.Height) / 2;
             selection.X = origin.X;
             selection.Y = origin.Y;

@@ -16,21 +16,21 @@ internal static class DesktopThemes
     public static ThemeDefinition ForVariant(bool light) => light ? Light.Definition : Dark.Definition;
 
     private static ThemeDefinition Create(bool light) => light
-        ? new(1, "浅色 · 云母清灰", new()
+        ? new(1, "浅色 · 云白", new()
         {
-            ["BgBrush"] = "#F7F8FA",
-            ["PanelBrush"] = "#F1F2F5",
+            ["BgBrush"] = "#F4F5FA",
+            ["PanelBrush"] = "#F1F2F7",
             ["CardBrush"] = "#FFFFFF",
-            ["FieldBrush"] = "#FAFAFC",
-            ["HoverBrush"] = "#EBEDF2",
-            ["LineBrush"] = "#E5E7ED",
-            ["TextBrush"] = "#1D2028",
-            ["MutedBrush"] = "#626A78",
+            ["FieldBrush"] = "#F7F7FB",
+            ["HoverBrush"] = "#E9EAF3",
+            ["LineBrush"] = "#E5E5EF",
+            ["TextBrush"] = "#202131",
+            ["MutedBrush"] = "#666779",
             ["FaintBrush"] = "#89909D",
-            ["AccentBrush"] = "#6E60DB",
-            ["AccentHoverBrush"] = "#5F52CB",
-            ["AccentFillBrush"] = "#6E60DB",
-            ["AccentPressedBrush"] = "#5044B9",
+            ["AccentBrush"] = "#6554D9",
+            ["AccentHoverBrush"] = "#5B49CE",
+            ["AccentFillBrush"] = "#6554D9",
+            ["AccentPressedBrush"] = "#5140BD",
             ["SelectedBrush"] = "#EEEBFF",
             ["SuccessBrush"] = "#269B65",
             ["WarnBrush"] = "#B98225",
@@ -39,21 +39,21 @@ internal static class DesktopThemes
             ["OverlayBrush"] = "#7A12151C",
             ["WallpaperTintBrush"] = "#4DF7F8FA"
         })
-        : new(1, "深色 · 星夜蓝灰", new()
+        : new(1, "深色 · 静夜", new()
         {
-            ["BgBrush"] = "#101114",
-            ["PanelBrush"] = "#14161B",
-            ["CardBrush"] = "#191C22",
-            ["FieldBrush"] = "#1F232B",
-            ["HoverBrush"] = "#262B35",
-            ["LineBrush"] = "#2A2E37",
-            ["TextBrush"] = "#F1F2F5",
-            ["MutedBrush"] = "#A0A4AF",
+            ["BgBrush"] = "#14151B",
+            ["PanelBrush"] = "#191B23",
+            ["CardBrush"] = "#1E2029",
+            ["FieldBrush"] = "#252733",
+            ["HoverBrush"] = "#2D303E",
+            ["LineBrush"] = "#30323F",
+            ["TextBrush"] = "#F1F2F7",
+            ["MutedBrush"] = "#A5A7BA",
             ["FaintBrush"] = "#737987",
-            ["AccentBrush"] = "#8B7CFF",
-            ["AccentHoverBrush"] = "#9A8DFF",
-            ["AccentFillBrush"] = "#6B5CE0",
-            ["AccentPressedBrush"] = "#5D4ED1",
+            ["AccentBrush"] = "#9B8CFF",
+            ["AccentHoverBrush"] = "#AFA2FF",
+            ["AccentFillBrush"] = "#9B8CFF",
+            ["AccentPressedBrush"] = "#8777ED",
             ["SelectedBrush"] = "#292440",
             ["SuccessBrush"] = "#4FBF83",
             ["WarnBrush"] = "#E6B65C",

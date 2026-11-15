@@ -6,9 +6,8 @@ public sealed partial class MainWindow
 {
     private void UpdateShellMaterialPreference()
     {
-        WindowTransparencyLevel[] levels = OperatingSystem.IsWindows() && _model?.HasCustomWallpaper != true
-            ? [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None]
-            : [WindowTransparencyLevel.None];
+        // A uses stable opaque surfaces; material effects must not tint text or instance content.
+        WindowTransparencyLevel[] levels = [WindowTransparencyLevel.None];
         if (!TransparencyLevelHint.SequenceEqual(levels)) TransparencyLevelHint = levels;
         UpdateShellMaterialState();
     }

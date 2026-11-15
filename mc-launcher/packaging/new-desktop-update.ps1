@@ -26,4 +26,4 @@ $signer=Join-Path $PSScriptRoot '../../scripts/update-signing.ps1'
 if(!$?){throw '签名失败，不能发布此更新。'}
 & $signer -ManifestPath $path -VerifyOnly
 if(!$?){throw '独立验签失败，不能发布此更新。'}
-Write-Output '发布时必须同时上传 Fangyu.exe、update.json 和 update.json.sig，并将该桌面版本设为 Latest。'
+Write-Output '发布时必须同时上传 Fangyu.exe、update.json 和 update.json.sig，预览版标记为 Pre-release；正式版才设为 Latest（遵循 docs/release-policy.md）。'

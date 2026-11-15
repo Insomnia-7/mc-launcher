@@ -13,5 +13,6 @@
     </FluentTheme>
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Tokens.axaml" />
     <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Controls.axaml" />
+    <StyleInclude Source="avares://MCLauncher.Desktop/Styles/Workbench.axaml" />
   </Application.Styles>
 </Application>

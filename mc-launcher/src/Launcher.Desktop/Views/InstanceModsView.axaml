@@ -2,10 +2,10 @@
   <Grid>
     <ScrollViewer x:Name="ManagedModsScroll" IsVisible="{Binding !IsModPreviewOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
       <StackPanel Spacing="16">
-        <Border Classes="card">
+        <Border Background="Transparent" Padding="0">
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <TextBlock Text="模组与资源" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              <TextBlock Text="已安装内容" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
               <Button Grid.Column="1" Classes="primary" Command="{Binding ShowDownloadsCommand}">
                 <icons:IconLabel Icon="ActionPlus" Text="添加资源" Foreground="{Binding $parent[Button].Foreground}"/>
               </Button>
@@ -21,8 +21,9 @@
                 <icons:IconLabel Icon="ActionRefresh" Text="刷新"/>
               </Button>
             </Grid>
+            <Button Classes="link" Command="{Binding SelectAllManagedModsCommand}" Content="选择全部模组" HorizontalAlignment="Left"/>
             <TextBlock Text="{Binding ModWarnings}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasModWarnings}" TextWrapping="Wrap"/>
-            <WrapPanel IsEnabled="{Binding CanUseModWorkbench}">
+            <WrapPanel IsVisible="{Binding HasManagedModSelection}" IsEnabled="{Binding CanUseModWorkbench}">
               <Button Command="{Binding SelectAllManagedModsCommand}" Content="全选" Margin="0,0,6,8"/>
               <Button Command="{Binding SelectAllManagedModsCommand}" CommandParameter="none" Content="取消全选" Margin="0,0,6,8"/>
               <Button x:Name="BatchEnableModsButton" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Enable" Content="启用" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,8"/>
@@ -52,7 +53,7 @@
         </Border>
         <Border Classes="card">
           <StackPanel Spacing="12">
-            <TextBlock Text="模组更新" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="兼容更新" FontSize="18" FontWeight="SemiBold"/>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding CanUseModWorkbench}">
               <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding UpdateChannel}" AutomationProperties.Name="更新频道"/>
               <Button Grid.Column="1" Command="{Binding CheckModUpdatesCommand}" Content="检查兼容更新"/>

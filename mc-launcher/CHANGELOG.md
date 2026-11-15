@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.15 · A 方案启动器 UI 全面重构
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.15)。
+
+- 按用户选定的 A 方案重建应用外壳、导航与页面层级，保留现有启动器图标；专注 Minecraft 安装、实例管理与启动。
+- 主页改为当前实例、账号与启动的连续区域；最近实例最多四条，运行环境按需展开；实例页分离选择、管理与启动。
+- 实例详情采用局部导航与表单；联机、资源分类、任务、账号和设置重新布局，保留现有服务和数据格式。
+- 重建紫色深浅双主题、按钮状态与原生窗口行为；补充 M0–M6 阶段检查、实际渲染与 Windows 原生验收。
+- 本批仅重建 Windows x64 程序。其他系统与真实高 DPI/远端联机项目仍按验收记录待测。
+
+
 ## 1.0.0-preview.14 · M9 当前电脑验收
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.14)。

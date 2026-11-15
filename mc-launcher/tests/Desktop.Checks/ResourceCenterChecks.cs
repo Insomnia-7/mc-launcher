@@ -110,7 +110,7 @@ internal static class ResourceCenterChecks
         capture("resources-list",true);
         var resultsScroll=window.GetVisualDescendants().OfType<ScrollViewer>().Single(c=>c.Name=="ResourceResultsScroll");
         var searchPanel=window.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ResourceSearchPanel");
-        check("搜索区紧凑并给资源列表保留更大高度",searchPanel.Bounds.Height<=150 && resultsScroll.Bounds.Height>=350 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<250});
+        check("分类侧栏与两行筛选保留足够资源列表高度",searchPanel.Bounds.Height<=180 && resultsScroll.Bounds.Height>=350 && resultsScroll.TranslatePoint(new Point(),window) is {Y:<=280});
         check("资源列表不再显示中文简介提示行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.TranslationHint));
         check("下载量与更新日期跟在介绍末尾，介绍字号略增",window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==item.ActivityText) && window.GetVisualDescendants().OfType<TextBlock>().Any(t=>ReferenceEquals(t.DataContext,item)&&t.Text==item.DescriptionText&&t.FontSize==14&&t.MaxLines==2));
         foreach(var category in new[]{DownloadCategory.ResourcePack,DownloadCategory.Shader,DownloadCategory.Datapack})

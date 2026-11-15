@@ -50,7 +50,7 @@ public sealed partial class MainWindow : Window
         if (OperatingSystem.IsWindows())
         {
             ExtendClientAreaToDecorationsHint=true;
-            ExtendClientAreaTitleBarHeightHint=38;
+            ExtendClientAreaTitleBarHeightHint=52;
             WindowDecorations=WindowDecorations.BorderOnly;
         }
         else
@@ -97,7 +97,7 @@ public sealed partial class MainWindow : Window
         // 用 LayoutUpdated 持续落位（与 DiscoverView 的 SelectionHighlight 同一做法），
         // 避免只在属性变化当帧按旧 Bounds 算一次就卡住。
         NavListLayoutUpdated();
-        SizeChanged += (_, _) => UpdateSidebar(userInitiated: false);
+        SizeChanged += (_, _) => { Classes.Set("compact-page", Bounds.Width < 1100); UpdateSidebar(userInitiated: false); };
         Activated += (_, _) => Classes.Set("inactive", false);
         Deactivated += (_, _) => Classes.Set("inactive", true);
         Opened += (_,_) =>

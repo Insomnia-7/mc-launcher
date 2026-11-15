@@ -1,196 +1,378 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.Views.DiscoverView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DiscoverView" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:net="using:Launcher.Application.Multiplayer" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience" xmlns:instances="using:Launcher.Application.Instances">
   <UserControl.Styles>
-    <Style Selector="Button.category-tab.active"><Setter Property="Background" Value="Transparent" /></Style>
-    <Style Selector="Button.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="Padding" Value="12,6" /><Setter Property="FontSize" Value="13" /></Style>
-    <Style Selector="Button.compact.category-tab"><Setter Property="FontSize" Value="14" /><Setter Property="MinHeight" Value="40" /><Setter Property="Padding" Value="12,7" /></Style>
-    <Style Selector="TextBox.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="Padding" Value="10,5" /><Setter Property="FontSize" Value="13" /></Style>
-    <Style Selector="ComboBox.compact"><Setter Property="MinHeight" Value="36" /><Setter Property="FontSize" Value="13" /></Style>
-    <Style Selector="Border.release-tag"><Setter Property="CornerRadius" Value="5" /><Setter Property="Padding" Value="6,2" /><Setter Property="Background" Value="{DynamicResource SelectedBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /></Style>
-    <Style Selector="Border.release-tag.beta"><Setter Property="BorderBrush" Value="{DynamicResource TextBrush}" /></Style>
-    <Style Selector="Border.release-tag.alpha"><Setter Property="BorderThickness" Value="2" /></Style>
+    <Style Selector="Button.category-tab.active">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.compact">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.compact.category-tab">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="12,7" />
+    </Style>
+    <Style Selector="TextBox.compact">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ComboBox.compact">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Border.release-tag">
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="Background" Value="{DynamicResource SelectedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Border.release-tag.beta">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Border.release-tag.alpha">
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
   </UserControl.Styles>
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
-    <StackPanel Spacing="7" Margin="0,0,0,18" IsVisible="{Binding Download.ShowsDiscoverHeading}"><TextBlock Text="{Binding Download.DiscoverHeading}" FontSize="28" FontWeight="SemiBold" /><TextBlock Text="选择游戏版本，或为现有世界添加资源。" Classes="muted" FontSize="13" /></StackPanel>
-    <Grid Grid.Row="1" IsVisible="{Binding Download.ShowsBrowseControls}"><icons:SelectionHighlight x:Name="CategoryHighlight" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{DynamicResource SelectedBrush}" CornerRadius="12" BoxShadow="0 3 10 0 #16000000" IsHitTestVisible="False" /><ItemsControl x:Name="CategoryTabs" IsVisible="{Binding Download.ShowsBrowseControls}" ItemsSource="{Binding Download.Categories}" Margin="0,0,0,6" IsEnabled="{Binding Download.CanBrowseCategories}">
-      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:CategoryItem"><Button Classes="nav compact category-tab" Classes.active="{Binding IsSelected}" IsVisible="{Binding IsNormal}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,0,6,6" AutomationProperties.Name="{Binding Title}"><icons:IconLabel Icon="{Binding Category, Converter={StaticResource CategoryIcon}}" Text="{Binding Title}" IconSize="28" Foreground="{Binding $parent[Button].Foreground}" /></Button></DataTemplate></ItemsControl.ItemTemplate>
-    </ItemsControl></Grid>
-    <Border x:Name="ResourceSearchPanel" Grid.Row="2" IsVisible="{Binding Download.ShowsBrowseControls}" Classes="card" Padding="12" Margin="0,0,0,8">
-      <StackPanel Spacing="6">
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"><TextBox Classes="compact" Text="{Binding Download.Query}" PlaceholderText="{Binding Download.SearchHint}" IsVisible="{Binding Download.IsSearchMode}"><TextBox.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding Download.SearchCommand}" /></TextBox.KeyBindings></TextBox><Button Classes="quiet compact" Command="{Binding ChooseGameRootCommand}" Content="选择游戏保存位置…" IsVisible="{Binding Download.IsVersionMode}" HorizontalContentAlignment="Left"/><Button Grid.Column="1" Classes="primary compact" Command="{Binding Download.SearchCommand}" IsVisible="{Binding Download.IsSearchMode}" AutomationProperties.Name="搜索"><icons:IconLabel Icon="ActionSearch" Text="搜索" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Grid.Column="2" Classes="compact" Command="{Binding Download.PopularCommand}" IsVisible="{Binding Download.IsSearchMode}" AutomationProperties.Name="热门推荐"><icons:IconLabel Icon="StatusInfo" Text="热门" Foreground="{Binding $parent[Button].Foreground}" /></Button></Grid>
-        <Grid ColumnDefinitions="1.1*,*,*,1.2*,1.2*,Auto" ColumnSpacing="6" IsVisible="{Binding Download.IsSearchMode}" IsEnabled="{Binding Download.CanEditSearch}">
-          <ComboBox Classes="compact" ItemsSource="{Binding Download.Sources}" SelectedItem="{Binding Download.SelectedSource}" ToolTip.Tip="资源平台" />
-          <TextBox Classes="compact" Grid.Column="1" Text="{Binding Download.GameVersionFilter}" PlaceholderText="游戏版本" ToolTip.Tip="游戏版本，例如 1.21.4" />
-          <ComboBox Classes="compact" Grid.Column="2" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}" IsVisible="{Binding Download.ShowsLoaderFilter}" ToolTip.Tip="Mod 加载器" />
-          <ComboBox Classes="compact" Grid.Column="3" ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" ToolTip.Tip="资源分类" />
-          <ComboBox Classes="compact" Grid.Column="4" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" ToolTip.Tip="排序方式" />
-          <Button Classes="quiet compact" Grid.Column="5" Command="{Binding Download.ResetFiltersCommand}" Content="重置" />
-        </Grid>
-        <TextBlock Text="{Binding Download.TargetText}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.TargetText}" />
-      </StackPanel>
-    </Border>
-    <Grid Grid.Row="3">
-      <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-        <ItemsControl x:Name="ResourceResults" ItemsSource="{Binding Download.Results}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:DownloadItem">
-          <Button Classes="nav tile" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
-            <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
-              <Border Width="60" Height="60" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding IconBytes}" /></Grid></Border>
-              <StackPanel Grid.Column="1" Spacing="3">
-                <WrapPanel><TextBlock Text="{Binding DisplayTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,0,10,0" /><TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" Margin="0,0,12,0" VerticalAlignment="Center" /><TextBlock Text="{Binding LoadersText}" IsVisible="{Binding ShowsLoaders}" Classes="muted" FontSize="13" VerticalAlignment="Center" /></WrapPanel>
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                  <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="14" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
-                  <TextBlock Grid.Column="1" Text="{Binding ActivityText}" Classes="muted" FontSize="13" VerticalAlignment="Bottom" />
+  <Grid RowDefinitions="Auto,*" RowSpacing="20">
+    <StackPanel Spacing="7" Margin="0" IsVisible="{Binding Download.ShowsDiscoverHeading}">
+      <TextBlock Text="{Binding Download.DiscoverHeading}" FontSize="28" FontWeight="SemiBold" />
+      <TextBlock Text="选择游戏版本，或为现有世界添加资源。" Classes="muted" FontSize="13" />
+    </StackPanel>
+    <Grid Grid.Row="1" ColumnDefinitions="148,*" RowDefinitions="Auto,*,Auto" ColumnSpacing="24" RowSpacing="12" x:Name="DiscoverBody">
+      <Grid Grid.Row="0" IsVisible="{Binding Download.ShowsBrowseControls}" Grid.RowSpan="3">
+        <icons:SelectionHighlight x:Name="CategoryHighlight" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{DynamicResource SelectedBrush}" CornerRadius="12" BoxShadow="0 3 10 0 #16000000" IsHitTestVisible="False" />
+        <ItemsControl x:Name="CategoryTabs" IsVisible="{Binding Download.ShowsBrowseControls}" ItemsSource="{Binding Download.Categories}" Margin="0,0,0,6" IsEnabled="{Binding Download.CanBrowseCategories}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CategoryItem">
+              <Button Classes="nav compact category-tab" Classes.active="{Binding IsSelected}" IsVisible="{Binding IsNormal}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,0,0,4" AutomationProperties.Name="{Binding Title}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                <icons:IconLabel Icon="{Binding Category, Converter={StaticResource CategoryIcon}}" Text="{Binding Title}" IconSize="18" Foreground="{Binding $parent[Button].Foreground}" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+      <Border x:Name="ResourceSearchPanel" Grid.Row="0" IsVisible="{Binding Download.ShowsBrowseControls}" Classes="" Padding="0" Margin="0" Grid.Column="1">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBox Classes="compact" Text="{Binding Download.Query}" PlaceholderText="{Binding Download.SearchHint}" IsVisible="{Binding Download.IsSearchMode}">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding Download.SearchCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+            <Button Classes="quiet compact" Command="{Binding ChooseGameRootCommand}" Content="选择游戏保存位置…" IsVisible="{Binding Download.IsVersionMode}" HorizontalContentAlignment="Left" />
+            <Button Grid.Column="1" Classes="primary compact" Command="{Binding Download.SearchCommand}" IsVisible="{Binding Download.IsSearchMode}" AutomationProperties.Name="搜索">
+              <icons:IconLabel Icon="ActionSearch" Text="搜索" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+            <Button Grid.Column="2" Classes="compact" Command="{Binding Download.PopularCommand}" IsVisible="{Binding Download.IsSearchMode}" AutomationProperties.Name="热门推荐">
+              <icons:IconLabel Icon="StatusInfo" Text="热门" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+          </Grid>
+          <Grid ColumnDefinitions="1.1*,*,*,1.2*,1.2*,Auto" ColumnSpacing="6" IsVisible="{Binding Download.IsSearchMode}" IsEnabled="{Binding Download.CanEditSearch}" x:Name="ResourceFilters">
+            <ComboBox Classes="compact" ItemsSource="{Binding Download.Sources}" SelectedItem="{Binding Download.SelectedSource}" ToolTip.Tip="资源平台" />
+            <TextBox Classes="compact" Grid.Column="1" Text="{Binding Download.GameVersionFilter}" PlaceholderText="游戏版本" ToolTip.Tip="游戏版本，例如 1.21.4" />
+            <ComboBox Classes="compact" Grid.Column="2" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.LoaderFilter}" IsVisible="{Binding Download.ShowsLoaderFilter}" ToolTip.Tip="Mod 加载器" />
+            <ComboBox Classes="compact" Grid.Column="3" ItemsSource="{Binding Download.ResourceTags}" SelectedItem="{Binding Download.SelectedTag}" ToolTip.Tip="资源分类" />
+            <ComboBox Classes="compact" Grid.Column="4" ItemsSource="{Binding Download.SortOptions}" SelectedItem="{Binding Download.SelectedSort}" ToolTip.Tip="排序方式" />
+            <Button Classes="quiet compact" Grid.Column="5" Command="{Binding Download.ResetFiltersCommand}" Content="重置" />
+          </Grid>
+          <TextBlock Text="{Binding Download.TargetText}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.TargetText}" />
+        </StackPanel>
+      </Border>
+      <Grid Grid.Row="1" Grid.Column="1">
+        <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+          <ItemsControl x:Name="ResourceResults" ItemsSource="{Binding Download.Results}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DownloadItem">
+                <Button Classes="nav tile" Command="{Binding OpenCommand}" CommandParameter="{Binding}" Margin="0,1" Padding="8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding DisplayTitle}">
+                  <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
+                    <Border Width="60" Height="60" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center">
+                      <Grid>
+                        <icons:UiIcon Kind="{Binding Category, Converter={StaticResource CategoryIcon}}" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <icons:ResourceIcon Bytes="{Binding IconBytes}" />
+                      </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                      <WrapPanel>
+                        <TextBlock Text="{Binding DisplayTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding Title}" IsVisible="{Binding HasOriginalTitle}" Classes="muted" Margin="0,0,12,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding LoadersText}" IsVisible="{Binding ShowsLoaders}" Classes="muted" FontSize="13" VerticalAlignment="Center" />
+                      </WrapPanel>
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{Binding DescriptionText}" Classes="muted" FontSize="14" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DescriptionText}" />
+                        <TextBlock Grid.Column="1" Text="{Binding ActivityText}" Classes="muted" FontSize="13" VerticalAlignment="Bottom" />
+                      </Grid>
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <StackPanel IsVisible="{Binding Download.ShowsSearchSkeleton}" Spacing="14" Margin="8,12" IsHitTestVisible="False">
+          <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.7" />
+          <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.5" />
+          <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.3" />
+        </StackPanel>
+        <Border IsVisible="{Binding Download.IsSearchingResources}" Background="{DynamicResource CardBrush}" CornerRadius="12" Padding="14" VerticalAlignment="Bottom" Margin="8" BoxShadow="0 4 18 0 #18000000">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding Download.MoreResourcesText}" IsVisible="{Binding Download.IsLoadingMore}" VerticalAlignment="Center" />
+              <TextBlock Text="正在搜索资源…" IsVisible="{Binding !Download.IsLoadingMore}" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="quiet compact" Content="取消" Command="{Binding Download.CancelCommand}" />
+            </Grid>
+            <ProgressBar IsIndeterminate="True" Height="3" />
+          </StackPanel>
+        </Border>
+        <TextBlock Text="{Binding Download.SearchStateText}" IsVisible="{Binding Download.IsResourceList}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="480" IsHitTestVisible="False" />
+        <Grid IsVisible="{Binding Download.IsResourceDetail}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
+          <Border Classes="card" Padding="14" IsVisible="{Binding Download.ShowsStandardResourceHeader}">
+            <Grid ColumnDefinitions="Auto,56,*" ColumnSpacing="12">
+              <Button x:Name="BackToResources" Classes="quiet" Content="‹ 返回" Command="{Binding Download.BackToResourcesCommand}" VerticalAlignment="Center" />
+              <Border Grid.Column="1" Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center">
+                <Grid>
+                  <icons:UiIcon Kind="Tile.CatMod" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}" />
                 </Grid>
+              </Border>
+              <StackPanel Grid.Column="2" Spacing="4">
+                <TextBlock Text="{Binding Download.ResourceDetailTitle}" TextTrimming="CharacterEllipsis" FontSize="19" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Download.ResourceOriginalTitle}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="13" />
+                <TextBlock Text="{Binding Download.ResourceDetailSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
-          </Button>
-        </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-      </ScrollViewer>
-      <StackPanel IsVisible="{Binding Download.ShowsSearchSkeleton}" Spacing="14" Margin="8,12" IsHitTestVisible="False">
-        <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.7"/>
-        <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.5"/>
-        <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.3"/>
-      </StackPanel>
-      <Border IsVisible="{Binding Download.IsSearchingResources}" Background="{DynamicResource CardBrush}" CornerRadius="12" Padding="14" VerticalAlignment="Bottom" Margin="8" BoxShadow="0 4 18 0 #18000000">
-        <StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Download.MoreResourcesText}" IsVisible="{Binding Download.IsLoadingMore}" VerticalAlignment="Center"/><TextBlock Text="正在搜索资源…" IsVisible="{Binding !Download.IsLoadingMore}" VerticalAlignment="Center"/><Button Grid.Column="1" Classes="quiet compact" Content="取消" Command="{Binding Download.CancelCommand}"/></Grid><ProgressBar IsIndeterminate="True" Height="3"/></StackPanel>
-      </Border>
-      <TextBlock Text="{Binding Download.SearchStateText}" IsVisible="{Binding Download.IsResourceList}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="480" IsHitTestVisible="False"/>
-      <Grid IsVisible="{Binding Download.IsResourceDetail}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
-        <Border Classes="card" Padding="14" IsVisible="{Binding Download.ShowsStandardResourceHeader}">
-          <Grid ColumnDefinitions="Auto,56,*" ColumnSpacing="12">
-            <Button x:Name="BackToResources" Classes="quiet" Content="‹ 返回" Command="{Binding Download.BackToResourcesCommand}" VerticalAlignment="Center" />
-            <Border Grid.Column="1" Width="48" Height="48" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center"><Grid><icons:UiIcon Kind="Tile.CatMod" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" /><icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}" /></Grid></Border>
-            <StackPanel Grid.Column="2" Spacing="4">
-              <TextBlock Text="{Binding Download.ResourceDetailTitle}" TextTrimming="CharacterEllipsis" FontSize="19" FontWeight="SemiBold" />
-              <TextBlock Text="{Binding Download.ResourceOriginalTitle}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="13" />
-              <TextBlock Text="{Binding Download.ResourceDetailSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
-            </StackPanel>
-          </Grid>
-        </Border>
-        <Border x:Name="PackResourceHero" IsVisible="{Binding Download.IsPackResourceDetail}" CornerRadius="18" ClipToBounds="True" Height="184" Background="{DynamicResource FieldBrush}">
-          <Grid>
-            <icons:WorldArt Width="280" Height="220" HorizontalAlignment="Right" Margin="0,-15,24,0" IsVisible="{Binding !Download.HasPackCover}"/>
-            <icons:ResourcePicture Bytes="{Binding Download.PackCover}" IsVisible="{Binding Download.HasPackCover}"/>
-            <Border Background="#99000000" IsVisible="{Binding Download.HasPackCover}"/>
-            <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,Auto">
-              <Button Content="‹ 返回资源" Command="{Binding Download.BackToResourcesCommand}" Classes="compact" HorizontalAlignment="Left"/>
-              <Border Grid.Column="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10,5" VerticalAlignment="Top"><TextBlock Text="整合包" FontSize="13"/></Border>
-              <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="76,*" ColumnSpacing="16" VerticalAlignment="Bottom">
-                <Border Width="76" Height="76" CornerRadius="16" Background="{DynamicResource CardBrush}" ClipToBounds="True"><Grid><icons:UiIcon Kind="Tile.LoaderModpack" Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center"/><icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}"/></Grid></Border>
-                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" IsVisible="{Binding !Download.HasPackCover}"/>
-                  <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" IsVisible="{Binding !Download.HasPackCover}"/>
-                  <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="White" IsVisible="{Binding Download.HasPackCover}"/>
-                  <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" Foreground="#EEEEEE" IsVisible="{Binding Download.HasPackCover}"/>
-                </StackPanel>
+          </Border>
+          <Border x:Name="PackResourceHero" IsVisible="{Binding Download.IsPackResourceDetail}" CornerRadius="18" ClipToBounds="True" Height="184" Background="{DynamicResource FieldBrush}">
+            <Grid>
+              <icons:WorldArt Width="280" Height="220" HorizontalAlignment="Right" Margin="0,-15,24,0" IsVisible="{Binding !Download.HasPackCover}" />
+              <icons:ResourcePicture Bytes="{Binding Download.PackCover}" IsVisible="{Binding Download.HasPackCover}" />
+              <Border Background="#99000000" IsVisible="{Binding Download.HasPackCover}" />
+              <Grid Margin="20" RowDefinitions="Auto,*" ColumnDefinitions="*,Auto">
+                <Button Content="‹ 返回资源" Command="{Binding Download.BackToResourcesCommand}" Classes="compact" HorizontalAlignment="Left" />
+                <Border Grid.Column="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10,5" VerticalAlignment="Top">
+                  <TextBlock Text="整合包" FontSize="13" />
+                </Border>
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="76,*" ColumnSpacing="16" VerticalAlignment="Bottom">
+                  <Border Width="76" Height="76" CornerRadius="16" Background="{DynamicResource CardBrush}" ClipToBounds="True">
+                    <Grid>
+                      <icons:UiIcon Kind="Tile.LoaderModpack" Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <icons:ResourceIcon Bytes="{Binding Download.ResourceDetailIcon}" />
+                    </Grid>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" IsVisible="{Binding !Download.HasPackCover}" />
+                    <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" IsVisible="{Binding !Download.HasPackCover}" />
+                    <TextBlock Text="{Binding Download.ResourceDetailTitle}" FontSize="27" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="White" IsVisible="{Binding Download.HasPackCover}" />
+                    <TextBlock Text="{Binding Download.PackAuthor}" FontSize="13" Foreground="#EEEEEE" IsVisible="{Binding Download.HasPackCover}" />
+                  </StackPanel>
+                </Grid>
               </Grid>
             </Grid>
-          </Grid>
-        </Border>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding Download.IsPackResourceDetail}">
-          <Button x:Name="PackOverviewTab" Classes="nav" Classes.active="{Binding Download.PackOverview}" Command="{Binding Download.ShowPackOverviewCommand}" Content="介绍"/>
-          <Button x:Name="PackVersionsTab" Classes="nav" Classes.active="{Binding !Download.PackOverview}" Command="{Binding Download.ShowPackVersionsCommand}" Content="版本与安装"/>
-        </StackPanel>
-        <Border Grid.Row="1" Classes="card" Padding="12" IsVisible="{Binding Download.ShowsResourceDependencies}">
-          <StackPanel Spacing="5"><TextBlock Text="所选版本的前置依赖" FontWeight="SemiBold" /><ScrollViewer MaxHeight="70" HorizontalScrollBarVisibility="Disabled"><TextBlock x:Name="ResourceDependencyNotice" Text="{Binding Download.ResourceDependencyHint}" TextWrapping="Wrap" Classes="muted" FontSize="13" /></ScrollViewer></StackPanel>
-        </Border>
-        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" IsVisible="{Binding Download.ShowsResourceVersions}" IsEnabled="{Binding Download.CanConfigureVersion}">
-          <ComboBox x:Name="ResourceGameFilter" ItemsSource="{Binding Download.ResourceGameVersions}" SelectedItem="{Binding Download.ResourceGameVersion}" AutomationProperties.Name="筛选游戏版本" />
-          <ComboBox Grid.Column="1" x:Name="ResourceLoaderFilter" IsVisible="{Binding Download.ShowsResourceLoaderFilter}" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.ResourceLoader}" AutomationProperties.Name="筛选加载器" />
-          <ComboBox Grid.Column="2" x:Name="ResourceChannelFilter" ItemsSource="{Binding Download.ResourceReleaseChannels}" SelectedItem="{Binding Download.ResourceReleaseChannel}" AutomationProperties.Name="筛选发布类型" />
-          <Button Grid.Column="3" Content="刷新" Command="{Binding Download.RetryResourceVersionsCommand}" />
-        </Grid>
-        <ScrollViewer Grid.Row="3" x:Name="PackOverviewScroll" IsVisible="{Binding Download.ShowsPackOverview}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-          <StackPanel Spacing="16">
-            <Border Classes="card" Padding="20"><StackPanel Spacing="10">
-              <TextBlock Text="关于这个整合包" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="{Binding Download.PackDescription}" FontSize="14" LineHeight="23" TextWrapping="Wrap"/>
-            </StackPanel></Border>
-            <Border Classes="card" Padding="18"><StackPanel Spacing="10">
-              <TextBlock Text="适配信息" FontSize="16" FontWeight="SemiBold"/>
-              <TextBlock Text="{Binding Download.PackSupportedVersions}" Classes="muted" TextWrapping="Wrap"/>
-              <TextBlock Text="{Binding Download.PackLoaders}" Classes="muted" TextWrapping="Wrap"/>
-              <TextBlock Text="{Binding Download.PackActivity}" Classes="muted" TextWrapping="Wrap"/>
-              <Button Command="{Binding Download.ShowPackVersionsCommand}" Content="选择版本并安装 →" HorizontalAlignment="Left"/>
-            </StackPanel></Border>
-          </StackPanel>
-        </ScrollViewer>
-        <ScrollViewer Grid.Row="3" x:Name="ResourceReleaseScroll" IsVisible="{Binding Download.ShowsResourceVersions}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="10">
-          <ProgressBar IsVisible="{Binding Download.IsLoadingResourceVersions}" IsIndeterminate="True" Height="3" />
-          <TextBlock Text="{Binding Download.ResourceVersionsStatus}" Classes="muted" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding Download.ResourceReleaseGroups}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResourceReleaseGroup">
-            <Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded}"><ItemsControl ItemsSource="{Binding Releases}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResourceReleaseItem">
-              <Border Classes="card" Margin="0,3" Padding="10"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" Padding="8"><StackPanel Spacing="5">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" /><Border Grid.Column="1" Classes="release-tag" Classes.beta="{Binding IsBeta}" Classes.alpha="{Binding IsAlpha}" VerticalAlignment="Center"><TextBlock Text="{Binding ReleaseChannel}" FontSize="13" FontWeight="SemiBold" /></Border></Grid>
-                  <TextBlock Text="{Binding Metadata}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding CompatibilityHint}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
-                </StackPanel></Button>
-                <Button Grid.Column="1" Content="{Binding DownloadText}" Command="{Binding InstallCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanInstall}" Classes="compact" VerticalAlignment="Center" />
-              </Grid></Border>
-            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Expander>
-          </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-          <Button Content="加载更多发布版本" IsVisible="{Binding Download.HasMoreResourceVersions}" Command="{Binding Download.MoreResourceVersionsCommand}" />
-        </StackPanel></ScrollViewer>
-      </Grid>
-      <ScrollViewer IsVisible="{Binding Download.IsVersionList}" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="12">
-        <TextBlock Text="最新版本" Classes="muted" />
-        <ItemsControl ItemsSource="{Binding Download.LatestVersions}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:VersionItem"><Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,3"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Id}" FontWeight="Medium" /><TextBlock Grid.Column="1" Text="{Binding TypeText}" Classes="muted" Margin="20,0,0,0" /></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-        <ItemsControl ItemsSource="{Binding Download.VersionGroups}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:VersionGroup"><Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded}"><ItemsControl ItemsSource="{Binding Versions}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:VersionItem"><Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Content="{Binding Id}" Margin="0,3" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Expander></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-      </StackPanel></ScrollViewer>
-      <ScrollViewer x:Name="VersionInstallScroll" IsVisible="{Binding Download.IsVersionConfiguration}" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="16" Margin="0,0,4,8">
-          <Border Classes="card" Padding="18">
-            <Grid ColumnDefinitions="Auto,48,*" ColumnSpacing="14">
-              <Button x:Name="BackToVersions" Classes="quiet" Command="{Binding Download.BackToVersionsCommand}" Content="‹ 返回" VerticalAlignment="Center" />
-              <icons:UiIcon Grid.Column="1" Kind="Tile.LoaderVanilla" Width="48" Height="48" VerticalAlignment="Center" />
-              <StackPanel Grid.Column="2" Spacing="5"><TextBlock Text="{Binding Download.InstallGameVersion}" FontSize="24" FontWeight="SemiBold" /><TextBlock Text="选择 Mod 加载器" Classes="muted" /></StackPanel>
-            </Grid>
           </Border>
-          <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Download.CanConfigureVersion}">
-            <TextBlock Text="下载源" Classes="muted" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <Button Classes="nav" Classes.active="{Binding Download.IsOfficialSource}" Content="官方" Command="{Binding Download.UseDownloadSourceCommand}" CommandParameter="official" />
-            <Button Classes="nav" Classes.active="{Binding Download.IsBmclapiSource}" Content="BMCLAPI 镜像" Command="{Binding Download.UseDownloadSourceCommand}" CommandParameter="bmclapi" />
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding Download.IsPackResourceDetail}">
+            <Button x:Name="PackOverviewTab" Classes="nav" Classes.active="{Binding Download.PackOverview}" Command="{Binding Download.ShowPackOverviewCommand}" Content="介绍" />
+            <Button x:Name="PackVersionsTab" Classes="nav" Classes.active="{Binding !Download.PackOverview}" Command="{Binding Download.ShowPackVersionsCommand}" Content="版本与安装" />
           </StackPanel>
-          <TextBlock Text="安装方式" FontSize="16" FontWeight="SemiBold" />
-          <ItemsControl ItemsSource="{Binding Download.InstallLoaders}" IsEnabled="{Binding Download.CanConfigureVersion}">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:InstallLoaderChoice">
-              <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}" Width="148" MinHeight="116" Margin="0,0,8,8" HorizontalContentAlignment="Left">
-                <StackPanel Spacing="8"><icons:UiIcon Kind="{Binding Icon}" Width="32" Height="32" HorizontalAlignment="Left" /><TextBlock Text="{Binding Title}" FontWeight="SemiBold" /><TextBlock Text="{Binding Description}" Classes="muted" FontSize="13" /></StackPanel>
-              </Button>
-            </DataTemplate></ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Border Classes="card" Padding="18" IsVisible="{Binding Download.ShowsInstallLoaderVersions}">
-            <StackPanel Spacing="12">
-              <TextBlock Text="加载器版本" FontWeight="SemiBold" />
-              <ComboBox x:Name="InstallLoaderVersion" ItemsSource="{Binding Download.InstallLoaderVersions}" SelectedItem="{Binding Download.SelectedInstallLoaderVersion}" PlaceholderText="请选择加载器版本" IsEnabled="{Binding Download.CanConfigureVersion}" AutomationProperties.Name="加载器版本" />
-              <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding Download.IsLoadingLoaderVersions}" />
-              <TextBlock Text="{Binding Download.LoaderVersionStatus}" TextWrapping="Wrap" Classes="muted" />
-              <Button Classes="quiet" Content="刷新版本列表" Command="{Binding Download.ReloadLoaderVersionsCommand}" IsEnabled="{Binding Download.CanConfigureVersion}" HorizontalAlignment="Left" />
+          <Border Grid.Row="1" Classes="card" Padding="12" IsVisible="{Binding Download.ShowsResourceDependencies}">
+            <StackPanel Spacing="5">
+              <TextBlock Text="所选版本的前置依赖" FontWeight="SemiBold" />
+              <ScrollViewer MaxHeight="70" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="ResourceDependencyNotice" Text="{Binding Download.ResourceDependencyHint}" TextWrapping="Wrap" Classes="muted" FontSize="13" />
+              </ScrollViewer>
             </StackPanel>
           </Border>
-          <TextBlock Text="每次选择一种加载器；需要的 Fabric API 等模组可在安装后到「模组」中添加。" Classes="muted" TextWrapping="Wrap" />
-        </StackPanel>
-      </ScrollViewer>
-    </Grid>
-    <Grid Grid.Row="4" IsVisible="{Binding Download.IsResourceList}" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,6,0,0">
-      <TextBlock Text="{Binding Download.Status}" IsVisible="{Binding !Download.IsSearchingResources}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
-      <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
-        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock Text="每次加载" VerticalAlignment="Center" Classes="muted" /><ComboBox x:Name="ResourcePageSize" Classes="compact" Width="72" ItemsSource="{Binding Download.PageSizes}" SelectedItem="{Binding Download.PageSize}" IsEnabled="{Binding Download.CanEditSearch}" AutomationProperties.Name="每次加载数量" /></StackPanel>
-        <CheckBox x:Name="InfiniteScrollChoice" Grid.Column="1" Content="连续滚动" IsChecked="{Binding Download.IsInfiniteScroll}" IsEnabled="{Binding Download.CanEditSearch}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="2" Text="{Binding Download.PageText}" Classes="muted" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6"><Button x:Name="LoadMoreResourcesButton" Classes="compact" IsVisible="{Binding Download.IsInfiniteScroll}" Command="{Binding Download.LoadMoreResourcesCommand}" Content="{Binding Download.MoreResourcesText}" /><Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="‹" Command="{Binding Download.PreviousPageCommand}" /><Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="›" Command="{Binding Download.NextPageCommand}" /></StackPanel>
+          <Grid Grid.Row="2" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" IsVisible="{Binding Download.ShowsResourceVersions}" IsEnabled="{Binding Download.CanConfigureVersion}">
+            <ComboBox x:Name="ResourceGameFilter" ItemsSource="{Binding Download.ResourceGameVersions}" SelectedItem="{Binding Download.ResourceGameVersion}" AutomationProperties.Name="筛选游戏版本" />
+            <ComboBox Grid.Column="1" x:Name="ResourceLoaderFilter" IsVisible="{Binding Download.ShowsResourceLoaderFilter}" ItemsSource="{Binding Download.Loaders}" SelectedItem="{Binding Download.ResourceLoader}" AutomationProperties.Name="筛选加载器" />
+            <ComboBox Grid.Column="2" x:Name="ResourceChannelFilter" ItemsSource="{Binding Download.ResourceReleaseChannels}" SelectedItem="{Binding Download.ResourceReleaseChannel}" AutomationProperties.Name="筛选发布类型" />
+            <Button Grid.Column="3" Content="刷新" Command="{Binding Download.RetryResourceVersionsCommand}" />
+          </Grid>
+          <ScrollViewer Grid.Row="3" x:Name="PackOverviewScroll" IsVisible="{Binding Download.ShowsPackOverview}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <Border Classes="card" Padding="20">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="关于这个整合包" FontSize="18" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Download.PackDescription}" FontSize="14" LineHeight="23" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Border Classes="card" Padding="18">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="适配信息" FontSize="16" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Download.PackSupportedVersions}" Classes="muted" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Download.PackLoaders}" Classes="muted" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Download.PackActivity}" Classes="muted" TextWrapping="Wrap" />
+                  <Button Command="{Binding Download.ShowPackVersionsCommand}" Content="选择版本并安装 →" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+          <ScrollViewer Grid.Row="3" x:Name="ResourceReleaseScroll" IsVisible="{Binding Download.ShowsResourceVersions}" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="10">
+              <ProgressBar IsVisible="{Binding Download.IsLoadingResourceVersions}" IsIndeterminate="True" Height="3" />
+              <TextBlock Text="{Binding Download.ResourceVersionsStatus}" Classes="muted" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding Download.ResourceReleaseGroups}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ResourceReleaseGroup">
+                    <Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded}">
+                      <ItemsControl ItemsSource="{Binding Releases}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:ResourceReleaseItem">
+                            <Border Classes="card" Margin="0,3" Padding="10">
+                              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" Padding="8">
+                                  <StackPanel Spacing="5">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                      <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" />
+                                      <Border Grid.Column="1" Classes="release-tag" Classes.beta="{Binding IsBeta}" Classes.alpha="{Binding IsAlpha}" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ReleaseChannel}" FontSize="13" FontWeight="SemiBold" />
+                                      </Border>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Metadata}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding CompatibilityHint}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                  </StackPanel>
+                                </Button>
+                                <Button Grid.Column="1" Content="{Binding DownloadText}" Command="{Binding InstallCommand}" CommandParameter="{Binding}" IsEnabled="{Binding CanInstall}" Classes="compact" VerticalAlignment="Center" />
+                              </Grid>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Expander>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="加载更多发布版本" IsVisible="{Binding Download.HasMoreResourceVersions}" Command="{Binding Download.MoreResourceVersionsCommand}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+        <ScrollViewer IsVisible="{Binding Download.IsVersionList}" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="12">
+            <TextBlock Text="最新版本" Classes="muted" />
+            <ItemsControl ItemsSource="{Binding Download.LatestVersions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:VersionItem">
+                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,3">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Id}" FontWeight="Medium" />
+                      <TextBlock Grid.Column="1" Text="{Binding TypeText}" Classes="muted" Margin="20,0,0,0" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Download.VersionGroups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:VersionGroup">
+                  <Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded}">
+                    <ItemsControl ItemsSource="{Binding Versions}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VersionItem">
+                          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Content="{Binding Id}" Margin="0,3" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Expander>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+        <ScrollViewer x:Name="VersionInstallScroll" IsVisible="{Binding Download.IsVersionConfiguration}" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="16" Margin="0,0,4,8">
+            <Border Classes="card" Padding="18">
+              <Grid ColumnDefinitions="Auto,48,*" ColumnSpacing="14">
+                <Button x:Name="BackToVersions" Classes="quiet" Command="{Binding Download.BackToVersionsCommand}" Content="‹ 返回" VerticalAlignment="Center" />
+                <icons:UiIcon Grid.Column="1" Kind="Tile.LoaderVanilla" Width="48" Height="48" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Spacing="5">
+                  <TextBlock Text="{Binding Download.InstallGameVersion}" FontSize="24" FontWeight="SemiBold" />
+                  <TextBlock Text="选择 Mod 加载器" Classes="muted" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding Download.CanConfigureVersion}">
+              <TextBlock Text="下载源" Classes="muted" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <Button Classes="nav" Classes.active="{Binding Download.IsOfficialSource}" Content="官方" Command="{Binding Download.UseDownloadSourceCommand}" CommandParameter="official" />
+              <Button Classes="nav" Classes.active="{Binding Download.IsBmclapiSource}" Content="BMCLAPI 镜像" Command="{Binding Download.UseDownloadSourceCommand}" CommandParameter="bmclapi" />
+            </StackPanel>
+            <TextBlock Text="安装方式" FontSize="16" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding Download.InstallLoaders}" IsEnabled="{Binding Download.CanConfigureVersion}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:InstallLoaderChoice">
+                  <Button Classes="nav" Classes.active="{Binding IsSelected}" Command="{Binding SelectCommand}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding Title}" Width="148" MinHeight="116" Margin="0,0,8,8" HorizontalContentAlignment="Left">
+                    <StackPanel Spacing="8">
+                      <icons:UiIcon Kind="{Binding Icon}" Width="32" Height="32" HorizontalAlignment="Left" />
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Description}" Classes="muted" FontSize="13" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Classes="card" Padding="18" IsVisible="{Binding Download.ShowsInstallLoaderVersions}">
+              <StackPanel Spacing="12">
+                <TextBlock Text="加载器版本" FontWeight="SemiBold" />
+                <ComboBox x:Name="InstallLoaderVersion" ItemsSource="{Binding Download.InstallLoaderVersions}" SelectedItem="{Binding Download.SelectedInstallLoaderVersion}" PlaceholderText="请选择加载器版本" IsEnabled="{Binding Download.CanConfigureVersion}" AutomationProperties.Name="加载器版本" />
+                <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding Download.IsLoadingLoaderVersions}" />
+                <TextBlock Text="{Binding Download.LoaderVersionStatus}" TextWrapping="Wrap" Classes="muted" />
+                <Button Classes="quiet" Content="刷新版本列表" Command="{Binding Download.ReloadLoaderVersionsCommand}" IsEnabled="{Binding Download.CanConfigureVersion}" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="每次选择一种加载器；需要的 Fabric API 等模组可在安装后到「模组」中添加。" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
       </Grid>
+      <Grid Grid.Row="2" IsVisible="{Binding Download.IsResourceList}" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,6,0,0" Grid.Column="1">
+        <TextBlock Text="{Binding Download.Status}" IsVisible="{Binding !Download.IsSearchingResources}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <TextBlock Text="每次加载" VerticalAlignment="Center" Classes="muted" />
+            <ComboBox x:Name="ResourcePageSize" Classes="compact" Width="72" ItemsSource="{Binding Download.PageSizes}" SelectedItem="{Binding Download.PageSize}" IsEnabled="{Binding Download.CanEditSearch}" AutomationProperties.Name="每次加载数量" />
+          </StackPanel>
+          <CheckBox x:Name="InfiniteScrollChoice" Grid.Column="1" Content="连续滚动" IsChecked="{Binding Download.IsInfiniteScroll}" IsEnabled="{Binding Download.CanEditSearch}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Text="{Binding Download.PageText}" Classes="muted" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+            <Button x:Name="LoadMoreResourcesButton" Classes="compact" IsVisible="{Binding Download.IsInfiniteScroll}" Command="{Binding Download.LoadMoreResourcesCommand}" Content="{Binding Download.MoreResourcesText}" />
+            <Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="‹" Command="{Binding Download.PreviousPageCommand}" />
+            <Button Classes="compact" IsVisible="{Binding Download.ShowsPagination}" Content="›" Command="{Binding Download.NextPageCommand}" />
+          </StackPanel>
+        </Grid>
+      </Grid>
+      <Border Grid.Row="2" IsVisible="{Binding Download.ShowsDownloadFooter}" Classes="card" Padding="12" Margin="0,8,0,0" Grid.Column="1">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <StackPanel Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Download.InstallSummary}" IsVisible="{Binding Download.IsVersionConfiguration}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Download.ResourceReleaseSummary}" IsVisible="{Binding Download.IsResourceDetail}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.ResourceReleaseSummary}" />
+            <TextBlock Text="{Binding Download.FooterStatus}" Classes="muted optional" FontSize="13" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
+            <ProgressBar IsVisible="{Binding Download.IsBusy}" Value="{Binding Download.ProgressPercent}" Maximum="100" Height="4" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" Content="取消" />
+            <Button Classes="primary" Command="{Binding Download.InstallCommand}" x:Name="InstallResourceRelease" IsVisible="{Binding Download.IsResourceDetail}" AutomationProperties.Name="{Binding Download.ResourceInstallButtonText}">
+              <icons:IconLabel Icon="ActionCloudDownload" Text="{Binding Download.ResourceInstallButtonText}" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+            <Button Classes="primary" Command="{Binding Download.InstallVersionCommand}" x:Name="InstallGameVersion" IsVisible="{Binding Download.IsVersionConfiguration}" AutomationProperties.Name="开始安装">
+              <icons:IconLabel Icon="ActionCloudDownload" Text="开始安装" Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
     </Grid>
-    <Border Grid.Row="4" IsVisible="{Binding Download.ShowsDownloadFooter}" Classes="card" Padding="12" Margin="0,8,0,0"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-      <StackPanel Spacing="5" VerticalAlignment="Center">
-        <TextBlock Text="{Binding Download.InstallSummary}" IsVisible="{Binding Download.IsVersionConfiguration}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-        <TextBlock Text="{Binding Download.ResourceReleaseSummary}" IsVisible="{Binding Download.IsResourceDetail}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.ResourceReleaseSummary}" />
-        <TextBlock Text="{Binding Download.FooterStatus}" Classes="muted optional" FontSize="13" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.Status}" />
-        <ProgressBar IsVisible="{Binding Download.IsBusy}" Value="{Binding Download.ProgressPercent}" Maximum="100" Height="4" />
-      </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><Button IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" Content="取消" /><Button Classes="primary" Command="{Binding Download.InstallCommand}" x:Name="InstallResourceRelease" IsVisible="{Binding Download.IsResourceDetail}" AutomationProperties.Name="{Binding Download.ResourceInstallButtonText}"><icons:IconLabel Icon="ActionCloudDownload" Text="{Binding Download.ResourceInstallButtonText}" Foreground="{Binding $parent[Button].Foreground}" /></Button><Button Classes="primary" Command="{Binding Download.InstallVersionCommand}" x:Name="InstallGameVersion" IsVisible="{Binding Download.IsVersionConfiguration}" AutomationProperties.Name="开始安装"><icons:IconLabel Icon="ActionCloudDownload" Text="开始安装" Foreground="{Binding $parent[Button].Foreground}" /></Button></StackPanel>
-    </Grid></Border>
   </Grid>
 </UserControl>

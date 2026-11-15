@@ -37,7 +37,7 @@ public sealed partial class LibraryEntry(InstanceCard instance,LibraryGamePrefer
 
 public sealed partial class MainViewModel
 {
-    private LibraryPreferences _libraryPreferences=new(false,new());
+    private LibraryPreferences _libraryPreferences=new(true,new());
     private string _presentationRoot="";
     private readonly List<LibraryEntry> _allLibraryEntries=[];
     private bool _libraryRefreshQueued;
@@ -63,10 +63,10 @@ public sealed partial class MainViewModel
         "showcase" => "UI 预览 · Dev",
         "settings" => "设置",
         "experience" => ExperiencePageTitle,
-        "multiplayer" => "联机大厅",
+        "multiplayer" => "联机",
         "detail" => SelectedGameName,
-        "discover" => "发现资源",
-        _ => "游戏实例"
+        "discover" => "资源",
+        _ => "实例"
     };
     public bool IsLibraryPage=>ShellPage is "library" or "detail";
     public bool IsDiscoverPage=>ShellPage=="discover";
@@ -157,7 +157,7 @@ public sealed partial class MainViewModel
         {
             _selectRecentGame=true;
             _presentationRoot=GameRoot;
-            _libraryPreferences=ExperienceFiles.Read<LibraryPreferences>(LibrarySettingsPath)??new(false,new());
+            _libraryPreferences=ExperienceFiles.Read<LibraryPreferences>(LibrarySettingsPath)??new(true,new());
             LibraryCompact=_libraryPreferences.Compact;
         }
         var previous=_allLibraryEntries.ToArray();_allLibraryEntries.Clear();

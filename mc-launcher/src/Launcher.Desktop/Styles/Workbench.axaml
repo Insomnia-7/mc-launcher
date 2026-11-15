@@ -1,0 +1,27 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:local="using:Launcher.Desktop">
+  <!-- A: quiet navigation, one main action, flat surfaces and deliberate typography. -->
+  <Style Selector="Window"><Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/><Setter Property="FontSize" Value="14"/></Style>
+  <Style Selector="TextBlock.page-title"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="LetterSpacing" Value="-0.5"/></Style>
+  <Style Selector="TextBlock.section-title"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  <Style Selector="TextBlock.label"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
+  <Style Selector="Border.card"><Setter Property="Padding" Value="20"/><Setter Property="BoxShadow" Value="none"/><Setter Property="CornerRadius" Value="12"/><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/></Style>
+  <Style Selector="Border.inset"><Setter Property="Background" Value="{DynamicResource FieldBrush}"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="12"/></Style>
+  <Style Selector="Button"><Setter Property="icons:Ripple.IsEnabled" Value="False"/><Setter Property="MinHeight" Value="38"/><Setter Property="FontSize" Value="13"/><Setter Property="Padding" Value="14,8"/></Style>
+  <Style Selector="Button /template/ Border#AmbientShadow, Button /template/ Border#HoverShadow, Button /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False"/></Style>
+  <Style Selector="Button:pressed"><Setter Property="RenderTransform" Value="none"/><Setter Property="Opacity" Value="1"/></Style>
+  <Style Selector="Button.primary:pressed"><Setter Property="RenderTransform" Value="scale(0.98)"/></Style>
+  <Style Selector="Button.primary:pressed /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/></Style>
+  <Style Selector="Button.nav"><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="12,8"/><Setter Property="FontSize" Value="13"/><Setter Property="FontWeight" Value="Medium"/></Style>
+  <Style Selector="Button.quiet, Button.ghost, Button.icon"><Setter Property="RenderTransform" Value="none"/></Style>
+  <Style Selector="Button.link"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/><Setter Property="MinHeight" Value="32"/><Setter Property="Padding" Value="4,4"/></Style>
+  <Style Selector="Button.icon"><Setter Property="Width" Value="36"/><Setter Property="Height" Value="36"/><Setter Property="MinHeight" Value="36"/><Setter Property="Padding" Value="8"/></Style>
+  <Style Selector="Button.row-action"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="12"/><Setter Property="RenderTransform" Value="none"/></Style>
+  <Style Selector="Button.row-action.active"><Setter Property="Background" Value="{DynamicResource SelectedBrush}"/></Style>
+  <Style Selector="Button.row-action.active /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}"/></Style>
+  <Style Selector="TextBox, ComboBox"><Setter Property="MinHeight" Value="38"/><Setter Property="FontSize" Value="13"/></Style>
+  <Style Selector="ListBox"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+  <Style Selector="ListBoxItem"><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="12,10"/></Style>
+  <Style Selector="Grid.library-tile:pointerover, Grid.library-tile:pressed"><Setter Property="RenderTransform" Value="none"/></Style>
+  <Style Selector="Grid.library-tile Border#TileHover"><Setter Property="IsVisible" Value="False"/></Style>
+  <Style Selector="Window.reduced-motion Button.primary:pressed"><Setter Property="RenderTransform" Value="none"/></Style>
+</Styles>

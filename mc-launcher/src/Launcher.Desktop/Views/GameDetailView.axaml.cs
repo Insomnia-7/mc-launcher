@@ -9,6 +9,12 @@ public sealed partial class GameDetailView:UserControl
     public GameDetailView()
     {
         InitializeComponent();
+        SizeChanged += (_, _) =>
+        {
+            DetailBody.ColumnDefinitions = new ColumnDefinitions(Bounds.Width < 800 ? "116,*" : "148,*");
+            InstanceCoverEditor.IsVisible = Bounds.Width >= 800;
+            InstancePresentationLayout.ColumnDefinitions = new ColumnDefinitions(Bounds.Width < 800 ? "*,0" : "*,180");
+        };
         DataContextChanged+=(_,_)=>
         {
             if(_model is not null)_model.PropertyChanged-=Changed;

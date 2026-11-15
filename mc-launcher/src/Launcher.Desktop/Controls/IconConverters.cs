@@ -26,9 +26,9 @@ public sealed class CategoryIconConverter : IValueConverter
 {
     public object Convert(object? value,Type targetType,object? parameter,CultureInfo culture) => value switch
     {
-        DownloadCategory.Mod=>"Tile.CatMod", DownloadCategory.Modpack=>"Tile.LoaderModpack",
-        DownloadCategory.ResourcePack=>"Tile.CatResourcepack", DownloadCategory.Datapack=>"Tile.CatDatapack",
-        DownloadCategory.Shader=>"Tile.CatShader", _=>"Tile.VersionRelease"
+        DownloadCategory.Mod=>"ResourceMod", DownloadCategory.Modpack=>"ResourcePack",
+        DownloadCategory.ResourcePack=>"ResourceTexture", DownloadCategory.Datapack=>"ResourceData",
+        DownloadCategory.Shader=>"ResourceShader", _=>"ResourceGame"
     };
     public object ConvertBack(object? value,Type targetType,object? parameter,CultureInfo culture) => throw new NotSupportedException();
 }
