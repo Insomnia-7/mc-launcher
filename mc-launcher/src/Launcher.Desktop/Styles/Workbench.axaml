@@ -1,10 +1,10 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:local="using:Launcher.Desktop">
-  <!-- A: quiet navigation, one main action, flat surfaces and deliberate typography. -->
+  <!-- Shared reference palette, rounded controls and consistent desktop typography. -->
   <Style Selector="Window"><Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/><Setter Property="FontSize" Value="14"/></Style>
   <Style Selector="TextBlock.page-title"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="LetterSpacing" Value="-0.5"/></Style>
   <Style Selector="TextBlock.section-title"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
   <Style Selector="TextBlock.label"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/></Style>
-  <Style Selector="Border.card"><Setter Property="Padding" Value="20"/><Setter Property="BoxShadow" Value="none"/><Setter Property="CornerRadius" Value="12"/><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/></Style>
+  <Style Selector="Border.card"><Setter Property="Padding" Value="20"/><Setter Property="BoxShadow" Value="0 3 12 0 #106459A0"/><Setter Property="CornerRadius" Value="12"/><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/></Style>
   <Style Selector="Border.inset"><Setter Property="Background" Value="{DynamicResource FieldBrush}"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="12"/></Style>
   <Style Selector="Button"><Setter Property="icons:Ripple.IsEnabled" Value="False"/><Setter Property="MinHeight" Value="38"/><Setter Property="FontSize" Value="13"/><Setter Property="Padding" Value="14,8"/></Style>
   <Style Selector="Button /template/ Border#AmbientShadow, Button /template/ Border#HoverShadow, Button /template/ Border#TopHighlight"><Setter Property="IsVisible" Value="False"/></Style>

@@ -5,7 +5,7 @@
     <AssemblyName>MCLauncher.Desktop</AssemblyName>
     <RootNamespace>Launcher.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>1.0.0-preview.15</Version>
+    <Version>1.0.0-preview.16</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyTitle>方隅</AssemblyTitle>
     <Product>方隅</Product>
@@ -14,6 +14,7 @@
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets/Brand/**" />
+    <AvaloniaResource Include="Assets/Scenery/**" />
     <AvaloniaResource Include="Assets/Loaders/**" />
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />

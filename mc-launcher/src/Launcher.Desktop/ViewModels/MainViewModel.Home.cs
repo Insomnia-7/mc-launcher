@@ -16,6 +16,7 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _isHomeSection = true;
     // The home page must not inherit the library page's search/group/favorite filters.
     public ObservableCollection<LibraryEntry> HomeEntries { get; } = [];
+    public IReadOnlyList<LibraryEntry> HomePreviewEntries => HomeEntries.Take(3).ToArray();
     public IReadOnlyList<LibraryEntry> RecentHomeEntries => HomeEntries.Take(4).ToArray();
     public bool IsHomePage => ShellPage == "home";
     public string AllInstancesLinkText => $"全部实例 ({Instances.Count}) ›";
@@ -77,7 +78,7 @@ public sealed partial class MainViewModel
         HomeEntries.Clear();
         foreach (var entry in _allLibraryEntries.OrderByDescending(e => e.LastPlayed).ThenByDescending(e => e.Favorite).ThenBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
             HomeEntries.Add(entry);
-        OnPropertyChanged(nameof(RecentHomeEntries));
+        OnPropertyChanged(nameof(RecentHomeEntries)); OnPropertyChanged(nameof(HomePreviewEntries));
         OnPropertyChanged(nameof(SelectedHomeEntry)); OnPropertyChanged(nameof(HomeLastPlayedText)); OnPropertyChanged(nameof(HomeSelectionText));
     }
     private void NotifyHomeMultiplayer()

@@ -70,7 +70,7 @@ public sealed class AppearanceManager : IDisposable
         SetBrush("DangerFillHoverBrush", Color.Parse(light ? "#B2303F" : "#BA3947"), duration);
         SetBrush("MicaShellTintBrush", Color.Parse(light ? "#ECF7F8FA" : "#E6101114"), duration);
         SetBrush("MicaSidebarBrush", Color.Parse(light ? "#E6F1F2F5" : "#DE14161B"), duration);
-        SetBrush("PrimaryTextBrush", light ? Colors.White : Color.Parse("#171326"), TimeSpan.Zero);
+        SetBrush("PrimaryTextBrush", Colors.White, TimeSpan.Zero);
 
         if (Avalonia.Application.Current is { } app)
             app.RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;

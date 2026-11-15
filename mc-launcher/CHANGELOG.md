@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.16 · 参考图首页与 MC 光影横条
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.16)。
+
+- 以用户提供的参考图重新实现首页：固定宽幅 MC 生存光影横条、四块双列卡片、三条实例预览及三列两行快捷功能，保留原启动器图标。
+- 内置原创生成的黄昏风景位图；标题使用原生文字，空库和深浅主题中均保留横条。生成来源与提示词见 docs/assets/home-banner-prompt.md。
+- 七项侧栏按参考图排列，网络入口直达现有设置；采用薰衣草浅色、炭灰蓝深色、紫色按钮与白色按钮文字。
+- 所有启动、实例管理及快捷功能继续连接真实业务；未测速和未检测 NAT 如实显示，不使用参考图的演示状态。
+- 当前设备 1,257 项检查通过，另通过架构护栏；发布包、签名与远端验证随构建记录补录。Win10、真实高 DPI、真实远端联机继续待测。
+
+
 ## 1.0.0-preview.15 · A 方案启动器 UI 全面重构
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.15)。

@@ -1,64 +1,70 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:icons="using:Launcher.Desktop.Controls" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.HomeView">
   <UserControl.Styles>
-    <Style Selector="UserControl.compact Grid#HomeLayout"><Setter Property="Margin" Value="24,24,24,20"/></Style>
-    <Style Selector="UserControl.compact TextBlock#HomeGreeting"><Setter Property="FontSize" Value="24"/></Style>
-    <Style Selector="UserControl.compact Border#HomeQuickLaunchCard"><Setter Property="Padding" Value="20"/></Style>
-    <Style Selector="UserControl.compact Grid#HomeScenery"><Setter Property="IsVisible" Value="False"/></Style>
-    <Style Selector="Grid.recent-row:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}"/></Style>
+    <Style Selector="icons|IconLabel.section-icon /template/ icons|UiIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/></Style>
+    <Style Selector="Border.home-card"><Setter Property="Padding" Value="22,20"/><Setter Property="CornerRadius" Value="16"/><Setter Property="BoxShadow" Value="0 4 14 0 #14645AA5"/></Style>
+    <Style Selector="Button.shortcut"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="Background" Value="{DynamicResource FieldBrush}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="CornerRadius" Value="12"/><Setter Property="Padding" Value="4,12"/></Style>
+    <Style Selector="Button.shortcut:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource SelectedBrush}"/></Style>
+    <Style Selector="Button.shortcut:pressed"><Setter Property="RenderTransform" Value="scale(0.97)"/></Style>
+    <Style Selector="Grid.instance-preview:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}"/></Style>
+    <Style Selector="Border.instance-badge"><Setter Property="Background" Value="{DynamicResource FieldBrush}"/><Setter Property="CornerRadius" Value="6"/><Setter Property="Padding" Value="7,3"/></Style>
+    <Style Selector="UserControl.compact Border.home-card"><Setter Property="Padding" Value="16"/></Style>
+    <Style Selector="UserControl.compact TextBlock#HomeHeroTitle"><Setter Property="FontSize" Value="28"/></Style>
+    <Style Selector="UserControl.compact Border.instance-badge"><Setter Property="IsVisible" Value="False"/></Style>
   </UserControl.Styles>
   <ScrollViewer x:Name="HomeScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-    <Grid x:Name="HomeLayout" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="28" Margin="40,32,40,24" MaxWidth="1320" HorizontalAlignment="Stretch">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-        <StackPanel Spacing="8"><TextBlock Text="MINECRAFT · JAVA EDITION" Classes="eyebrow" FontSize="10" LetterSpacing="1.8"/><TextBlock x:Name="HomeGreeting" Text="下一次冒险，从这里开始。" Classes="page-title"/></StackPanel>
-        <TextBlock Grid.Column="1" Text="{Binding HomeLastPlayedText}" Classes="label" VerticalAlignment="Bottom"/>
-      </Grid>
-      <Border x:Name="HomeQuickLaunchCard" Grid.Row="1" Classes="card" Padding="28" CornerRadius="16">
-        <Grid RowDefinitions="Auto,Auto" RowSpacing="24">
-          <Grid x:Name="HomeLaunchContent" ColumnDefinitions="1.45*,1*" ColumnSpacing="24">
-            <StackPanel Spacing="12" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="8"><Border Background="{DynamicResource SelectedBrush}" CornerRadius="4" Padding="7,3"><TextBlock Text="启动 Minecraft" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold"/></Border><TextBlock Text="{Binding SelectedGameStatus}" Classes="label" VerticalAlignment="Center" IsVisible="{Binding HasInstances}"/></StackPanel>
-              <TextBlock x:Name="HomeSelectedName" Text="{Binding SelectedGameName}" FontSize="30" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasInstances}"/>
-              <TextBlock Text="{Binding SelectedGameMeta}" Classes="muted" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasInstances}"/>
-              <StackPanel x:Name="HomeEmptyLibrary" IsVisible="{Binding !HasInstances}" Spacing="10"><TextBlock Text="开始你的第一个世界" FontSize="28" FontWeight="SemiBold"/><TextBlock Text="安装 Minecraft，或导入喜欢的整合包。" Classes="muted" TextWrapping="Wrap"/></StackPanel>
-              <Button x:Name="HomeAccountEntry" Classes="quiet" Command="{Binding OpenAccountsCommand}" HorizontalAlignment="Left" Padding="0,4" AutomationProperties.Name="选择游戏账号"><StackPanel Orientation="Horizontal" Spacing="8"><Grid Width="20" Height="20"><Image Source="{Binding SkinHead}" IsVisible="{Binding HasSkinHead}" RenderOptions.BitmapInterpolationMode="None"/><icons:UiIcon Kind="ActionLogin" IsVisible="{Binding !HasSkinHead}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}"/></Grid><TextBlock Text="{Binding AccountText}" FontSize="12" MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><TextBlock Text="切换 ›" FontSize="11" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/></StackPanel></Button>
-            </StackPanel>
-            <Grid x:Name="HomeScenery" Grid.Column="1" Height="160" IsHitTestVisible="False"><Border CornerRadius="12" ClipToBounds="True"><Grid><Image Source="{Binding WallpaperImage}" Opacity="{Binding WallpaperOpacity}" Stretch="UniformToFill" IsVisible="{Binding HasCustomWallpaper}"/><icons:WorldArt IsVisible="{Binding !HasCustomWallpaper}"/></Grid></Border></Grid>
-          </Grid>
-          <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="12">
-            <Grid ColumnDefinitions="*,160" ColumnSpacing="12" IsVisible="{Binding HasInstances}">
-              <ComboBox x:Name="QuickInstanceSelector" ItemsSource="{Binding HomeEntries}" SelectedItem="{Binding SelectedHomeEntry, Mode=TwoWay}" MinHeight="46" PlaceholderText="选择 Minecraft 实例" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.Name="选择要启动的游戏实例">
-                <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="10"><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="24" Height="24"/><TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding LoaderBadgeText}" Classes="label" VerticalAlignment="Center"/></Grid></DataTemplate></ComboBox.ItemTemplate>
-              </ComboBox>
-              <Button x:Name="HomeLaunchButton" Grid.Column="1" Classes="primary" Command="{Binding LaunchCommand}" Height="46" AutomationProperties.Name="启动游戏"><icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" IconSize="20" FontSize="14" Foreground="{Binding $parent[Button].Foreground}"/></Button>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding !HasInstances}"><Button x:Name="HomeCreateFirstButton" Classes="primary" Command="{Binding OpenSetupCommand}" Height="46" Content="安装 Minecraft"/><Button x:Name="HomeImportFirstButton" Command="{Binding ImportModpackCommand}" Height="46" Content="导入整合包"/></StackPanel>
-            <Grid x:Name="HomeLaunchProgress" Grid.Row="1" IsVisible="{Binding IsBusy}" ColumnDefinitions="*,Auto" ColumnSpacing="12"><StackPanel Spacing="8"><TextBlock Text="{Binding StatusText}" Classes="label" TextTrimming="CharacterEllipsis"/><ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="3"/></StackPanel><Button x:Name="HomeCancelLaunch" Grid.Column="1" Classes="link" Command="{Binding CancelCommand}" Content="取消" IsVisible="{Binding CanCancel}"/></Grid>
-          </Grid>
+    <Grid x:Name="HomeLayout" RowDefinitions="Auto,Auto,Auto" RowSpacing="18" Margin="18,12,22,28" MaxWidth="1440" HorizontalAlignment="Stretch">
+      <Border x:Name="HomeHeroBanner" Height="136" CornerRadius="16" ClipToBounds="True" BorderBrush="#505B53BA" BorderThickness="1" BoxShadow="0 3 12 0 #186059B5">
+        <Grid>
+          <Image x:Name="HomeBannerImage" Source="avares://MCLauncher.Desktop/Assets/Scenery/home-survival-banner-v1.png" Stretch="UniformToFill"/>
+          <Border><Border.Background><LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%"><GradientStop Color="#A026225F" Offset="0"/><GradientStop Color="#502C276C" Offset="0.50"/><GradientStop Color="#002C276C" Offset="1"/></LinearGradientBrush></Border.Background></Border>
+          <StackPanel Margin="32,0" VerticalAlignment="Center" Spacing="12"><TextBlock x:Name="HomeHeroTitle" Text="专注于更好的 MC 联机体验" Foreground="White" FontSize="34" FontWeight="Bold" TextTrimming="CharacterEllipsis"/><TextBlock Text="更 稳 定  ·  更 便 捷  ·  更 流 畅" Foreground="#F0F0F4FF" FontSize="15" FontWeight="SemiBold" LetterSpacing="2"/></StackPanel>
         </Grid>
       </Border>
-      <Grid x:Name="HomeBottomRow" Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="24">
-        <StackPanel x:Name="HomeInstancesCard" Spacing="12">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="最近使用" Classes="section-title" VerticalAlignment="Center"/><Button x:Name="HomeAllInstances" Grid.Column="1" Classes="link" Command="{Binding ShowInstancesCommand}" Content="{Binding AllInstancesLinkText}"/></Grid>
-          <ItemsControl x:Name="HomeInstancesList" ItemsSource="{Binding RecentHomeEntries}" IsVisible="{Binding HasInstances}">
-            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry">
-              <Grid Classes="recent-row" ColumnDefinitions="44,*,36,36" ColumnSpacing="10" Margin="0,2" Height="62" Background="Transparent">
-                <Border Width="36" Height="36" CornerRadius="8" ClipToBounds="True" VerticalAlignment="Center"><Grid><Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="32" Height="32" IsVisible="{Binding !HasCover}"/></Grid></Border>
-                <Button Grid.Column="1" Classes="quiet" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"><StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Meta}" Classes="label" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
-                <Button Grid.Column="2" Classes="icon" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).QuickLaunchEntryCommand}" CommandParameter="{Binding}" ToolTip.Tip="启动此实例" AutomationProperties.Name="启动此实例"><icons:UiIcon Kind="ActionPlay" Foreground="{DynamicResource AccentBrush}" Width="18" Height="18"/></Button>
-                <Button Grid.Column="3" Classes="icon" Content="···" Click="OpenEntryMenu" ToolTip.Tip="实例操作" AutomationProperties.Name="实例操作"/>
-              </Grid>
-            </DataTemplate></ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="安装后，你的 Minecraft 实例会显示在这里。" Classes="muted" IsVisible="{Binding !HasInstances}" Margin="0,12"/>
-        </StackPanel>
-        <Border x:Name="HomeRuntimePanel" Grid.Column="1" Classes="card" Width="250" IsVisible="False" VerticalAlignment="Top"><StackPanel Spacing="16"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="运行环境" Classes="section-title"/><Button Grid.Column="1" Classes="icon" Content="×" Click="ToggleRuntime" ToolTip.Tip="收起运行环境"/></Grid><StackPanel Spacing="6"><TextBlock Text="内存" Classes="label"/><TextBlock Text="{Binding MemoryText}" FontSize="20" FontWeight="SemiBold"/></StackPanel><StackPanel Spacing="6"><TextBlock Text="Java" Classes="label"/><TextBlock Text="{Binding HomeJavaSummary}" TextWrapping="Wrap" FontSize="13"/></StackPanel><Button Content="管理当前实例" Command="{Binding OpenGameCommand}" IsEnabled="{Binding HasInstances}"/></StackPanel></Border>
+      <Grid x:Name="HomeTopRow" Grid.Row="1" ColumnDefinitions="1.65*,1*" ColumnSpacing="18" MinHeight="204">
+        <Border x:Name="HomeQuickLaunchCard" Classes="card home-card">
+          <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+            <icons:IconLabel Classes="section-icon" Icon="NavVersions" Text="快速启动 Minecraft" IconSize="26" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Grid.Row="1" Text="选择实例并一键启动游戏" Classes="muted" FontSize="14"/>
+            <Grid Grid.Row="2" VerticalAlignment="Bottom" ColumnDefinitions="2*,1*" ColumnSpacing="16" Margin="0,16,0,0" IsVisible="{Binding HasInstances}">
+              <ComboBox x:Name="QuickInstanceSelector" ItemsSource="{Binding HomeEntries}" SelectedItem="{Binding SelectedHomeEntry, Mode=TwoWay}" Height="52" MinWidth="150" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" PlaceholderText="选择游戏实例" AutomationProperties.Name="选择要启动的游戏实例"><ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><Grid ColumnDefinitions="26,*" ColumnSpacing="10"><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="26" Height="26"/><TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/></Grid></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+              <Button x:Name="HomeLaunchButton" Grid.Column="1" HorizontalAlignment="Stretch" Classes="primary" Command="{Binding LaunchCommand}" Height="52" IsVisible="{Binding HasInstances}" AutomationProperties.Name="启动游戏"><icons:IconLabel Icon="ActionPlay" Text="{Binding LaunchTitle}" IconSize="22" FontSize="15" FontWeight="SemiBold" Foreground="{Binding $parent[Button].Foreground}"/></Button>
+            </Grid>
+            <StackPanel x:Name="HomeEmptyLibrary" Grid.Row="2" IsVisible="{Binding !HasInstances}" Orientation="Horizontal" Spacing="12" VerticalAlignment="Bottom" Margin="0,16,0,0"><Button x:Name="HomeCreateFirstButton" Classes="primary" Command="{Binding OpenSetupCommand}" Content="安装 Minecraft" Height="52"/><Button x:Name="HomeImportFirstButton" Command="{Binding ImportModpackCommand}" Content="导入整合包" Height="52"/></StackPanel>
+            <Grid x:Name="HomeLaunchProgress" Grid.Row="3" IsVisible="{Binding IsBusy}" ColumnDefinitions="*,Auto" ColumnSpacing="12"><StackPanel Spacing="6"><TextBlock Text="{Binding StatusText}" Classes="label" TextTrimming="CharacterEllipsis"/><ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="3"/></StackPanel><Button x:Name="HomeCancelLaunch" Grid.Column="1" Classes="link" Command="{Binding CancelCommand}" Content="取消" IsVisible="{Binding CanCancel}"/></Grid>
+          </Grid>
+        </Border>
+        <Border x:Name="HomeNetworkStatusCard" Grid.Column="1" Classes="card home-card">
+          <Grid RowDefinitions="Auto,*,*,*" RowSpacing="10">
+            <icons:IconLabel Classes="section-icon" Icon="NetworkSignal" Text="联机与网络状态" IconSize="24" FontSize="20" FontWeight="SemiBold"/>
+            <Grid Grid.Row="1" ColumnDefinitions="18,*,Auto" ColumnSpacing="10" VerticalAlignment="Center"><icons:UiIcon Kind="{Binding HomeMultiplayerStatusIcon}" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}"/><TextBlock Grid.Column="1" Text="联机服务" FontSize="14"/><TextBlock Grid.Column="2" Text="{Binding HomeMultiplayerStateText}" Classes="label" FontWeight="SemiBold"/></Grid>
+            <Grid Grid.Row="2" ColumnDefinitions="18,*,Auto" ColumnSpacing="10" VerticalAlignment="Center"><icons:UiIcon Kind="{Binding HomeLatencyStatusIcon}" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}"/><TextBlock Grid.Column="1" Text="网络连接" FontSize="14"/><TextBlock Grid.Column="2" Text="{Binding HomeLatencyText}" Classes="label" FontWeight="SemiBold"/></Grid>
+            <Grid Grid.Row="3" ColumnDefinitions="18,*,Auto" ColumnSpacing="10" VerticalAlignment="Center"><icons:UiIcon Kind="NetworkClock" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}"/><TextBlock Grid.Column="1" Text="NAT 类型" FontSize="14"/><Button x:Name="HomeNetworkEntry" Grid.Column="2" Classes="link" Command="{Binding OpenNetworkCommand}" Content="未检测" FontSize="12" MinHeight="22" Padding="0" ToolTip.Tip="打开网络与连接设置；尚未检测 NAT 类型"/></Grid>
+          </Grid>
+        </Border>
       </Grid>
-      <WrapPanel x:Name="HomeShortcuts" Grid.Row="3">
-        <Button x:Name="HomeNewInstance" Classes="quiet" Command="{Binding OpenSetupCommand}" Margin="0,0,8,8"><icons:IconLabel Icon="ActionPlus" Text="安装新版本" IconSize="16" FontSize="12"/></Button>
-        <Button x:Name="HomeImportModpack" Classes="quiet" Command="{Binding ImportModpackCommand}" Margin="0,0,8,8"><icons:IconLabel Icon="ActionImport" Text="导入整合包" IconSize="16" FontSize="12"/></Button>
-        <Button x:Name="HomeRuntimeToggle" Classes="quiet" Click="ToggleRuntime" Margin="0,0,0,8" IsEnabled="{Binding HasInstances}"><icons:IconLabel Icon="ActionSettings" Text="运行环境" IconSize="16" FontSize="12"/></Button>
-      </WrapPanel>
-      <Border x:Name="HomeConnectionSummary" Grid.Row="4" Background="{DynamicResource SelectedBrush}" CornerRadius="8" Padding="12" IsVisible="{Binding Multiplayer.HasSession}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding HomeMultiplayerStateText}" FontSize="12" VerticalAlignment="Center"/><Button Grid.Column="1" Classes="link" Content="查看联机 ›" Command="{Binding OpenMultiplayerCommand}"/></Grid></Border>
+      <Grid x:Name="HomeBottomRow" Grid.Row="2" ColumnDefinitions="1.65*,1*" ColumnSpacing="18" MinHeight="290">
+        <Border x:Name="HomeInstancesCard" Classes="card home-card">
+          <Grid RowDefinitions="Auto,*" RowSpacing="12">
+            <Grid ColumnDefinitions="*,Auto"><icons:IconLabel Classes="section-icon" Icon="NavVersions" Text="游戏实例管理" IconSize="24" FontSize="20" FontWeight="SemiBold"/><Button x:Name="HomeAllInstances" Grid.Column="1" Classes="link" Command="{Binding ShowInstancesCommand}" Content="{Binding AllInstancesLinkText}" Foreground="{DynamicResource MutedBrush}" FontSize="13"/></Grid>
+            <ItemsControl x:Name="HomeInstancesList" Grid.Row="1" ItemsSource="{Binding HomePreviewEntries}" IsVisible="{Binding HasInstances}" VerticalAlignment="Top"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry">
+              <Grid Classes="instance-preview" ColumnDefinitions="36,*,Auto,Auto,32,32" ColumnSpacing="8" Height="66" Background="Transparent">
+                <Grid Width="32" Height="32" VerticalAlignment="Center"><Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}"/><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="32" Height="32" IsVisible="{Binding !HasCover}"/></Grid>
+                <Button Grid.Column="1" Classes="quiet" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}" CommandParameter="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"><TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/></Button>
+                <Border Grid.Column="2" Classes="instance-badge" VerticalAlignment="Center"><TextBlock Text="{Binding VersionBadgeText}" Classes="label" FontSize="11"/></Border><Border Grid.Column="3" Classes="instance-badge" VerticalAlignment="Center"><TextBlock Text="{Binding LoaderBadgeText}" Classes="label" FontSize="11"/></Border>
+                <Button Grid.Column="4" Classes="icon" Width="32" Height="32" MinHeight="32" Padding="6" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).QuickLaunchEntryCommand}" CommandParameter="{Binding}" ToolTip.Tip="启动此实例" AutomationProperties.Name="启动此实例"><icons:UiIcon Kind="ActionPlay" Foreground="{DynamicResource AccentBrush}" Width="20" Height="20"/></Button>
+                <Button Grid.Column="5" Classes="icon" Width="32" Height="32" MinHeight="32" Padding="4" Content="···" Click="OpenEntryMenu" Foreground="{DynamicResource AccentBrush}" ToolTip.Tip="实例操作" AutomationProperties.Name="实例操作"/>
+              </Grid>
+            </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            <TextBlock Grid.Row="1" Text="安装后，你的 Minecraft 实例会显示在这里。" Classes="muted" IsVisible="{Binding !HasInstances}" TextWrapping="Wrap" Margin="0,24"/>
+          </Grid>
+        </Border>
+        <Border x:Name="HomeShortcutsCard" Grid.Column="1" Classes="card home-card"><Grid RowDefinitions="Auto,*" RowSpacing="16"><icons:IconLabel Classes="section-icon" Icon="NavVersions" Text="快捷功能" IconSize="24" FontSize="20" FontWeight="SemiBold"/><Grid x:Name="HomeShortcuts" Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="*,*" ColumnSpacing="10" RowSpacing="10"><Button x:Name="HomeNewInstance" Grid.Row="0" Grid.Column="0" Classes="shortcut" Command="{Binding OpenSetupCommand}" ><StackPanel Spacing="10"><icons:UiIcon Kind="ActionPlus" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="新建实例" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button>
+<Button x:Name="HomeImportModpack" Grid.Row="0" Grid.Column="1" Classes="shortcut" Command="{Binding ImportModpackCommand}" ><StackPanel Spacing="10"><icons:UiIcon Kind="ActionImport" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="导入整合包" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button>
+<Button x:Name="HomeManageMods" Grid.Row="0" Grid.Column="2" Classes="shortcut" Command="{Binding OpenSelectedModsCommand}" ><StackPanel Spacing="10"><icons:UiIcon Kind="ResourceMod" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="管理模组" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button>
+<Button x:Name="HomeManageResources" Grid.Row="1" Grid.Column="0" Classes="shortcut" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks" IsEnabled="{Binding HasInstances}"><StackPanel Spacing="10"><icons:UiIcon Kind="ResourceLayers" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="管理资源包" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button>
+<Button x:Name="HomeOpenGameDirectory" Grid.Row="1" Grid.Column="1" Classes="shortcut" Command="{Binding OpenGameDirectoryCommand}" IsEnabled="{Binding HasInstances}"><StackPanel Spacing="10"><icons:UiIcon Kind="ActionFolder" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="打开游戏目录" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button>
+<Button x:Name="HomeDiagnostics" Grid.Row="1" Grid.Column="2" Classes="shortcut" Command="{Binding OpenSelectedDiagnosticsOrLogsCommand}" ><StackPanel Spacing="10"><icons:UiIcon Kind="ActionLogs" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/><TextBlock Text="日志与调试" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Button></Grid></Grid></Border>
+      </Grid>
     </Grid>
   </ScrollViewer>
 </UserControl>

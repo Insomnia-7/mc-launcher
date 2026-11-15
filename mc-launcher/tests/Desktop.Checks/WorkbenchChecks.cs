@@ -15,7 +15,7 @@ internal static class WorkbenchChecks
         check("M1 主导航宽度为216 DIP", Math.Abs(Find<Border>("SidebarPanel").Bounds.Width-216)<1);
         check("M1 标题栏高度52且有独立账号入口", Find<Border>("WindowHeader").Bounds.Height==52 && Find<Button>("HeaderAccountButton").IsEffectivelyVisible);
         check("M1 角色入口从普通侧栏移出", !Find<Button>("WardrobeEntry").IsVisible);
-        check("M1 下载和设置放在主导航下方", Find<Button>("TaskCenterEntry").TranslatePoint(default,window)!.Value.Y > Find<Button>("DiscoverNav").TranslatePoint(default,window)!.Value.Y+200);
+        check("M1 下载和设置紧随资源管理", Find<Button>("TaskCenterEntry").TranslatePoint(default,window)!.Value.Y > Find<Button>("DiscoverNav").TranslatePoint(default,window)!.Value.Y);
         click(Find<Button>("LibraryNav")); check("M1 实例导航连接真实页面",model.IsLibraryPage);
         click(Find<Button>("MultiplayerNav")); check("M1 联机导航连接真实页面",model.IsMultiplayerPage);
         click(Find<Button>("TaskCenterEntry")); check("M1 下载导航连接任务页",model.IsTaskPage);
@@ -27,10 +27,10 @@ internal static class WorkbenchChecks
         model.IsSidebarCollapsed=false;window.Width=1440;window.Height=900;pump(200);
         model.SelectThemeModeCommand.Execute("dark");pump(250);capture("m1-shell-dark",true);
         var dark=(SolidColorBrush)Avalonia.Application.Current!.FindResource("BgBrush")!;
-        check("M1 A方案深色基础色应用",dark.Color==Color.Parse("#14151B"));
+        check("M1 A方案深色基础色应用",dark.Color==Color.Parse("#1D1F2B"));
         model.SelectThemeModeCommand.Execute("light");pump(250);capture("m1-shell-light",true);
         var light=(SolidColorBrush)Avalonia.Application.Current!.FindResource("BgBrush")!;
-        check("M1 A方案浅色基础色应用",light.Color==Color.Parse("#F4F5FA"));
+        check("M1 A方案浅色基础色应用",light.Color==Color.Parse("#EFEEFB"));
         Find<Button>("HomeNav").Focus();pump(30);check("M1 导航可获得键盘焦点", Find<Button>("HomeNav").IsFocused);
     }
     public static void Home(MainViewModel model, MainWindow window, TestLauncher launcher, Action<int> pump, Action<string,bool> check, Action<string,bool> capture, Action<Control> click, string root)

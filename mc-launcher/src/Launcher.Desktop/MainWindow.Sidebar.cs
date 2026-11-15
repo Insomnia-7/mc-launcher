@@ -165,7 +165,7 @@ public sealed partial class MainWindow
         "library" or "detail" => "LibraryNav",
         "discover" => "DiscoverNav",
         "multiplayer" => "MultiplayerNav",
-        "settings" => "SettingsEntry",
+        "settings" => _model.IsNetworkSettingsPage ? "NetworkNav" : "SettingsEntry",
         "experience" => _model.IsRolePage ? null : _model.IsTaskPage ? "TaskCenterEntry" : null,
         _ => null
     };
@@ -191,7 +191,7 @@ public sealed partial class MainWindow
         }
         if (_navPosition != origin || !animated)
         {
-            indicator.X = origin.X + 3;
+            indicator.X = origin.X + button.Bounds.Width - 3;
             indicator.Y = origin.Y + (button.Bounds.Height - NavIndicator.Height) / 2;
             selection.X = origin.X;
             selection.Y = origin.Y;

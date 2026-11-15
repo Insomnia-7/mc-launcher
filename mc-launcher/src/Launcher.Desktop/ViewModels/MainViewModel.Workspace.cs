@@ -73,6 +73,8 @@ public sealed partial class MainViewModel
     public bool IsRolePage=>ShellPage=="experience"&&IsWardrobeTab;
     public bool IsTaskPage=>ShellPage=="experience"&&IsToolsTab;
     public bool IsSettingsPage=>ShellPage=="settings";
+    public bool IsNetworkSettingsPage => IsSettingsPage && IsNetworkOpen;
+    public bool IsGeneralSettingsPage => IsSettingsPage && !IsNetworkOpen;
     public string ExperiencePageTitle=>IsWardrobeTab?"角色":"下载任务";
     public string ExperiencePageCaption=>IsWardrobeTab?"换上喜欢的皮肤，准备下一次出发。":"查看下载进度，暂停、恢复或清理未完成的任务。";
     public bool IsOverviewTab=>DetailTab==0;
@@ -137,7 +139,7 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsShowcasePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsShowcasePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsNetworkSettingsPage),nameof(IsGeneralSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()

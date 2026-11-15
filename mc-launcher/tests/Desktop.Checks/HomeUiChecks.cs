@@ -21,12 +21,12 @@ internal static class HomeUiChecks
         T Find<T>(string name) where T:Control => window.GetVisualDescendants().OfType<T>().Single(c=>c.Name==name);
         void Wait(Task task){var clock=Stopwatch.StartNew();while(!task.IsCompleted && clock.ElapsedMilliseconds<15000)pump(10);if(!task.IsCompleted)throw new TimeoutException();task.GetAwaiter().GetResult();pump(100);}
         var host=Find<AnimatedContentHost>("PageHost");var home=host.Content;
-        check("默认进入真实首页并显示主页标题",model.IsHomePage && home is HomeView && Find<TextBlock>("TitleEdition").Text=="主页");
+        check("默认进入真实首页并显示主页标题",model.IsHomePage && home is HomeView && Find<TextBlock>("TitleEdition").Text=="Minecraft 启动器");
         check("主页导航连接命令并成为唯一选中入口",Find<Button>("HomeNav").Command==model.ShowHomeCommand && Find<Button>("HomeNav").Classes.Contains("active") && !Find<Button>("LibraryNav").Classes.Contains("active"));
         check("首页不主动扫描联机或发起联网请求",requests()==0 && multiplayer.Scans==0 && multiplayer.Queries==0);
         check("未检测时如实显示未测速",model.HomeLatencyText=="未测速" && model.Multiplayer.LastPingMs is null && !model.HomeHasLatency);
         check("未安装组件不显示在线成功",model.HomeMultiplayerStateText=="待安装组件" && !model.Multiplayer.HasSession);
-        check("实例下拉和首页列表来自完整真实库",model.HomeEntries.Count==12 && ReferenceEquals(Find<ComboBox>("QuickInstanceSelector").ItemsSource,model.HomeEntries) && ReferenceEquals(Find<ItemsControl>("HomeInstancesList").ItemsSource,model.HomeEntries));
+        check("实例下拉和首页列表来自完整真实库",model.HomeEntries.Count==12 && ReferenceEquals(Find<ComboBox>("QuickInstanceSelector").ItemsSource,model.HomeEntries) && Find<ItemsControl>("HomeInstancesList").ItemCount==3);
         var selected=model.HomeEntries.Last();Find<ComboBox>("QuickInstanceSelector").SelectedItem=selected;pump(60);
         check("下拉选择同步主启动实例",model.SelectedInstance?.InstanceId==selected.Instance.InstanceId && ReferenceEquals(model.SelectedHomeEntry,selected));
         model.LibraryQuery="不会命中的搜索条件";pump(80);
@@ -36,25 +36,31 @@ internal static class HomeUiChecks
         model.ShowHomeCommand.Execute(null);pump(250);
         check("返回复用首页并保留所选实例",ReferenceEquals(home,host.Content) && model.SelectedInstance?.InstanceId==selected.Instance.InstanceId);
         model.LibraryQuery="";pump(60);
-        foreach(var (width,height,minimum,name) in new[]{(1366,768,5,"home-1366-light"),(1440,900,8,"home-1440-dark")})
+        var navNames=new[]{"HomeNav","LibraryNav","MultiplayerNav","NetworkNav","DiscoverNav","TaskCenterEntry","SettingsEntry"};
+        window.Width=1280;window.Height=800;model.IsSidebarCollapsed=false;pump(200);
+        var navY=navNames.Select(n=>Find<Button>(n).TranslatePoint(default,window)!.Value.Y).ToArray();
+        check("七项主导航顺序与参考图一致且连续排列",navY.Zip(navY.Skip(1),(a,b)=>b>a && b-a<60).All(x=>x));
+        click(Find<Button>("NetworkNav"));check("网络与连接导航打开真实网络设置且成为唯一设置选中项",model.IsNetworkSettingsPage && !model.IsGeneralSettingsPage && Find<Button>("NetworkNav").Classes.Contains("active") && !Find<Button>("SettingsEntry").Classes.Contains("active"));
+        model.ShowHomeCommand.Execute(null);pump(180);
+        foreach(var (width,height,name) in new[]{(1280,800,"reference-home-1280-light"),(1440,900,"reference-home-1440-dark")})
         {
             window.Width=width;window.Height=height;model.SetThemeMode(name.Contains("dark")?ThemeMode.Dark:ThemeMode.Light);pump(250);
             var hero=Find<Border>("HomeHeroBanner");var page=Find<Grid>("PageContent");
-            check($"{width}×{height} 横幅定高88且距内容顶部8",hero.Bounds.Height==88 && Math.Abs(hero.TranslatePoint(default,page)!.Value.Y-8)<1);
-            check($"{width}×{height} 首行定高144、双栏比例1.65",Find<Grid>("HomeTopRow").Bounds.Height==144 && Math.Abs(Find<Border>("HomeQuickLaunchCard").Bounds.Width/Find<Border>("HomeNetworkStatusCard").Bounds.Width-1.65)<0.02);
-            var view=Find<ScrollViewer>("HomeInstancesScroll");
-            check($"{width}×{height} 首屏至少完整显示{minimum}条实例",Math.Floor(view.Viewport.Height/50)>=minimum);
-            check($"{width}×{height} 六个快捷按钮与底栏完整可见",Find<Grid>("HomeShortcuts").GetVisualDescendants().OfType<Button>().Count()==6 && Find<Grid>("HomeFooter").TranslatePoint(new Point(0,28),page)!.Value.Y<=page.Bounds.Height+1 && Find<ScrollViewer>("HomeScroll").ScrollBarMaximum.Y<1);
+            check($"{width} 横条横跨整个内容区且比例约7.6比1",Math.Abs(hero.Bounds.Width/(hero.Bounds.Height)-7.6)<0.15 && Math.Abs(hero.Bounds.Width-Find<Grid>("HomeLayout").Bounds.Width)<2);
+            check($"{width} 横条使用真实位图且白色标题准确",Find<Image>("HomeBannerImage").Source is Bitmap && Find<TextBlock>("HomeHeroTitle").Text=="专注于更好的 MC 联机体验");
+            check($"{width} 四卡网格左右比1.65且上下列对齐",Math.Abs(Find<Border>("HomeQuickLaunchCard").Bounds.Width/Find<Border>("HomeNetworkStatusCard").Bounds.Width-1.65)<0.02 && Math.Abs(Find<Border>("HomeQuickLaunchCard").Bounds.Width-Find<Border>("HomeInstancesCard").Bounds.Width)<1 && Math.Abs(Find<Border>("HomeNetworkStatusCard").Bounds.Width-Find<Border>("HomeShortcutsCard").Bounds.Width)<1);
+            var shortcuts=Find<Grid>("HomeShortcuts");var buttons=shortcuts.Children.OfType<Button>().ToArray();
+            check($"{width} 六个快捷按钮以三列两行排列",buttons.Length==6 && buttons.Select((b,i)=>Grid.GetRow(b)==i/3 && Grid.GetColumn(b)==i%3).All(x=>x));
+            check($"{width} 四卡和六个快捷按钮在首屏完整可见",Find<Border>("HomeShortcutsCard").TranslatePoint(new Point(0,Find<Border>("HomeShortcutsCard").Bounds.Height),page)!.Value.Y<=page.Bounds.Height+1 && Find<ScrollViewer>("HomeScroll").ScrollBarMaximum.Y<1);
+            check($"{width} 主按钮为饱和紫底白字",Find<Button>("HomeLaunchButton").Foreground is ISolidColorBrush foreground && foreground.Color==Colors.White && ((ISolidColorBrush)Avalonia.Application.Current!.FindResource("PrimaryFillBrush")!).Color.B>190);
             capture(name,true);
         }
-        window.Width=760;window.Height=620;pump(200);
+        window.Width=900;window.Height=560;pump(200);
         check("最小窗口提供纵向滚动且不横向溢出",Find<ScrollViewer>("HomeScroll").Extent.Width<=Find<ScrollViewer>("HomeScroll").Viewport.Width+1 && Find<Grid>("HomeShortcuts").GetVisualDescendants().OfType<Button>().All(b=>b.Bounds.Height>=42));
-        capture("home-760",true);
-        window.Width=1366;window.Height=768;pump(150);
-        var scrolling=Find<ScrollViewer>("HomeInstancesScroll");scrolling.Offset=new Vector(0,100);pump(30);var offset=scrolling.Offset;
+        capture("reference-home-900",true);
+        window.Width=1280;window.Height=800;pump(150);
         model.ShowInstancesCommand.Execute(null);pump(100);model.ShowHomeCommand.Execute(null);pump(120);
-        check("首页实例列表往返保留滚动",Find<ScrollViewer>("HomeInstancesScroll").Offset==offset);
-        scrolling.Offset=default;pump(30);
+        check("首页往返保留所选实例与固定风景横条",ReferenceEquals(home,host.Content) && model.SelectedInstance?.InstanceId==selected.Instance.InstanceId && Find<Border>("HomeHeroBanner").IsEffectivelyVisible);
         check("启动与取消使用既有业务命令",Find<Button>("HomeLaunchButton").Command==model.LaunchCommand && Find<Button>("HomeCancelLaunch").Command==model.CancelCommand);
         model.IsBusy=true;model.ProgressPercent=37;model.StatusText="正在准备测试环境";pump(30);
         check("准备中显示真实状态与进度",Find<Grid>("HomeLaunchProgress").IsVisible && Find<Grid>("HomeLaunchProgress").GetVisualDescendants().OfType<ProgressBar>().Single().Value==37 && model.LaunchTitle=="正在准备…");
@@ -62,7 +68,7 @@ internal static class HomeUiChecks
         var starts=launcher.Starts;var launchEntry=model.HomeEntries.First();Wait(model.QuickLaunchEntryCommand.ExecuteAsync(launchEntry));
         check("行内启动实际委托启动链路并选择该实例",launcher.Starts==starts+1 && model.SelectedInstance?.InstanceId==launchEntry.Instance.InstanceId);
         check("真实启动后首页最近游玩记录更新",model.HomeLastPlayedText.StartsWith("最近游玩") && model.HomeEntries.Any(e=>e.Instance.InstanceId==launchEntry.Instance.InstanceId && e.LastPlayed is not null));
-        var entry=model.HomeEntries[1];var more=Find<ItemsControl>("HomeInstancesList").GetVisualDescendants().OfType<Button>().First(b=>ReferenceEquals(b.DataContext,entry) && b.Content as string=="•••");
+        var entry=model.HomeEntries[1];var more=Find<ItemsControl>("HomeInstancesList").GetVisualDescendants().OfType<Button>().First(b=>ReferenceEquals(b.DataContext,entry) && b.Content as string=="···");
         more.BringIntoView();pump(120);
         var hit=window.InputHitTest(more.TranslatePoint(new Point(more.Bounds.Width/2,more.Bounds.Height/2),window)!.Value) as Visual;
         check("列表滚动条不遮挡右侧实例操作按钮",ReferenceEquals(hit,more) || hit?.GetVisualAncestors().Contains(more)==true);
@@ -96,7 +102,8 @@ internal static class HomeUiChecks
         var saved=model.Instances.ToArray();model.Instances.Clear();model.SelectedInstance=null;pump(120);
         check("空库显示真实引导和新建主操作",Find<StackPanel>("HomeEmptyLibrary").IsVisible && Find<Button>("HomeCreateFirstButton").IsVisible && !Find<Button>("HomeLaunchButton").IsVisible);
         check("空库禁用资源目录操作而保留新建和导入",!Find<Button>("HomeManageResources").IsEffectivelyEnabled && !Find<Button>("HomeOpenGameDirectory").IsEffectivelyEnabled && Find<Button>("HomeNewInstance").IsEffectivelyEnabled && Find<Button>("HomeImportModpack").IsEffectivelyEnabled);
-        capture("home-empty",true);click(Find<Button>("HomeManageMods"));check("空库管理模组进入下载中心模组分类",model.IsDiscoverPage && model.Download.SelectedCategory?.Category==Launcher.Domain.Content.DownloadCategory.Mod);
+        check("空库仍然显示固定风景横条和四块卡片",Find<Border>("HomeHeroBanner").IsEffectivelyVisible && Find<Border>("HomeQuickLaunchCard").IsEffectivelyVisible && Find<Border>("HomeNetworkStatusCard").IsEffectivelyVisible && Find<Border>("HomeInstancesCard").IsEffectivelyVisible && Find<Border>("HomeShortcutsCard").IsEffectivelyVisible);
+        capture("reference-home-empty",true);click(Find<Button>("HomeManageMods"));check("空库管理模组进入下载中心模组分类",model.IsDiscoverPage && model.Download.SelectedCategory?.Category==Launcher.Domain.Content.DownloadCategory.Mod);
         foreach(var instance in saved)model.Instances.Add(instance);model.SelectedInstance=saved[0];model.ShowHomeCommand.Execute(null);pump(180);
         check("恢复实例后首页下拉、列表和总数一起更新",model.HomeEntries.Count==12 && Find<ComboBox>("QuickInstanceSelector").ItemCount==12 && model.AllInstancesLinkText=="全部实例 (12) ›");
     }

@@ -18,23 +18,18 @@ public sealed partial class HomeView : UserControl
             if (_entered) return;
             _entered = true;
             _entrance = new CancellationTokenSource();
-            var stages = new List<Control> { HomeQuickLaunchCard, HomeInstancesCard, HomeShortcuts };
+            var stages = new List<Control> { HomeHeroBanner, HomeQuickLaunchCard, HomeNetworkStatusCard, HomeInstancesCard, HomeShortcutsCard };
             await Motion.PlayStaggerSequenceAsync(stages, _entrance.Token);
         };
         Unloaded += (_, _) => { _entrance?.Cancel(); _entrance?.Dispose(); _entrance = null; };
     }
-    private bool _runtimeOpen;
-    private void ToggleRuntime(object? sender, RoutedEventArgs e)
-    {
-        if (Bounds.Width < 880 && DataContext is MainViewModel model)
-        { model.OpenGameCommand.Execute(null); model.SelectDetailTabCommand.Execute("3"); return; }
-        _runtimeOpen = !_runtimeOpen; UpdateLayoutMode();
-    }
     private void UpdateLayoutMode()
     {
-        Classes.Set("compact", Bounds.Width < 880);
-        HomeLaunchContent.ColumnDefinitions = new ColumnDefinitions(Bounds.Width < 880 ? "*,0" : "1.45*,1*");
-        HomeRuntimePanel.IsVisible = _runtimeOpen && Bounds.Width >= 880;
+        Classes.Set("compact", Bounds.Width < 1000);
+        HomeHeroBanner.Height = Math.Clamp((Bounds.Width - 40) / 7.6, 108, 180);
+        var leftCardWidth = Math.Max(0, Bounds.Width - 58) * 1.65 / 2.65;
+        HomeTopRow.MinHeight = Math.Clamp(leftCardWidth / 3.1, 204, 280);
+        HomeBottomRow.MinHeight = Math.Clamp(leftCardWidth / 2.08, 290, 420);
     }
     private void OpenEntryMenu(object? sender, RoutedEventArgs e)
     {
