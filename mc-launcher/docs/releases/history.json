@@ -422,5 +422,36 @@
       "nativeShell": 16,
       "sidebar": 34
     }
+  },
+  {
+    "version": "1.0.0-preview.10",
+    "date": "2026-11-15",
+    "title": "M5 页面动效",
+    "tag": "desktop-v1.0.0-preview.10",
+    "sourceCommit": "dada03789fa86d5fb3ba85c0f24c8e3f7e7823d2",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/dada03789fa86d5fb3ba85c0f24c8e3f7e7823d2",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.10",
+    "changes": "M5 统一时长、双层页面过渡、状态保留与交错入场。",
+    "platform": "Windows x64",
+    "bytes": 25736174,
+    "sha256": "56642a9aea480a90aba2b271588363eb87d388d2cc9f0104fc06c4197d670c7c",
+    "binaryProductVersion": "1.0.0-preview.10+dada03789fa86d5fb3ba85c0f24c8e3f7e7823d2",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "shell": 35,
+      "desktop": 344,
+      "total": 1355,
+      "nativeShell": 16,
+      "trimmedAssemblies": true,
+      "architecture": true,
+      "legacyTheme": 4,
+      "nativeSidebar": 8,
+      "pageMotion": 20,
+      "core": 880,
+      "sidebar": 34,
+      "empty": 6,
+      "nativePageMotion": 8,
+      "singleFileStartup": true
+    }
   }
 ]

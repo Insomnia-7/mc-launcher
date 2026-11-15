@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.10)。
 
+[源码 dada037](https://github.com/Insomnia-7/mc-launcher/commit/dada03789fa86d5fb3ba85c0f24c8e3f7e7823d2)。Windows 单文件 25736174 字节，SHA-256：`56642a9aea480a90aba2b271588363eb87d388d2cc9f0104fc06c4197d670c7c`。1355 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 统一页面、侧栏、文字和基础按钮的动效时长。
 - 页面切换增加旧页 110ms 上移淡出与新页 200ms 淡入；实色背景托底，完成后清除旧页。
 - 快速往返复用已有页面，保留筛选和滚动；中途关闭动画、卸载和最小化还原均可恢复。
