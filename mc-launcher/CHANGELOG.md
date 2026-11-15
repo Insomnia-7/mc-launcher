@@ -4,6 +4,8 @@
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.9)。
 
+[源码 e939670](https://github.com/Insomnia-7/mc-launcher/commit/e939670b67cc3890583eabfc5eeeb2214424eb7d)。Windows 单文件 25733124 字节，SHA-256：`5c17ca90a0d8566a232f94b46e856b2e2e52cb27c032855e3e8c73e278c3ce4a`。1327 项检查通过，另通过架构检查、裁剪程序集回归与单文件启动。
+
 - 实现 240/72px 侧边栏分步文字动画，展开先扩宽再渐入，收起先渐隐再切换紧凑布局；连续点击从当前宽度反向衔接。
 - 选中背景胶囊与唯一 3×20 指示条以 190ms 平滑跟随页面；保留窄窗口浮层，减少动画时立即落位。
 - 收起态增加 450ms 中文 Tooltip、32×32 账号入口与更新入口；已加载头像可直接复用。

@@ -393,5 +393,34 @@
       "singleFileStartup": true,
       "total": 1282
     }
+  },
+  {
+    "version": "1.0.0-preview.9",
+    "date": "2026-11-15",
+    "title": "M4 侧边栏交互",
+    "tag": "desktop-v1.0.0-preview.9",
+    "sourceCommit": "e939670b67cc3890583eabfc5eeeb2214424eb7d",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/e939670b67cc3890583eabfc5eeeb2214424eb7d",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.9",
+    "changes": "M4 侧边栏分步文字动画、连续反向、共享高亮、紧凑身份入口与真实任务角标。",
+    "platform": "Windows x64",
+    "bytes": 25733124,
+    "sha256": "5c17ca90a0d8566a232f94b46e856b2e2e52cb27c032855e3e8c73e278c3ce4a",
+    "binaryProductVersion": "1.0.0-preview.9+e939670b67cc3890583eabfc5eeeb2214424eb7d",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "trimmedAssemblies": true,
+      "singleFileStartup": true,
+      "legacyTheme": 4,
+      "desktop": 344,
+      "shell": 35,
+      "nativeSidebar": 8,
+      "empty": 6,
+      "architecture": true,
+      "total": 1327,
+      "core": 880,
+      "nativeShell": 16,
+      "sidebar": 34
+    }
   }
 ]
