@@ -640,5 +640,35 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.16",
+    "date": "2026-11-16",
+    "title": "参考图首页与 MC 生存光影横条",
+    "tag": "desktop-v1.0.0-preview.16",
+    "sourceCommit": "3519bf6b847c04787cac35b82163e23c8fbf7838",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/3519bf6b847c04787cac35b82163e23c8fbf7838",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.16",
+    "changes": "固定 MC 光影横条、四卡双列首页、三列两行快捷按钮、七项侧栏及参考图深浅配色。M0–M6 当前设备与发布包通过，跨设备项目待测。",
+    "platform": "Windows x64",
+    "bytes": 28947473,
+    "sha256": "f2ad00c52702f5c4e1ed4bf0e9b7c85cdbc0f87c601f138a578bba62c8963d9a",
+    "binaryProductVersion": "1.0.0-preview.16+3519bf6b847c04787cac35b82163e23c8fbf7838",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 880,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 103,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1257.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]
