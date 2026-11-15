@@ -45,6 +45,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SidebarPanel.PropertyChanged += (_, e) => { if (e.Property == WidthProperty) UpdateSidebarColumn(); };
         // Windows supports extended native hit-testing, including drag and snap layouts.
         // Other desktops keep their native frame until their platform builds are verified.
         if (OperatingSystem.IsWindows())

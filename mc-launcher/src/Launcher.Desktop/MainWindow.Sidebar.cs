@@ -85,8 +85,11 @@ public sealed partial class MainWindow
         SidebarPanel.Classes.Set("nav-minimal", state == SidebarState.Minimal);
         SidebarPanel.Classes.Set("nav-overlay", state == SidebarState.Overlay);
         Grid.SetColumnSpan(SidebarPanel, state == SidebarState.Overlay ? 2 : 1);
-        SidebarPanel.HorizontalAlignment = state == SidebarState.Overlay ? Avalonia.Layout.HorizontalAlignment.Left : Avalonia.Layout.HorizontalAlignment.Stretch;
+        SidebarPanel.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
         SidebarPanel.Width = state switch { SidebarState.Expanded or SidebarState.Overlay => 216, SidebarState.Compact => 64, _ => 0 };
+        // Explicitly release the expanded column after a native window resize. An Auto column
+        // can retain the wider measure while a transition or native restore is in flight.
+        UpdateSidebarColumn();
         SidebarScrim.IsVisible = state == SidebarState.Overlay;
         SidebarHamburger.IsVisible = state == SidebarState.Minimal;
         PageContent.Classes.Set("minimal", state == SidebarState.Minimal);
@@ -108,6 +111,9 @@ public sealed partial class MainWindow
             }
         }
     }
+
+    private void UpdateSidebarColumn() => Shell.ColumnDefinitions[0].Width = new GridLength(
+        _sidebarState is SidebarState.Expanded or SidebarState.Compact ? Math.Max(0, SidebarPanel.Width) : 0);
 
     private async Task FoldSidebarAsync(SidebarState state, CancellationToken token)
     {

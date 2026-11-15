@@ -22,6 +22,7 @@ internal static class WorkbenchNativeChecks
         nint Hit(Control control)=>SendMessage(handle,0x84,0,Pack(control.PointToScreen(new Point(control.Bounds.Width/2,control.Bounds.Height/2))));
         void Capture(string name,double scale=1)
         {
+            window.UpdateLayout();
             using var bitmap=new RenderTargetBitmap(new PixelSize((int)(window.ClientSize.Width*scale),(int)(window.ClientSize.Height*scale)),new Vector(96*scale,96*scale));
             bitmap.Render(window);bitmap.Save(Path.Combine(root,name+".png"),PngBitmapEncoderOptions.Default);
         }
@@ -35,6 +36,13 @@ internal static class WorkbenchNativeChecks
         Check("M6 原生边缘可缩放",left.Contains((nint)10));
         model.SelectThemeModeCommand.Execute("dark");await Task.Delay(250);Capture("a-home-1440-dark");
         model.SelectThemeModeCommand.Execute("light");await Task.Delay(250);Capture("a-home-1440-light");
+        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");
+        model.IsSidebarCollapsed=true;await Task.Delay(70);window.UpdateLayout();
+        var folding=Find<Border>("SidebarPanel");
+        Check("M6 侧栏收起具有真实中间帧",folding.Bounds.Width>64 && folding.Bounds.Width<216);
+        Check("M6 内容跟随侧栏的实际过渡宽度",Math.Abs(Find<Grid>("PageContent").TranslatePoint(default,window)!.Value.X-folding.Bounds.Width)<2);
+        await Task.Delay(240);window.UpdateLayout();Check("M6 收起结束释放全部可用宽度",Math.Abs(Find<Grid>("PageContent").TranslatePoint(default,window)!.Value.X-64)<2);
+        model.IsSidebarCollapsed=false;await Task.Delay(300);
         var drag=Find<Border>("TitleDragArea").PointToScreen(new Point(180,20));SendMessage(handle,0xA3,2,Pack(drag));await Task.Delay(250);
         Check("M6 标题栏双击最大化",window.WindowState==WindowState.Maximized);
         Check("M6 最大化处理外边界",!Find<Border>("WindowOutline").IsVisible && Find<Grid>("Shell").Margin==window.OffScreenMargin);
@@ -43,6 +51,14 @@ internal static class WorkbenchNativeChecks
         foreach(var size in new[]{new Size(900,560),new Size(1366,768),new Size(1920,1080)})
         {
             window.Width=size.Width;window.Height=size.Height;await Task.Delay(250);
+            window.UpdateLayout();
+            if(size.Width==900)
+            {
+                var sidebar=Find<Border>("SidebarPanel");
+                var content=Find<Grid>("PageContent");
+                Check("M6 原生紧凑侧栏贴合左边界",sidebar.TranslatePoint(default,window) is {X:>=0 and <2});
+                Check("M6 原生收起导航释放内容宽度",content.Bounds.Width>=window.ClientSize.Width-66);
+            }
             var launch=Find<Button>("HomeLaunchButton");launch.BringIntoView();await Task.Delay(60);
             var pos=launch.TranslatePoint(default,window)!.Value;
             Check($"M6 原生{size.Width}启动入口可达",pos.X>=0 && pos.X+launch.Bounds.Width<=window.ClientSize.Width && pos.Y+launch.Bounds.Height<=window.ClientSize.Height);
