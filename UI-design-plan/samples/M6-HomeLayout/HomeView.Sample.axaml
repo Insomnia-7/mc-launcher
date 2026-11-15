@@ -1,0 +1,412 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.App.ViewModels"
+             xmlns:icons="using:Launcher.Desktop.Controls"
+             x:DataType="vm:MainViewModel"
+             x:Class="Launcher.Desktop.Views.HomeView">
+  <!--
+    遵循 UI.md §0.1 #7, §5, §7-§11, §25：
+    1. 核心布局改造：取消横幅上方冗余 H1 与大块空白，外层上内边距仅 8px（相较第二版参考图上移约 28-36px）
+    2. 横幅高度收敛为 88px，固定文案「专注于更好的 MC 联机体验」，叠加内置 world-meadow-v2.png 景观
+    3. 下方采用 1.65* : 1* 双栏网格：
+       - 行 1 左：快速启动 Minecraft（复用 SelectedInstance + LaunchCommand）
+       - 行 1 右：联机与网络状态（复用真实 Multiplayer 会话/组件状态 + 实测延迟 + 真实代理/下载源，绝不伪造 NAT）
+       - 行 2 左：游戏实例管理（紧凑列表填满纵向 * 空间，1440x900 首屏可展示 8+ 个实例）
+       - 行 2 右：快捷功能（2x3 网格，全部对应工程真实命令）
+  -->
+  <Grid RowDefinitions="88,Auto,*,Auto"
+        RowSpacing="16"
+        Margin="24,8,24,12">
+
+    <!-- ① 顶部紧凑横幅（已上移 28-36px，定高 88px） -->
+    <Border x:Name="HomeHeroBanner"
+            Grid.Row="0"
+            CornerRadius="12"
+            ClipToBounds="True"
+            BorderBrush="{DynamicResource LineBrush}"
+            BorderThickness="1">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#292440" Offset="0" />
+          <GradientStop Color="#191C28" Offset="0.65" />
+          <GradientStop Color="#241E38" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="*,240">
+        <StackPanel Spacing="6" VerticalAlignment="Center" Margin="24,0,0,0" ZIndex="2">
+          <TextBlock Text="专注于更好的 MC 联机体验"
+                     FontSize="20"
+                     FontWeight="SemiBold"
+                     Foreground="#F6F7FB" />
+          <TextBlock Text="更稳定  ·  更便捷  ·  更流畅"
+                     FontSize="12"
+                     LetterSpacing="1"
+                     Foreground="#C5C8D9" />
+        </StackPanel>
+
+        <!-- 复用项目内置 Assets/Brand/world-meadow-v2.png 世界观插画，零网络请求 -->
+        <Grid Grid.Column="1" Opacity="0.88" IsHitTestVisible="False">
+          <icons:WorldArt Width="220" Height="112" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- ② 第一行双栏：快速启动 Minecraft (1.65*) + 联机与网络状态 (1*) -->
+    <Grid Grid.Row="1" ColumnDefinitions="1.65*,1*" ColumnSpacing="16">
+
+      <!-- 左上：快速启动 Minecraft（首页第一主视觉操作区） -->
+      <Border x:Name="QuickLaunchCard"
+              Grid.Column="0"
+              Classes="card"
+              Padding="20,16">
+        <StackPanel Spacing="14">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="3">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <icons:UiIcon Kind="NavVersions" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="快速启动 Minecraft" Classes="card-title" />
+              </StackPanel>
+              <TextBlock Text="{Binding QuickLaunchSubcaption}" Classes="secondary" />
+            </StackPanel>
+
+            <!-- 当前状态胶囊标签（图标 + 颜色 + 文字） -->
+            <Border Background="{DynamicResource FieldBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="8,4"
+                    VerticalAlignment="Top">
+              <TextBlock Text="{Binding SelectedGameStatus}" FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+            </Border>
+          </Grid>
+
+          <!-- 实例选择下拉 + 主启动按钮 -->
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <ComboBox x:Name="QuickInstanceSelector"
+                      ItemsSource="{Binding LibraryEntries}"
+                      SelectedItem="{Binding SelectedHomeEntry, Mode=TwoWay}"
+                      IsEnabled="{Binding HasInstances}"
+                      MinHeight="42"
+                      PlaceholderText="暂未安装游戏实例"
+                      AutomationProperties.Name="选择要启动的游戏实例">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LibraryEntry">
+                  <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="10">
+                    <icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="22" Height="22" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding Meta}" Classes="faint" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Button x:Name="LaunchButton"
+                    Grid.Column="1"
+                    Classes="primary"
+                    MinWidth="136"
+                    Height="42"
+                    Command="{Binding LaunchCommand}"
+                    IsVisible="{Binding HasInstances}"
+                    AutomationProperties.Name="启动游戏">
+              <icons:IconLabel Icon="ActionPlay"
+                               Text="{Binding LaunchTitle}"
+                               IconSize="18"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+
+            <Button Grid.Column="1"
+                    Classes="primary"
+                    MinWidth="136"
+                    Height="42"
+                    Command="{Binding OpenSetupCommand}"
+                    IsVisible="{Binding !HasInstances}"
+                    AutomationProperties.Name="新建游戏实例">
+              <icons:IconLabel Icon="ActionPlus"
+                               Text="新建实例"
+                               IconSize="18"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+          </Grid>
+
+          <!-- 启动准备进度条（仅在 IsBusy 时展开，附取消入口） -->
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding IsBusy}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding StatusText}" Classes="faint" TextTrimming="CharacterEllipsis" />
+              <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="4" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="ghost" MinHeight="28" Padding="8,2" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" Content="取消" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- 右上：联机与网络状态（严格绑定现有工程真实状态，不伪造 NAT） -->
+      <Border x:Name="NetworkStatusCard"
+              Grid.Column="1"
+              Classes="card"
+              Padding="20,16">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:UiIcon Kind="ActionGlobe" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="联机与网络状态" Classes="card-title" />
+            </StackPanel>
+            <Button Classes="ghost"
+                    Padding="6,2"
+                    MinHeight="24"
+                    FontSize="12"
+                    Command="{Binding OpenMultiplayerCommand}"
+                    Content="联机大厅 ›" />
+          </Grid>
+
+          <!-- 行 1：联机组件与会话真实状态（同时使用图标 + 语义色 + 文字） -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <icons:UiIcon Kind="{Binding HomeMultiplayerStatusIcon}"
+                          Width="14"
+                          Height="14"
+                          Foreground="{Binding HomeMultiplayerStatusBrush}" />
+            <TextBlock Grid.Column="1" Text="联机服务" Classes="secondary" />
+            <TextBlock Grid.Column="2"
+                       Text="{Binding HomeMultiplayerStateText}"
+                       FontSize="12"
+                       FontWeight="Medium"
+                       Foreground="{Binding HomeMultiplayerStatusBrush}" />
+          </Grid>
+
+          <!-- 行 2：实测会话延迟（有房间或测速后显示真实 ms，空闲时如实显示「未检测」） -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <icons:UiIcon Kind="{Binding HomeLatencyStatusIcon}"
+                          Width="14"
+                          Height="14"
+                          Foreground="{Binding HomeLatencyStatusBrush}" />
+            <TextBlock Grid.Column="1" Text="连接延迟" Classes="secondary" />
+            <TextBlock Grid.Column="2"
+                       Text="{Binding HomeLatencyText}"
+                       FontSize="12"
+                       Foreground="{Binding HomeLatencyStatusBrush}" />
+          </Grid>
+
+          <!-- 行 3：真实代理与下载源（替代工程未提供的 NAT 探测） -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <icons:UiIcon Kind="ActionMirror" Width="14" Height="14" Foreground="{DynamicResource MutedBrush}" />
+            <TextBlock Grid.Column="1" Text="网络与源" Classes="secondary" />
+            <Button Grid.Column="2"
+                    Classes="ghost"
+                    Padding="0"
+                    MinHeight="20"
+                    Command="{Binding OpenNetworkCommand}"
+                    ToolTip.Tip="点击配置代理与连接方式"
+                    ToolTip.ShowDelay="450">
+              <TextBlock Text="{Binding HomeProxyAndSourceSummary}" FontSize="12" Foreground="{DynamicResource TextBrush}" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- ③ 第二行双栏：游戏实例管理 (1.65*) + 快捷功能 (1*)，填满首屏剩余垂直空间 -->
+    <Grid Grid.Row="2" ColumnDefinitions="1.65*,1*" ColumnSpacing="16">
+
+      <!-- 左下：游戏实例管理（紧凑列表，首屏可容纳多个实例） -->
+      <Border x:Name="InstanceListCard"
+              Grid.Column="0"
+              Classes="card"
+              Padding="20,16">
+        <Grid RowDefinitions="Auto,*" RowSpacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <icons:UiIcon Kind="NavVersions" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="游戏实例管理" Classes="card-title" />
+            </StackPanel>
+            <Button Classes="ghost"
+                    Padding="6,2"
+                    MinHeight="26"
+                    FontSize="12"
+                    Command="{Binding ShowInstancesCommand}"
+                    Content="{Binding AllInstancesLinkText}" />
+          </Grid>
+
+          <!-- 空实例状态引导 -->
+          <Border Grid.Row="1"
+                  IsVisible="{Binding !HasInstances}"
+                  Background="{DynamicResource FieldBrush}"
+                  BorderBrush="{DynamicResource BorderSubtleBrush}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="20">
+            <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <TextBlock Text="尚未安装任何 Minecraft 实例" FontWeight="Medium" HorizontalAlignment="Center" />
+              <TextBlock Text="可一键下载原版 / Fabric / Forge / NeoForge，或直接拖入整合包压缩文件。" Classes="secondary" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- 真实实例紧凑列表（内容超出时局部合理滚动，不压缩卡片） -->
+          <ScrollViewer Grid.Row="1"
+                        IsVisible="{Binding HasInstances}"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="HomeInstancesList" ItemsSource="{Binding LibraryEntries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LibraryEntry">
+                  <Border Classes="instance-row"
+                          CornerRadius="8"
+                          Padding="10,8"
+                          Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="32,*,Auto,Auto,Auto" ColumnSpacing="10">
+                      <Border Width="32" Height="32" CornerRadius="6" Background="{DynamicResource FieldBrush}" ClipToBounds="True">
+                        <Grid>
+                          <Image Source="{Binding Cover}" Stretch="{Binding CoverStretch}" IsVisible="{Binding HasCover}" />
+                          <icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="26" Height="26" IsVisible="{Binding !HasCover}" />
+                        </Grid>
+                      </Border>
+
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Name}"
+                                 FontWeight="Medium"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" />
+
+                      <!-- 克制的版本与加载器胶囊标签 -->
+                      <Border Grid.Column="2"
+                              Background="{DynamicResource FieldBrush}"
+                              BorderBrush="{DynamicResource BorderSubtleBrush}"
+                              BorderThickness="1"
+                              CornerRadius="5"
+                              Padding="7,2"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Instance.BaseVersion}" Classes="faint" />
+                      </Border>
+
+                      <Border Grid.Column="3"
+                              Background="{DynamicResource FieldBrush}"
+                              BorderBrush="{DynamicResource BorderSubtleBrush}"
+                              BorderThickness="1"
+                              CornerRadius="5"
+                              Padding="7,2"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LoaderBadgeText}" Classes="faint" />
+                      </Border>
+
+                      <!-- 主要操作（快捷启动）与更多菜单 -->
+                      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Button Classes="ghost"
+                                Width="30"
+                                Height="30"
+                                MinHeight="30"
+                                Padding="0"
+                                ToolTip.Tip="选择并启动此实例"
+                                ToolTip.ShowDelay="450"
+                                Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).QuickLaunchEntryCommand}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.Name="启动此实例">
+                          <icons:UiIcon Kind="ActionPlay" Width="15" Height="15" Foreground="{DynamicResource AccentBrush}" />
+                        </Button>
+
+                        <Button Classes="ghost"
+                                Width="30"
+                                Height="30"
+                                MinHeight="30"
+                                Padding="0"
+                                Content="•••"
+                                ToolTip.Tip="更多实例操作"
+                                ToolTip.ShowDelay="450"
+                                AutomationProperties.Name="更多实例操作">
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem Header="管理实例详情"
+                                        Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenGameCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="切换收藏状态"
+                                        Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).FavoriteGameCommand}"
+                                        CommandParameter="{Binding}" />
+                              <Separator />
+                              <MenuItem Header="打开游戏目录"
+                                        Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).OpenEntryDirectoryCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="删除此实例…"
+                                        Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).DeleteEntryCommand}"
+                                        CommandParameter="{Binding}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- 右下：快捷功能（2x3 网格，全部对应现有工程真实命令） -->
+      <Border x:Name="QuickActionsCard"
+              Grid.Column="1"
+              Classes="card"
+              Padding="20,16">
+        <Grid RowDefinitions="Auto,*" RowSpacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <icons:UiIcon Kind="ActionSettings" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="快捷功能" Classes="card-title" />
+          </StackPanel>
+
+          <UniformGrid Grid.Row="1" Columns="3" Rows="2">
+            <Button Classes="quick-tile" Margin="0,0,8,8" Command="{Binding OpenSetupCommand}" AutomationProperties.Name="新建实例">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionPlus" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="新建实例" FontSize="12" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="quick-tile" Margin="4,0,4,8" Command="{Binding ImportModpackCommand}" AutomationProperties.Name="导入整合包">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionImport" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="导入整合包" FontSize="12" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="quick-tile" Margin="8,0,0,8" Command="{Binding OpenSelectedModsCommand}" AutomationProperties.Name="管理模组">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionMemory" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="管理模组" FontSize="12" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="quick-tile" Margin="0,4,8,0" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks" AutomationProperties.Name="管理资源包">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionWindow" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="管理资源包" FontSize="12" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="quick-tile" Margin="4,4,4,0" Command="{Binding OpenGameDirectoryCommand}" AutomationProperties.Name="打开游戏目录">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionFolder" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="打开游戏目录" FontSize="12" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="quick-tile" Margin="8,4,0,0" Command="{Binding OpenSelectedDiagnosticsOrLogsCommand}" AutomationProperties.Name="日志与诊断">
+              <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <icons:UiIcon Kind="ActionLogs" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="日志与诊断" FontSize="12" />
+              </StackPanel>
+            </Button>
+          </UniformGrid>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- ④ 底部轻量辅助信息行（消除无意义大块留白，承载真实环境摘要） -->
+    <Grid x:Name="HomeFooterBar" Grid.Row="3" ColumnDefinitions="*,Auto">
+      <TextBlock Text="{Binding StatusText}" Classes="faint" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
+        <TextBlock Text="{Binding JavaText, StringFormat='Java: {0}'}" Classes="faint" />
+        <TextBlock Text="{Binding MemoryText, StringFormat='分配内存: {0}'}" Classes="faint" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>
