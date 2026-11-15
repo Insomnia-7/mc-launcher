@@ -1,5 +1,15 @@
 # 方隅版本记录
 
+## 1.0.0-preview.14 · M9 当前电脑验收
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.14)。
+
+- 新增 M9 专项检查，验证 240/72px 侧栏、首页横幅、三种窗口尺寸、连续导航与主题切换、减少动画和未知主题兼容。
+- 当前 Windows 11 实测 8 个边角缩放命中、标题栏双击最大化/还原、实际 Mica 与实色回退；导出多倍率渲染图，明确区别真实系统 DPI。
+- 使用正式安装与进程适配器验证真实 Minecraft 1.20.1 的安装取消/重试、实例选择、启动、图形/音频初始化与退出码 0。
+- 修复旧 WPF 资源页只读文字采用双向绑定引发的渲染异常，并更新旧验收脚本以符合现行目录及更新行为。
+- 两个解决方案构建成功，共 1844 项编号检查及架构护栏通过；当前环境验收结论与未测项目详见 [M9 报告](docs/ui-m9-acceptance.md)。其他设备 DPI、Win10、鼠标拖拽/Snap 飞出面板和真实联机仍待补测。
+
 ## 1.0.0-preview.13 · M8 开发预览页
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.13)。

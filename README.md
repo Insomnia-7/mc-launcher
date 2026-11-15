@@ -7,7 +7,7 @@
 
 一款 Minecraft Java 版启动器，用 C# 与 Avalonia 写成，Windows 上以单文件分发。
 
-**当前版本**：1.0.0-preview.13（预览版）
+**当前版本**：1.0.0-preview.14（预览版）
 
 ## 简介
 

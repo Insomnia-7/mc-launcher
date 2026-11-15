@@ -27,13 +27,14 @@ internal static partial class UiCheck
         var root = Path.Combine(Path.GetTempPath(), "mcl-ui-" + Guid.NewGuid().ToString("N"));
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, Guid.NewGuid().ToString("N")));
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", Path.Combine(Environment.GetEnvironmentVariable("MCLAUNCHER_HOME")!, "game"));
+        Directory.CreateDirectory(Environment.GetEnvironmentVariable("MCLAUNCHER_GAME_ROOT")!);
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
         var app = new System.Windows.Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
         app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source=new Uri("/MCLauncher;component/Styles/Controls.xaml",UriKind.Relative) });
         var vm = (MainViewModel)Resolve(typeof(MainViewModel))!;
         var window = new MainWindow(vm);
         Check("首帧构造不进行资源检索", State.Searches == 0);
-        Check("首次启动显示引导", vm.IsSetupOpen);
+        Check("首次启动不自动弹出安装引导", !vm.IsSetupOpen);
         Pump(vm.OpenSetupCommand.ExecuteAsync(null));
         Check("只显示正式版并选择元数据最新版本", vm.SetupVersions.Count == 2 && vm.SetupVersion?.Id == "setup-test");
         using (var held = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(vm.GameRoot, "跨页面验证"))
@@ -112,7 +113,7 @@ internal static partial class UiCheck
         var updateVm = (MainViewModel)Resolve(typeof(MainViewModel))!;
         updateVm.HasUpdate = true;
         Pump(updateVm.CheckUpdateCommand.ExecuteAsync(null));
-        Check("更新签名失败向用户显示原因并关闭安装入口", !updateVm.HasUpdate && updateVm.StatusText.Contains("更新验证失败") && updateVm.UpdateText.Contains("签名"));
+        Check("更新签名失败向用户显示原因并关闭安装入口", !updateVm.HasUpdate && updateVm.LauncherUpdateFailed && updateVm.UpdateText.Contains("签名"));
 
         // 换游戏目录：坏路径拒绝并给原因，能用的路径就地切换
         var occupied = Path.Combine(root, "occupied.txt");
@@ -121,6 +122,8 @@ internal static partial class UiCheck
             !updateVm.TryUseGameRoot(Path.Combine(occupied, "game"), out var gameRootError)
             && gameRootError!.Contains("建不出来") && updateVm.GameRootProblem.Length == 0);
         var altRoot = Path.Combine(root, "alt-game");
+        Check("环境变量固定的游戏目录不被界面覆盖", !updateVm.TryUseGameRoot(altRoot, out _));
+        Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", null);
         Check("可用游戏目录就地切换",
             updateVm.TryUseGameRoot(altRoot, out _)
             && !updateVm.HasGameRootProblem
@@ -132,7 +135,7 @@ internal static partial class UiCheck
         File.WriteAllText(altRoot, "x");
         Check("运行中目录失效会被重新发现",
             !updateVm.RefreshGameRootHealth() && updateVm.HasGameRootProblem
-            && updateVm.GameRootProblem.Contains("文件"));
+            && updateVm.GameRootProblem.Contains("暂不可用") && File.Exists(altRoot));
         File.Delete(altRoot);
         Check("换回可用目录后恢复",
             updateVm.TryUseGameRoot(Path.Combine(root, "alt-game-2"), out _) && !updateVm.HasGameRootProblem);
@@ -172,6 +175,7 @@ internal static partial class UiCheck
             Pump(browser.SearchCommand.ExecuteAsync(null));
             Check("同一检索页适用于 " + category, State.LastRequest!.Category == category && browser.Results.All(r => r.Category == category) && browser.ShowsLoaderFilter == category.UsesLoader());
         }
+        browser.Query = "new-search-failure";
         State.FailSearch = true; Pump(browser.SearchCommand.ExecuteAsync(null));
         Check("检索失败恢复按钮并禁用旧分页", !browser.IsBusy && browser.Status.Contains("失败") && browser.Results.Count == 0 && !browser.NextPageCommand.CanExecute(null));
         State.FailSearch = false;
@@ -308,7 +312,7 @@ public class SetupProxy : DispatchProxy
                 }
                 return Task.FromResult(state.Page(state.LastRequest));
             case "CheckAsync" when method.ReturnType == typeof(Task<Launcher.Application.Update.UpdateCheckResult>):
-                return Task.FromResult(new Launcher.Application.Update.UpdateCheckResult(null, Reason: "更新验证失败：发布者签名无效"));
+                return Task.FromResult(new Launcher.Application.Update.UpdateCheckResult(null, Reason: "更新验证失败：发布者签名无效", Failed: true));
             case "GetModAsync": return Task.FromResult<CfMod?>(new CfMod { Id=123,ClassId=state.CfClassId,Name="CF fixture" });
             case "Protect": return System.Text.Encoding.UTF8.GetBytes((string)args![0]!);
             case "Rewrite": return args![0];

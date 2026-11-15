@@ -43,6 +43,8 @@ internal static class Program
         if(args.Contains("--showcase-invalid"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","true");
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--real-game"))return RealGameChecks.Start(root);
+        if(args.Contains("--redesign-native"))return ShellNativeChecks.Start(root,redesign:true);
         if(args.Contains("--showcase-native"))return ShellNativeChecks.Start(root,showcase:true);
         if(args.Contains("--components-native"))return ShellNativeChecks.Start(root, components: true);
         if(args.Contains("--home-native"))return ShellNativeChecks.Start(root, home: true);
@@ -54,10 +56,10 @@ internal static class Program
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", data);
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", game);
         Directory.CreateDirectory(data);
-        File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--legacy-theme")
+        File.WriteAllText(Path.Combine(data, "appearance.json"), args.Contains("--unknown-theme") ? """{"themeId":"missing-historical-preset","motionMode":"off"}""" : args.Contains("--legacy-theme")
             ? """{"themeId":"custom","customTheme":{"schema":1,"name":"旧彩色主题","colors":{"BgBrush":"#FF0000"}},"wallpaperOpacity":0.35,"motionMode":"off"}"""
             : """{"themeId":"glacier","motionMode":"off"}""");
-        foreach (var id in args.Contains("--empty") ? [] : args.Contains("--home") ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
+        foreach (var id in args.Contains("--empty") ? [] : (args.Contains("--home") || args.Contains("--redesign")) ? Enumerable.Range(1,12).Select(i=>$"1.21.{i}").ToArray() : new[] { "1.21", "1.21.4", "26.3" })
         {
             var directory = Path.Combine(game, "versions", id); Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, id + ".json"), JsonSerializer.Serialize(new { id, type = "release", mainClass = "net.minecraft.client.main.Main", arguments = new { jvm = new[] { "-cp", "${classpath}" }, game = new[] { "--username", "${auth_player_name}" } }, libraries = Array.Empty<object>(), javaVersion = new { majorVersion = 21 } }));
@@ -120,6 +122,8 @@ internal static class Program
             if(args.Contains("--maintenance")){MaintenanceUiChecks.Run(window,Pump,Check,Capture);Check("维护页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} maintenance checks passed");return 0;}
             if(args.Contains("--workspace")){WorkspaceUiChecks.Run(model,window,Pump,Check,Capture,Click,root);Check("新版工作区无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workspace checks passed");return 0;}
             if(args.Contains("--mod-workbench")){ModWorkbenchUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture,Click,root);Check("模组工作台无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} mod workbench checks passed");return 0;}
+            if(args.Contains("--redesign")){UiV11RedesignChecks.Run(model,window,Pump,Check,root);Check("M9专项无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} redesign checks passed");return 0;}
+            if(args.Contains("--unknown-theme")){Check("未知历史主题回退默认深色",!model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);Check("未知主题持久化已清理",Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="aurora");Check("未知主题无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} unknown theme checks passed");return 0;}
             if(args.Contains("--legacy-theme"))
             {
                 Check("旧彩色主题迁移为深色主题", !model.IsLightTheme && model.SelectedTheme?.Id=="aurora" && model.ThemeChoices.Count==2);

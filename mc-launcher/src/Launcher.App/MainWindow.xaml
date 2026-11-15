@@ -783,7 +783,7 @@
                                     <TextBlock FontSize="12" Foreground="{DynamicResource MutedBrush}"
                                                FontFamily="{StaticResource UiFontFamily}"
                                                TextTrimming="CharacterEllipsis">
-                                        <Run Text="{Binding Author}" /><Run Text=" · " /><Run Text="{Binding MetaText}" />
+                                        <Run Text="{Binding Author, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding MetaText, Mode=OneWay}" />
                                     </TextBlock>
                                     <TextBlock Text="{Binding Description}" FontSize="12"
                                                Foreground="{DynamicResource MutedBrush}"
