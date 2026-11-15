@@ -52,19 +52,11 @@ public static class ThemeCatalog
     }
 }
 
-public enum ThemeMode
-{
-    System,
-    Light,
-    Dark
-}
-
-public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55, string MotionMode = "smooth", bool SidebarCollapsed = false, string ThemeMode = "auto")
+public sealed record AppearanceSettings(string ThemeId = "ocean", ThemeDefinition? CustomTheme = null, string? WallpaperFile = null, double WallpaperOpacity = 0.55, string MotionMode = "smooth", bool SidebarCollapsed = false)
 {
     public AppearanceSettings Validate()
     {
         if (MotionMode is not ("smooth" or "system" or "off")) throw new ArgumentException("未知动画模式。");
-        if (ThemeMode is not ("auto" or "system" or "light" or "dark")) throw new ArgumentException("未知主题模式。");
         if (ThemeId != "custom" && !ThemeCatalog.BuiltIns.Any(t => t.Id == ThemeId)) throw new ArgumentException("未知主题。");
         if (ThemeId == "custom" && CustomTheme is null) throw new ArgumentException("缺少自定义主题。");
         if (!double.IsFinite(WallpaperOpacity) || WallpaperOpacity is < 0 or > 0.85) throw new ArgumentException("壁纸强度应在 0–85% 之间。");

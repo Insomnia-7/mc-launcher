@@ -6,8 +6,6 @@
 !/LICENSE
 !/mc-launcher/
 !/mc-launcher/**
-!/UI-design-plan/
-!/UI-design-plan/**
 !/.github/
 !/.github/workflows/
 !/.github/workflows/release.yml

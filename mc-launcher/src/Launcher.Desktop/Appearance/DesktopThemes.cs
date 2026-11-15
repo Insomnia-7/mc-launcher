@@ -2,64 +2,42 @@ using Launcher.Application.Settings;
 
 namespace Launcher.App.Appearance;
 
-// Keep the persisted IDs compatible with the existing appearance store ("aurora" = Dark, "glacier" = Light).
+// Keep the persisted IDs compatible with the existing appearance store.
 internal static class DesktopThemes
 {
     public const string LightId = "glacier";
+    /// <summary>旧夜间主题的 id：仅用于把历史设置迁移到日间白，不再对外提供。</summary>
     public const string DarkId = "aurora";
+    /// <summary>外观只提供日间白一种主题。</summary>
+    public static IReadOnlyList<ThemePreset> Choices { get; } =
+        [new(LightId, Create(true))];
 
-    public static ThemePreset Dark { get; } = new(DarkId, Create(light: false));
-    public static ThemePreset Light { get; } = new(LightId, Create(light: true));
-
-    public static IReadOnlyList<ThemePreset> Choices { get; } = [Dark, Light];
-
-    public static ThemeDefinition ForVariant(bool light) => light ? Light.Definition : Dark.Definition;
-
-    private static ThemeDefinition Create(bool light) => light
-        ? new(1, "浅色 · 云母清灰", new()
+    private static ThemeDefinition Create(bool light)
+    {
+        var text = light ? "#191919" : "#F0F0F0";
+        var fill = light ? "#202020" : "#EEEEEE";
+        return new(1, light ? "日间 · 白" : "夜间 · 黑", new()
         {
-            ["BgBrush"] = "#F7F8FA",
-            ["PanelBrush"] = "#F1F2F5",
-            ["CardBrush"] = "#FFFFFF",
-            ["FieldBrush"] = "#FAFAFC",
-            ["HoverBrush"] = "#EBEDF2",
-            ["LineBrush"] = "#E5E7ED",
-            ["TextBrush"] = "#1D2028",
-            ["MutedBrush"] = "#626A78",
-            ["FaintBrush"] = "#89909D",
-            ["AccentBrush"] = "#6E60DB",
-            ["AccentHoverBrush"] = "#5F52CB",
-            ["AccentFillBrush"] = "#6E60DB",
-            ["AccentPressedBrush"] = "#5044B9",
-            ["SelectedBrush"] = "#EEEBFF",
-            ["SuccessBrush"] = "#269B65",
-            ["WarnBrush"] = "#B98225",
-            ["DangerBrush"] = "#D34F5D",
-            ["DangerSoftBrush"] = "#1ED34F5D",
-            ["OverlayBrush"] = "#7A12151C",
-            ["WallpaperTintBrush"] = "#4DF7F8FA"
-        })
-        : new(1, "深色 · 星夜蓝灰", new()
-        {
-            ["BgBrush"] = "#101114",
-            ["PanelBrush"] = "#14161B",
-            ["CardBrush"] = "#191C22",
-            ["FieldBrush"] = "#1F232B",
-            ["HoverBrush"] = "#262B35",
-            ["LineBrush"] = "#2A2E37",
-            ["TextBrush"] = "#F1F2F5",
-            ["MutedBrush"] = "#A0A4AF",
-            ["FaintBrush"] = "#737987",
-            ["AccentBrush"] = "#8B7CFF",
-            ["AccentHoverBrush"] = "#9A8DFF",
-            ["AccentFillBrush"] = "#6B5CE0",
-            ["AccentPressedBrush"] = "#5D4ED1",
-            ["SelectedBrush"] = "#292440",
-            ["SuccessBrush"] = "#4FBF83",
-            ["WarnBrush"] = "#E6B65C",
-            ["DangerBrush"] = "#E06C75",
-            ["DangerSoftBrush"] = "#24E06C75",
-            ["OverlayBrush"] = "#A608090C",
-            ["WallpaperTintBrush"] = "#52101114"
+            ["BgBrush"] = light ? "#F2F2F2" : "#101010",
+            ["PanelBrush"] = light ? "#F9F9F9" : "#191919",
+            ["CardBrush"] = light ? "#FFFFFF" : "#222222",
+            ["FieldBrush"] = light ? "#EBEBEB" : "#2A2A2A",
+            ["HoverBrush"] = light ? "#E0E0E0" : "#363636",
+            ["LineBrush"] = light ? "#24000000" : "#28FFFFFF",
+            ["TextBrush"] = text,
+            ["MutedBrush"] = light ? "#626262" : "#ACACAC",
+            ["FaintBrush"] = light ? "#707070" : "#999999",
+            ["AccentBrush"] = text,
+            ["AccentHoverBrush"] = fill,
+            ["AccentFillBrush"] = fill,
+            ["AccentPressedBrush"] = fill,
+            ["SelectedBrush"] = light ? "#12000000" : "#18FFFFFF",
+            ["SuccessBrush"] = text,
+            ["WarnBrush"] = text,
+            ["DangerBrush"] = text,
+            ["DangerSoftBrush"] = light ? "#10000000" : "#10FFFFFF",
+            ["OverlayBrush"] = "#99000000",
+            ["WallpaperTintBrush"] = light ? "#45FFFFFF" : "#45000000"
         });
+    }
 }

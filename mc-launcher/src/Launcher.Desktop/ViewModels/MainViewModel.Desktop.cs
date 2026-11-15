@@ -5,7 +5,8 @@ namespace Launcher.App.ViewModels;
 
 public sealed partial class MainViewModel
 {
-    public bool IsLightTheme => _appearance?.IsEffectiveLight ?? false;
+    /// <summary>外观只提供日间白，这里恒为 true；保留属性是因为既有绑定与检查仍在读它。</summary>
+    public bool IsLightTheme => true;
     public bool HasInstances => Instances.Count > 0;
     public string InstanceCountText => $"{Instances.Count} 个游戏实例";
     public string WorldVersion => SelectedInstance?.BaseVersion ?? "添加你的第一个世界";

@@ -37,7 +37,7 @@
 
     <!-- 侧边栏：宽度由 MainWindow 的状态机驱动（用户点折叠键才播 250ms，窗口 resize 引起的变化一律瞬时） -->
     <Style Selector="Border#SidebarPanel">
-      <Setter Property="Width" Value="240" />
+      <Setter Property="Width" Value="236" />
       <Setter Property="Transitions"><Transitions><DoubleTransition Property="Width" Duration="{x:Static local:MotionTiming.Normal}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Setter>
     </Style>
     <Style Selector="Border#SidebarPanel.nav-minimal"><Setter Property="IsVisible" Value="False" /></Style>
@@ -115,7 +115,7 @@
       </Grid>
     </Border>
 
-    <!-- ② 侧边栏：Expanded 240 / Compact 72 / Minimal 0 / Overlay 240 浮层 -->
+    <!-- ② 侧边栏：Expanded 236 / Compact 72 / Minimal 0 / Overlay 236 浮层 -->
     <Border x:Name="SidebarPanel" Grid.Row="1" Grid.Column="0" CornerRadius="12" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Margin="24,12,0,12" Padding="14,16,14,12" VerticalAlignment="Stretch">
       <DockPanel>
         <Grid x:Name="SidebarBrandExpanded" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,0,0">

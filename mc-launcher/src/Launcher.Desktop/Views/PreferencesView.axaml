@@ -25,16 +25,6 @@
       </Border>
       <ScrollViewer Grid.Row="2" IsVisible="{Binding IsAppearanceSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
         <StackPanel Spacing="16">
-          <StackPanel Spacing="8">
-            <TextBlock Text="主题模式" FontWeight="SemiBold"/>
-            <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="10" Padding="4">
-              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                <Button x:Name="ThemeModeDarkButton" Classes="nav" Classes.active="{Binding IsDarkModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="dark" Content="深色模式" HorizontalContentAlignment="Center"/>
-                <Button x:Name="ThemeModeLightButton" Grid.Column="1" Classes="nav" Classes.active="{Binding IsLightModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="light" Content="浅色模式" HorizontalContentAlignment="Center"/>
-                <Button x:Name="ThemeModeSystemButton" Grid.Column="2" Classes="nav" Classes.active="{Binding IsSystemModeSelected}" Command="{Binding SelectThemeModeCommand}" CommandParameter="system" Content="跟随系统" HorizontalContentAlignment="Center"/>
-              </Grid>
-            </Border>
-          </StackPanel>
           <ListBox x:Name="ThemeList" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}" MaxHeight="230">
             <ListBox.ItemsPanel>
               <ItemsPanelTemplate>

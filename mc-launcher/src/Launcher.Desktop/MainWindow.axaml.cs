@@ -168,7 +168,7 @@ public sealed partial class MainWindow : Window
 
         var target = state switch
         {
-            SidebarState.Expanded or SidebarState.Overlay => 240d,
+            SidebarState.Expanded or SidebarState.Overlay => 236d,
             SidebarState.Compact => 72d,
             _ => 0d
         };
