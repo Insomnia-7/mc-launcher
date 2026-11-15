@@ -72,6 +72,8 @@ public sealed partial class MainViewModel
     public ObservableCollection<DurableTaskRow> DurableTasks {get;}=[];
     public ObservableCollection<DurableTaskRow> VisibleDurableTasks { get; } = [];
     public bool HasDurableTasks=>VisibleDurableTasks.Count>0;
+    public int SidebarTaskCount => DurableTasks.Count(task => !task.IsHistory);
+    public bool HasSidebarTasks => SidebarTaskCount > 0;
     [ObservableProperty] private bool _showsTaskHistory;
     public string TaskListHint => ShowsTaskHistory ? "历史记录仅保留结果；移除记录不删除游戏、备份或共享资源。" : "进行中包含等待、暂停和失败任务。完成或取消后进入历史记录。";
     partial void OnShowsTaskHistoryChanged(bool value) { OnPropertyChanged(nameof(TaskListHint)); RefreshTaskRows(); }
@@ -243,6 +245,8 @@ public sealed partial class MainViewModel
         }
         OnPropertyChanged(nameof(CanEditExperience));
         OnPropertyChanged(nameof(HasDurableTasks));
+        OnPropertyChanged(nameof(SidebarTaskCount));
+        OnPropertyChanged(nameof(HasSidebarTasks));
         RefreshPackTaskState();
     }
     private void ReloadExperienceLists()

@@ -10,7 +10,7 @@ using Avalonia.Styling;
 namespace Launcher.Desktop;
 
 /// <summary>
-/// 全局动效时长。全项目只允许这四个值，出现第五个就是失控（设计大纲 §4.1）。
+/// 通用动效时长，以及 UI 重构计划中已落地阶段的专用节奏。
 /// 这里改一个数，全项目动效跟着变；「关闭动画」不在这里生效——
 /// 关掉动效靠窗口上的 reduced-motion 类统一清空 Transitions，见 Styles/Controls.axaml。
 /// </summary>
@@ -27,6 +27,12 @@ public static class MotionTiming
 
     /// <summary>带内元素的错峰间隔。</summary>
     public const int StaggerMs = 40;
+
+    // UI redesign M4: text phases fit inside the 250ms sidebar width transition.
+    public const int SidebarTextOutMs = 120;
+    public const int SidebarTextDelayMs = 80;
+    public const int SidebarTextInMs = 140;
+    public static TimeSpan Navigation => TimeSpan.FromMilliseconds(190);
 
     /// <summary>
     /// 大纲在 §3.2 B-1 与 §3.4 里单独点名了 200ms（浮层滑入、设置退场）。

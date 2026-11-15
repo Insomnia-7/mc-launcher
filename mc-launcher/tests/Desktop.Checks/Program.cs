@@ -40,6 +40,7 @@ internal static class Program
         }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--sidebar-native"))return ShellNativeChecks.Start(root, sidebar: true);
         if(args.Contains("--shell-native"))return ShellNativeChecks.Start(root);
         if(args.Contains("--gpu-native"))return GpuPreviewChecks.Start(root);
         var data = Path.Combine(root, "fixture"); var game = Path.Combine(data, "game");
@@ -93,6 +94,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--sidebar")){SidebarUiChecks.Run(model,window,Pump,Check,Capture,Click,data);Check("侧边栏无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} sidebar checks passed");return 0;}
             if(args.Contains("--shell")){ShellUiChecks.Run(model,window,Pump,Check,Capture,Click,data,root);Check("标题栏与主题无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} shell checks passed");return 0;}
             if(args.Contains("--multiplayer")){MultiplayerUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture);Check("联机页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} multiplayer UI checks passed");return 0;}
             if(args.Contains("--instance-icons")){InstanceIconUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例图标页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} instance icon checks passed");return 0;}
@@ -366,7 +368,7 @@ internal static class Program
             Click(VisibleSidebarToggle()); Pump(350);
             Check("真实点击再次展开恢复宽度且文字可见", !model.IsSidebarCollapsed && Math.Abs(sidebar.Width - 240) < 1 && navText.Opacity > 0.9);
             Check("真实点击状态写入外观设置并被读回", !Launcher.Application.Settings.AppearanceStore.Read(data).SidebarCollapsed);
-            Check("收起态导航项提供 ToolTip", ToolTip.GetTip(Find<Button>("LibraryNav")) as string == "游戏库");
+            Check("展开态抑制重复导航提示", ToolTip.GetTip(Find<Button>("LibraryNav")) as string == "游戏实例" && !ToolTip.GetServiceEnabled(Find<Button>("LibraryNav")));
 
             // 侧边栏四态（大纲 B-1）：窄窗口降为 Minimal，汉堡键开 Overlay 浮层
             var hamburger = Find<Button>("SidebarHamburger");

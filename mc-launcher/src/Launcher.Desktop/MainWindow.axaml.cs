@@ -100,7 +100,7 @@ public sealed partial class MainWindow : Window
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
-            _navIndicatorCts?.Cancel(); _navIndicatorCts?.Dispose(); _navIndicatorCts = null;
+            _sidebarCts?.Cancel(); _sidebarCts?.Dispose(); _sidebarCts = null;
         };
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
@@ -138,7 +138,11 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void UpdateMotion() => Classes.Set("reduced-motion", !MotionPreferences.Enabled);
+    private void UpdateMotion()
+    {
+        Classes.Set("reduced-motion", !MotionPreferences.Enabled);
+        if (IsLoaded && _model is not null) { UpdateSidebar(userInitiated: false); UpdateNavIndicator(animate: false); }
+    }
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -159,157 +163,6 @@ public sealed partial class MainWindow : Window
             // 用递增 revision 只让最后一次 Post 生效，避免多个 Animation 互相取消。
             var revision = ++_navIndicatorRevision;
             Dispatcher.UIThread.Post(() => { if (revision == _navIndicatorRevision) UpdateNavIndicator(); }, DispatcherPriority.Background);
-        }
-    }
-
-    /// <summary>
-    /// 侧边栏状态机（Expanded / Compact / Minimal / Overlay）。
-    /// 收放手感回到上一版：宽度是唯一被动画的量，内部布局在 t=0 到位，
-    /// 由宽度过渡带着内容连续重排；窗口 resize 引起的变化一律瞬时。
-    /// </summary>
-    private void UpdateSidebar(bool userInitiated)
-    {
-        var panel = SidebarPanel;
-        var width = Bounds.Width > 0 ? Bounds.Width : ClientSize.Width;
-        var narrow = width > 0 && width < 900;
-        SidebarState state;
-        if (narrow) state = _overlaySidebarOpen ? SidebarState.Overlay : SidebarState.Minimal;
-        else state = _model?.IsSidebarCollapsed == true || (width >= 900 && width < 1000) ? SidebarState.Compact : SidebarState.Expanded;
-
-        var previous = _sidebarState;
-        var userToggle = userInitiated && previous != state;
-        _sidebarState = state;
-
-        var target = state switch
-        {
-            SidebarState.Expanded or SidebarState.Overlay => 240d,
-            SidebarState.Compact => 72d,
-            _ => 0d
-        };
-        var expandedLayout = state is SidebarState.Expanded or SidebarState.Overlay;
-
-        panel.Classes.Set("nav-compact", state == SidebarState.Compact);
-        panel.Classes.Set("nav-minimal", state == SidebarState.Minimal);
-        panel.Classes.Set("nav-overlay", state == SidebarState.Overlay);
-        Grid.SetColumnSpan(panel, state == SidebarState.Overlay ? 2 : 1);
-        panel.HorizontalAlignment = state == SidebarState.Overlay ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
-
-        // 品牌行、文字、导航标签与上一版一致：紧贴状态切换一次性到位，不参与补间。
-        SidebarBrandExpanded.IsVisible = expandedLayout;
-        SidebarBrandCollapsed.IsVisible = state == SidebarState.Compact;
-        SidebarScrim.IsVisible = state == SidebarState.Overlay;
-        SidebarHamburger.IsVisible = state == SidebarState.Minimal;
-        PageContent.Classes.Set("minimal", state == SidebarState.Minimal);
-
-        panel.Width = target;
-
-        if (userToggle && state == SidebarState.Overlay) PlayOverlayEntrance();
-    }
-
-    /// <summary>浮层侧栏滑入：窄窗口下从左侧推 24px 入场。</summary>
-    private async void PlayOverlayEntrance()
-    {
-        if (!MotionPreferences.Enabled) return;
-        try { await Motion.AnimateTranslateX(SidebarPanel, -24, 0, MotionTiming.PanelMs, MotionEasing.Entrance, CancellationToken.None); }
-        finally { SidebarPanel.RenderTransform = TransformOperations.Identity; }
-    }
-
-    private void OpenOverlaySidebar(object? sender, RoutedEventArgs e)
-    {
-        _overlaySidebarOpen = true;
-        _sidebarState = SidebarState.Minimal;
-        UpdateSidebar(userInitiated: true);
-    }
-
-    private void OnScrimPressed(object? sender, PointerPressedEventArgs e)
-    {
-        _overlaySidebarOpen = false;
-        UpdateSidebar(userInitiated: false);
-    }
-
-    /// <summary>导航按钮在 ShellPage 上的对应关系。experience 页按当前 tab 解析。</summary>
-    private static readonly Dictionary<string, string> NavButtonForPage = new()
-    {
-        ["library"] = "LibraryNav",
-        ["detail"] = "LibraryNav",
-        ["discover"] = "DiscoverNav",
-        ["multiplayer"] = "MultiplayerNav",
-        ["settings"] = "SettingsEntry",
-    };
-
-    private string? NavButtonName()
-    {
-        if (_model is null) return null;
-        if (_model.ShellPage == "experience")
-            return _model.IsRolePage ? "WardrobeEntry" : _model.IsTaskPage ? "TaskCenterEntry" : null;
-        return NavButtonForPage.TryGetValue(_model.ShellPage, out var name) ? name : null;
-    }
-
-    /// <summary>
-    /// 共享蓝色指示条：整条导航只有一条，随 ShellPage 平移 250ms（大纲 B-4）。
-    /// 位置与路由同步；首次显示直接落位不飞入；侧栏收起时按图标布局重算。
-    /// </summary>
-    private void UpdateNavIndicator(bool animate = true)
-    {
-        if (_model is null) return;
-        var indicator = this.FindControl<Border>("NavIndicator");
-        var list = this.FindControl<StackPanel>("NavList");
-        if (indicator is null || list is null) return;
-        if (NavButtonName() is not { } buttonName
-            || this.FindControl<Button>(buttonName) is not { } target
-            || !target.IsAttachedToVisualTree()
-            || target.GetVisualAncestors().OfType<Control>().All(a => a != (Control)list))
-        {
-            indicator.IsVisible = false;
-            return;
-        }
-        var origin = target.TranslatePoint(new Point(0, (target.Bounds.Height - indicator.Height) / 2), list);
-        if (origin is not { } point) { indicator.IsVisible = false; return; }
-        var transform = indicator.RenderTransform as TranslateTransform;
-        if (transform is null) return;
-        indicator.IsVisible = true;
-        _navIndicatorPlaced = true;
-        if (!animate || !MotionPreferences.Enabled)
-        {
-            transform.X = point.X - 10; transform.Y = point.Y;
-            return;
-        }
-        _navIndicatorCts?.Cancel(); _navIndicatorCts?.Dispose();
-        var cts = _navIndicatorCts = new CancellationTokenSource();
-        var fromX = transform.X; var fromY = transform.Y;
-        _ = AnimateIndicatorAsync(indicator, transform, fromX, fromY, point.X - 10, point.Y, cts.Token);
-    }
-
-    private CancellationTokenSource? _navIndicatorCts;
-    private int _navIndicatorRevision;
-    private bool _navIndicatorPlaced;
-
-    /// <summary>布局每帧变化（侧栏宽度过渡、窗口缩放、折叠）时以 animate:false 跟随，不做飞入动画。</summary>
-    private void NavListLayoutUpdated()
-    {
-        var list = this.FindControl<StackPanel>("NavList");
-        if (list is null) return;
-        list.LayoutUpdated += (_,_) =>
-        {
-            if (_model is null) return;
-            if (!_navIndicatorPlaced || _navIndicatorCts is not null) UpdateNavIndicator(animate: false);
-        };
-    }
-
-    private static async Task AnimateIndicatorAsync(Border indicator, TranslateTransform transform, double fromX, double fromY, double toX, double toY, CancellationToken token)
-    {
-        try
-        {
-            var animation = new Animation { Duration = MotionTiming.Normal, Easing = MotionEasing.Entrance, FillMode = FillMode.Forward };
-            animation.Children.Add(new KeyFrame { Cue = new Cue(0), Setters = { new Setter(TranslateTransform.XProperty, fromX), new Setter(TranslateTransform.YProperty, fromY) } });
-            animation.Children.Add(new KeyFrame { Cue = new Cue(1), Setters = { new Setter(TranslateTransform.XProperty, toX), new Setter(TranslateTransform.YProperty, toY) } });
-            await animation.RunAsync(indicator, token);
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
-            // FillMode.Forward 只在动画正常完成时保留终值；取消/中断时显式写回终值，保证快速连续切换后位置一致。
-            if (!token.IsCancellationRequested) { transform.X = toX; transform.Y = toY; }
         }
     }
 

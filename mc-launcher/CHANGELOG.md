@@ -1,5 +1,15 @@
 # 方隅版本记录
 
+## 1.0.0-preview.9 · M4 侧边栏交互
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.9)。
+
+- 实现 240/72px 侧边栏分步文字动画，展开先扩宽再渐入，收起先渐隐再切换紧凑布局；连续点击从当前宽度反向衔接。
+- 选中背景胶囊与唯一 3×20 指示条以 190ms 平滑跟随页面；保留窄窗口浮层，减少动画时立即落位。
+- 收起态增加 450ms 中文 Tooltip、32×32 账号入口与更新入口；已加载头像可直接复用。
+- 任务中心角标显示真实未完成数量，任务完成后自动更新；导航保留所有现有业务模块，主页入口随 M6 接入。
+- 新增无头与 Windows 原生窗口侧栏专项验收；M5–M9 继续按计划推进。
+
 ## 1.0.0-preview.8 · 三态主题、材质适配与一体化标题栏
 
 2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.8)。

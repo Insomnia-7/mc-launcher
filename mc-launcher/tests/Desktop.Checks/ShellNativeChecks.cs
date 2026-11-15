@@ -19,7 +19,7 @@ internal static class ShellNativeChecks
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     private static nint Pack(PixelPoint point) => (nint)((point.X & 0xffff) | ((point.Y & 0xffff) << 16));
 
-    public static int Start(string root)
+    public static int Start(string root, bool sidebar = false)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This check uses Windows native hit testing.");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, "data"));
@@ -44,6 +44,7 @@ internal static class ShellNativeChecks
             try
             {
                 await Task.Delay(350);
+                if (sidebar) { await SidebarUiChecks.RunNativeAsync(model, window, root); exit = 0; return; }
                 var handle = window.TryGetPlatformHandle()!.Handle;
                 nint Hit(Control control) => SendMessage(handle, 0x84, 0, Pack(control.PointToScreen(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2))));
                 Check("真实 Windows 标题栏高 38px", Find<Border>("WindowHeader").Bounds.Height == 38);

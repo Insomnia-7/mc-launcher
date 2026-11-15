@@ -86,10 +86,12 @@ internal static class ExperienceUiChecks
         model.UnlockModUpdateCommand.Execute("test.jar");model.UpdateChannel="测试版";check("更新频道明确区分测试版与正式版",model.ModUpdateReleaseChannel=="beta");model.UpdateChannel="正式版";
         capture("instance-history",true);
         model.CloseExperienceCommand.Execute(null);model.IsInstanceSection=false;var vm=model.Download;vm.SelectedCategory=vm.Categories.First(c=>c.Category==DownloadCategory.MinecraftVersion);vm.SelectVersionCommand.Execute(new VersionItem("1.21.4","release",DateTimeOffset.UtcNow));
-        resources.PendingDownload=new(TaskCreationOptions.RunContinuationsAsynchronously);var running=vm.InstallVersionCommand.ExecuteAsync(null);Until(()=>model.DurableTasks.Any(t=>t.CanPause));
-        model.OpenTaskCenterCommand.Execute(null);var task=model.DurableTasks.Single(t=>t.CanPause);model.PauseDurableTaskCommand.Execute(task);Wait(running);
+        var sidebarTasksBefore=model.SidebarTaskCount;resources.PendingDownload=new(TaskCreationOptions.RunContinuationsAsynchronously);var running=vm.InstallVersionCommand.ExecuteAsync(null);Until(()=>model.DurableTasks.Any(t=>t.CanPause));
+        model.OpenTaskCenterCommand.Execute(null);check("运行任务同步侧栏真实计数",model.SidebarTaskCount==sidebarTasksBefore+1&&window.FindControl<Border>("SidebarTaskBadge")!.IsVisible);var task=model.DurableTasks.Single(t=>t.CanPause);model.PauseDurableTaskCommand.Execute(task);Wait(running);
         check("任务中心可暂停安装并恢复操作入口",task.CanResume&&!model.IsBusy&&!vm.IsBusy&&task.StateText.Contains("暂停"));
+        check("暂停任务仍计入侧栏未完成数量",model.SidebarTaskCount==sidebarTasksBefore+1);
         resources.PendingDownload=null;Wait(model.ResumeDurableTaskCommand.ExecuteAsync(task));check("任务中心恢复原任务并完成安装",task.Record.State==DurableTaskState.Completed);
+        check("任务完成后侧栏数量恢复，其他未完成任务保留",model.SidebarTaskCount==sidebarTasksBefore&&window.FindControl<Border>("SidebarTaskBadge")!.IsVisible==(sidebarTasksBefore>0));
         Wait(model.InspectInstanceCommand.ExecuteAsync(null));check("中文体检展示依据和可操作建议",model.InspectionIssues.Count>0&&model.InspectionIssues.All(i=>i.Evidence.Length>0&&i.Advice.Length>0));
         capture("task-center",true);model.CloseExperienceCommand.Execute(null);model.IsInstanceSection=true;pump(80);
         check("关闭玩家中心后释放预览纹理与弹窗命中",!model.HasOverlay&&model.PreviewSkin is null&&model.PreviewCape is null);
