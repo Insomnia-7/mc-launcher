@@ -46,7 +46,7 @@ public sealed partial class MainWindow : Window
         if (OperatingSystem.IsWindows())
         {
             ExtendClientAreaToDecorationsHint=true;
-            ExtendClientAreaTitleBarHeightHint=40;
+            ExtendClientAreaTitleBarHeightHint=38;
             WindowDecorations=WindowDecorations.BorderOnly;
         }
         else
@@ -54,8 +54,13 @@ public sealed partial class MainWindow : Window
             CaptionButtons.IsVisible=false;
             TitleDragArea.IsVisible=false;
         }
-        PropertyChanged += (_, e) => { if(e.Property==WindowStateProperty) UpdateCaption(); };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty) UpdateCaption();
+            if (e.Property == ActualTransparencyLevelProperty) UpdateShellMaterialState();
+        };
         UpdateCaption();
+        UpdateShellMaterialPreference();
         DataContextChanged += (_, _) =>
         {
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
@@ -70,6 +75,7 @@ public sealed partial class MainWindow : Window
             if (_model is not null) _model.PropertyChanged += ModelChanged;
             UpdatePage();
             UpdateOverlay();
+            UpdateShellMaterialPreference();
             Dispatcher.UIThread.Post(() => { UpdateSidebar(userInitiated: false); UpdateNavIndicator(animate: false); }, DispatcherPriority.Loaded);
         };
         MotionPreferences.Changed += UpdateMotion;
@@ -109,6 +115,7 @@ public sealed partial class MainWindow : Window
     private async void UpdateCaption()
     {
         var maximized=WindowState==WindowState.Maximized;
+        Classes.Set("maximized", maximized);
         var data=maximized?"M 4,2 L 12,2 12,10 M 2,4 L 10,4 10,12 2,12 Z":"M 2,2 L 12,2 12,12 2,12 Z";
         var label=maximized?"还原窗口":"最大化";
         ToolTip.SetTip(MaximizeButton,label);
@@ -122,7 +129,13 @@ public sealed partial class MainWindow : Window
             MaximizeGlyph.Data=Geometry.Parse(data);
             await Motion.AnimateOpacity(MaximizeGlyph, 0, 1, MotionTiming.FastMs, MotionEasing.Entrance, CancellationToken.None);
         }
-        finally { MaximizeGlyph.Data=Geometry.Parse(data); MaximizeGlyph.Opacity=1; _captionSwapping=false; }
+        finally
+        {
+            // A second state change can arrive while the icon is fading.
+            MaximizeGlyph.Data=Geometry.Parse(WindowState==WindowState.Maximized
+                ? "M 4,2 L 12,2 12,10 M 2,4 L 10,4 10,12 2,12 Z" : "M 2,2 L 12,2 12,12 2,12 Z");
+            MaximizeGlyph.Opacity=1; _captionSwapping=false;
+        }
     }
 
     private void UpdateMotion() => Classes.Set("reduced-motion", !MotionPreferences.Enabled);
@@ -131,6 +144,7 @@ public sealed partial class MainWindow : Window
     {
         // ShellPage 一次导航会发多条中间通知（先关旧页再开新页），
         // 指示条只在值稳定后落位，避免被中间态（如 "" 空页）闪隐藏。
+        if (e.PropertyName == nameof(MainViewModel.HasCustomWallpaper)) UpdateShellMaterialPreference();
         if (e.PropertyName == nameof(MainViewModel.HasOverlay)) UpdateOverlay();
         if (e.PropertyName == nameof(MainViewModel.IsSidebarCollapsed) || e.PropertyName == nameof(MainViewModel.ShellPage))
         {

@@ -1,5 +1,7 @@
 # 方隅 · 源码
 
+当前 Windows 版本：`1.0.0-preview.8`。
+
 Minecraft Java 版启动器。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
 
 界面在 `src/Launcher.Desktop`。旧的 WPF 入口 `src/Launcher.App` 还留着，能编译能跑，但只在 Windows 用，也不再出新功能。
@@ -119,3 +121,7 @@ MCLAUNCHER_GAME_ROOT  游戏目录（versions、libraries、assets、instances�
 ## 许可
 
 MIT。Minecraft 与第三方资源遵循各自的许可，本项目与 Mojang、Microsoft 无关联。
+
+## UI 重构进度
+
+M2 材质适配与 M3 标题栏已落地本批源码。具体实现与验证范围见 [进度记录](../UI-design-plan/02-implementation-progress.md)。M4–M9 仍按原计划继续推进。

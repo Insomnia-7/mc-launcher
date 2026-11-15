@@ -40,6 +40,7 @@ internal static class Program
         }
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--shell-native"))return ShellNativeChecks.Start(root);
         if(args.Contains("--gpu-native"))return GpuPreviewChecks.Start(root);
         var data = Path.Combine(root, "fixture"); var game = Path.Combine(data, "game");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", data);
@@ -92,6 +93,7 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--shell")){ShellUiChecks.Run(model,window,Pump,Check,Capture,Click,data,root);Check("标题栏与主题无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} shell checks passed");return 0;}
             if(args.Contains("--multiplayer")){MultiplayerUiChecks.Run(model,window,services.GetRequiredService<MultiplayerFixture>(),launch,Pump,Check,Capture);Check("联机页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} multiplayer UI checks passed");return 0;}
             if(args.Contains("--instance-icons")){InstanceIconUiChecks.Run(model,window,Pump,Check,Capture,root);Check("实例图标页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} instance icon checks passed");return 0;}
             if(args.Contains("--library-storage")){LibraryStorageUiChecks.Run(model,window,Pump,Check,Capture,root,resourceFixture);Check("目录存储页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} library storage UI checks passed");return 0;}
@@ -194,8 +196,7 @@ internal static class Program
                 Check("标题栏最小化按钮可用", window.WindowState==WindowState.Minimized);
                 window.WindowState=WindowState.Normal; window.Activate(); Pump(60);
             }
-            // 外观只保留日间白：标题栏不再有日夜切换按钮。
-            Check("标题栏不再提供日夜切换", !window.GetVisualDescendants().OfType<ToggleButton>().Any(t => t.Name == "ThemeToggle"));
+            Check("标题栏提供三态主题快切", Find<Button>("ThemeSwitchButton").Command == model.CycleThemeModeCommand);
             Check("日间主题已保存", model.IsLightTheme && Launcher.Application.Settings.AppearanceStore.Read(data).ThemeId=="glacier");
             var primaryForeground=(ISolidColorBrush)Avalonia.Application.Current!.Resources["PrimaryTextBrush"]!;
             Check("日间主按钮使用白字", primaryForeground.Color==Colors.White);

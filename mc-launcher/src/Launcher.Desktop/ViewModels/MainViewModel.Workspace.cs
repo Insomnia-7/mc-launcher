@@ -57,6 +57,15 @@ public sealed partial class MainViewModel
     public string LibraryResultText=>$"{LibraryEntries.Count} / {Instances.Count}";
     public bool LibraryHasNoResults=>LibraryEntries.Count==0&&HasInstances;
     public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsInstanceSection?"library":"discover";
+    public string ShellPageTitle => ShellPage switch
+    {
+        "settings" => "设置",
+        "experience" => ExperiencePageTitle,
+        "multiplayer" => "联机大厅",
+        "detail" => SelectedGameName,
+        "discover" => "发现资源",
+        _ => "游戏实例"
+    };
     public bool IsLibraryPage=>ShellPage is "library" or "detail";
     public bool IsDiscoverPage=>ShellPage=="discover";
     public bool IsRolePage=>ShellPage=="experience"&&IsWardrobeTab;
@@ -126,12 +135,12 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()
     {
-        foreach(var property in new[]{nameof(SelectedGameName),nameof(SelectedGameMeta),nameof(SelectedGameStatus),nameof(SelectedGameCover),nameof(SelectedGameCoverStretch),nameof(HasGameCover),nameof(WorldDisplayName),nameof(HasWorldDisplayName)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(SelectedGameName),nameof(SelectedGameMeta),nameof(SelectedGameStatus),nameof(SelectedGameCover),nameof(SelectedGameCoverStretch),nameof(HasGameCover),nameof(WorldDisplayName),nameof(HasWorldDisplayName)})OnPropertyChanged(property);
     }
     private void QueueLibraryRefresh()
     {

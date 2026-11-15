@@ -1,5 +1,17 @@
 # 方隅版本记录
 
+## 1.0.0-preview.8 · 三态主题、材质适配与一体化标题栏
+
+2026-11-15。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.8)。
+
+- 交付此前已合入的深色 / 浅色 / 跟随系统主题、设计资源和 240px 展开侧栏。
+- M2：补齐 Windows Mica / Acrylic / 实色回退，仅标题栏和侧栏使用高不透明度材质色，业务内容保持实色；自定义壁纸优先。
+- M3：标题栏收紧为 38px，保留原始品牌标识并显示当前真实页面或实例名称；新增三态主题快切、真实后台任务入口和键盘焦点提示。
+- 保留原生窗口拖动、双击最大化、边缘缩放和 Snap Layouts 命中角色；最大化使用 OffScreenMargin 修正边界，还原时恢复细描边。
+- 修正快速最大化再还原时，标题栏图标可能被上一段动画覆盖为旧状态的问题。
+- 新增标题栏与材质专项检查和 Windows 原生窗口检查，并记录 M0–M9 实施进度。M4–M9 继续按计划推进。
+- Linux/macOS 继续使用现有版本，本批不重新发布。四种系统 DPI 实机验收留待 M9。
+
 ## 1.0.0-preview.7 · 界面与动效体系重构
 
 2026-11-14。[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.7)。

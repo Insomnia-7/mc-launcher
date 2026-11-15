@@ -219,6 +219,7 @@ public sealed partial class MainViewModel
     public Task PauseTasksForShutdownAsync()=>_tasks?.PauseAndWaitAsync()??Task.CompletedTask;
     private void RefreshTaskRows()
     {
+        OnPropertyChanged(nameof(HasActivePersistentTask));
         if(!_experienceInitialized)return;
         var ordered = _tasks.List().OrderBy(t=>t.State==DurableTaskState.Running?0:t.State==DurableTaskState.Ready?1:2)
             .ThenBy(t=>t.State==DurableTaskState.Ready?(t.QueueOrder==0?t.CreatedAt.UtcTicks:t.QueueOrder):-t.CreatedAt.UtcTicks).ToArray();

@@ -1,6 +1,14 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:conv="using:Avalonia.Data.Converters" xmlns:local="using:Launcher.Desktop" xmlns:views="using:Launcher.Desktop.Views"
-        xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.MainWindow" Background="{DynamicResource BgBrush}" Title="方隅" Icon="avares://MCLauncher.Desktop/Assets/Brand/fangyu.ico" Width="1180" Height="800" MinWidth="760" MinHeight="620" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
+        xmlns:vm="using:Launcher.App.ViewModels" xmlns:versions="using:Launcher.Domain.Versions" x:DataType="vm:MainViewModel" xmlns:icons="using:Launcher.Desktop.Controls" x:Class="Launcher.Desktop.MainWindow" TransparencyBackgroundFallback="{DynamicResource BgBrush}" Title="方隅" Icon="avares://MCLauncher.Desktop/Assets/Brand/fangyu.ico" Width="1180" Height="800" MinWidth="760" MinHeight="620" WindowStartupLocation="CenterScreen" UseLayoutRounding="True">
   <Window.Styles>
+    <Style Selector="Window"><Setter Property="Background" Value="{DynamicResource BgBrush}" /></Style>
+    <Style Selector="Border#WindowHeader"><Setter Property="Background" Value="{DynamicResource PanelBrush}" /></Style>
+    <!-- Native material is limited to shell surfaces; business content stays opaque. -->
+    <Style Selector="Window.mica"><Setter Property="Background" Value="Transparent" /></Style>
+    <Style Selector="Window.mica Border#WindowHeader"><Setter Property="Background" Value="{DynamicResource MicaSidebarBrush}" /></Style>
+    <Style Selector="Window.mica Border#SidebarPanel"><Setter Property="Background" Value="{DynamicResource MicaSidebarBrush}" /></Style>
+    <Style Selector="Window.mica Border#SidebarPanel.nav-overlay"><Setter Property="Background" Value="{DynamicResource PanelBrush}" /></Style>
+    <Style Selector="Window.maximized Border#WindowOutline"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,12,32,16" /></Style>
     <Style Selector="Grid#PageContent.catalog"><Setter Property="Margin" Value="24,4,24,8" /></Style>
     <!-- Minimal 态侧栏收成 0，汉堡键浮在内容区左上，内容整体下让 44px 免得压住页标题（大纲 B-1） -->
@@ -16,13 +24,14 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
     <Style Selector="Button.caption:pointerover, Button.caption:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
-    <Style Selector="Button.caption:pointerover /template/ Border#Surface"><Setter Property="Background" Value="#1A000000" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
-    <Style Selector="Button.caption:pressed /template/ Border#Surface"><Setter Property="Background" Value="#30000000" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+    <Style Selector="Button.caption:pointerover /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
+    <Style Selector="Button.caption:pressed /template/ Border#Surface"><Setter Property="Background" Value="{DynamicResource PressedBrush}" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
     <Style Selector="Button.caption.close:pointerover /template/ Border#Surface"><Setter Property="Background" Value="#C42B1C" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
     <Style Selector="Button.caption.close:pressed /template/ Border#Surface"><Setter Property="Background" Value="#A82316" /><Setter Property="BorderBrush" Value="#00000000" /></Style>
     <Style Selector="Button.caption.close:pointerover"><Setter Property="Foreground" Value="White" /></Style>
     <Style Selector="Button.caption.close:pressed"><Setter Property="Foreground" Value="White" /></Style>
     <Style Selector="Button.caption /template/ Border#FocusRing"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Button.caption:focus-visible /template/ Border#FocusRing"><Setter Property="IsVisible" Value="True" /></Style>
     <Style Selector="Button.caption /template/ Border#AmbientShadow, Button.caption /template/ Border#HoverShadow"><Setter Property="IsVisible" Value="False" /></Style>
 
     <!-- 失焦：标题与内容降灰，167ms 进场曲线；按钮跟着降透明度（大纲 A-2 A-5） -->
@@ -37,7 +46,7 @@
 
     <!-- 侧边栏：宽度由 MainWindow 的状态机驱动（用户点折叠键才播 250ms，窗口 resize 引起的变化一律瞬时） -->
     <Style Selector="Border#SidebarPanel">
-      <Setter Property="Width" Value="240" />
+      <Setter Property="Width" Value="240" /><Setter Property="Background" Value="{DynamicResource PanelBrush}" />
       <Setter Property="Transitions"><Transitions><DoubleTransition Property="Width" Duration="{x:Static local:MotionTiming.Normal}"><DoubleTransition.Easing><local:EntranceEasing /></DoubleTransition.Easing></DoubleTransition></Transitions></Setter>
     </Style>
     <Style Selector="Border#SidebarPanel.nav-minimal"><Setter Property="IsVisible" Value="False" /></Style>
@@ -89,25 +98,31 @@
     <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding OpenAppearanceCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CloseTopOverlayCommand}" />
   </Window.KeyBindings>
-  <Grid x:Name="Shell" RowDefinitions="40,*,Auto" ColumnDefinitions="Auto,*" Margin="{Binding $parent[Window].OffScreenMargin}">
+  <Grid x:Name="Shell" RowDefinitions="38,*,Auto" ColumnDefinitions="Auto,*" Margin="{Binding $parent[Window].OffScreenMargin}">
     <Grid Grid.RowSpan="3" Grid.ColumnSpan="2" IsHitTestVisible="False">
       <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" Opacity="{Binding WallpaperOpacity}" />
       <Border Background="{DynamicResource WallpaperTintBrush}" IsVisible="{Binding WallpaperImage, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
       <Border Background="{DynamicResource BackdropGlowBrush}" />
     </Grid>
 
-    <!-- ① 标题栏 h=40 -->
-    <Border x:Name="WindowHeader" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+    <!-- ① 标题栏 h=38，原生拖动区与交互按钮区分离 -->
+    <Border x:Name="WindowHeader" Grid.ColumnSpan="2" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="*,Auto" Margin="12,0,0,0">
         <Border x:Name="TitleDragArea" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar">
-          <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center" IsHitTestVisible="False">
-            <Image x:Name="TitleAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="24" Height="24" />
-            <TextBlock x:Name="TitleText" Text="方隅" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" />
-            <Border Width="1" Height="12" Background="{DynamicResource DividerBrush}" Margin="4,0" />
-            <TextBlock x:Name="TitleEdition" Text="JAVA EDITION" Classes="eyebrow" FontSize="9" LetterSpacing="1.2" VerticalAlignment="Center" />
-          </StackPanel>
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*" VerticalAlignment="Center" IsHitTestVisible="False">
+            <Image x:Name="TitleAppIcon" Source="avares://MCLauncher.Desktop/Assets/Brand/fangyu.png" Width="20" Height="20" Margin="0,0,9,0" />
+            <TextBlock x:Name="TitleText" Grid.Column="1" Text="方隅" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,9,0" />
+            <Border Grid.Column="2" Width="1" Height="12" Background="{DynamicResource DividerBrush}" Margin="4,0,13,0" />
+            <TextBlock x:Name="TitleEdition" Grid.Column="3" Text="{Binding ShellPageTitle}" FontSize="13" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
+          </Grid>
         </Border>
         <StackPanel x:Name="CaptionButtons" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" WindowDecorationProperties.ElementRole="User">
+          <Button x:Name="HeaderTaskButton" Classes="caption" IsVisible="{Binding HasActivePersistentTask}" Command="{Binding OpenTaskCenterCommand}" ToolTip.Tip="查看正在进行的下载任务" ToolTip.ShowDelay="450" AutomationProperties.Name="查看正在进行的下载任务">
+            <icons:UiIcon Kind="NavDownload" Width="15" Height="15" Foreground="{DynamicResource AccentBrush}" />
+          </Button>
+          <Button x:Name="ThemeSwitchButton" Classes="caption" Command="{Binding CycleThemeModeCommand}" ToolTip.Tip="{Binding ThemeModeTooltip}" ToolTip.ShowDelay="450" AutomationProperties.Name="{Binding ThemeModeTooltip}">
+            <Path Data="{Binding ThemeModeIconGeometry}" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.4" Width="15" Height="15" Stretch="Uniform" IsHitTestVisible="False" />
+          </Button>
           <Button x:Name="MinimizeButton" Classes="caption" Click="MinimizeWindow" WindowDecorationProperties.ElementRole="MinimizeButton" ToolTip.Tip="最小化" AutomationProperties.Name="最小化"><Path Data="M 2,7 L 12,7" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
           <Button x:Name="MaximizeButton" Classes="caption" Click="ToggleMaximizeWindow" WindowDecorationProperties.ElementRole="MaximizeButton" ToolTip.Tip="最大化" AutomationProperties.Name="最大化"><Path x:Name="MaximizeGlyph" Data="M 2,2 L 12,2 12,12 2,12 Z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="14" Height="14" IsHitTestVisible="False" /></Button>
           <Button x:Name="CloseWindowButton" Classes="caption close" Click="CloseWindow" WindowDecorationProperties.ElementRole="CloseButton" ToolTip.Tip="关闭" AutomationProperties.Name="关闭窗口"><icons:UiIcon Kind="ActionClose" Width="15" Height="15" Foreground="{Binding $parent[Button].Foreground}" /></Button>
@@ -116,7 +131,7 @@
     </Border>
 
     <!-- ② 侧边栏：Expanded 240 / Compact 72 / Minimal 0 / Overlay 240 浮层 -->
-    <Border x:Name="SidebarPanel" Grid.Row="1" Grid.Column="0" CornerRadius="12" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Margin="24,12,0,12" Padding="14,16,14,12" VerticalAlignment="Stretch">
+    <Border x:Name="SidebarPanel" Grid.Row="1" Grid.Column="0" CornerRadius="12" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Margin="24,12,0,12" Padding="14,16,14,12" VerticalAlignment="Stretch">
       <DockPanel>
         <Grid x:Name="SidebarBrandExpanded" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,0,0">
           <StackPanel Orientation="Horizontal" Spacing="10" IsHitTestVisible="False">
@@ -174,7 +189,7 @@
     <Border x:Name="SidebarScrim" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{DynamicResource ScrimBrush}" IsVisible="False" ZIndex="8" PointerPressed="OnScrimPressed" />
 
     <!-- ③ 内容区 -->
-    <Grid x:Name="PageContent" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
+    <Grid x:Name="PageContent" Background="{DynamicResource BgBrush}" Classes.catalog="{Binding IsDiscoverPage}" Grid.Row="1" Grid.Column="1">
       <!-- 页面容器只有一层：切页直接换内容，没有任何过渡，也就不存在残留、叠页、闪白。 -->
       <ContentControl x:Name="PageHost" />
     </Grid>
@@ -200,6 +215,7 @@
         <TextBlock Text="{Binding StatusText}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasStatusText}" />
       </StackPanel>
     </Border>
+    <Border x:Name="WindowOutline" Grid.RowSpan="3" Grid.ColumnSpan="2" ZIndex="20" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}" IsHitTestVisible="False" />
     <ContentControl x:Name="OverlayHost" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" IsHitTestVisible="False" />
   </Grid>
 </Window>
