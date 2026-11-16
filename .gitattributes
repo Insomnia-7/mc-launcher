@@ -1,0 +1,2 @@
+# Signature fixtures must retain the exact upstream bytes on Windows.
+mc-launcher/tests/TestFixtures/HorizonSigned/* -text
