@@ -20,3 +20,15 @@
 该入口同时纳入本地 M6 和桌面发布工作流，资源目录检查保留在 M4/M6。GitHub 工作流修改须以后续远端实际运行结果为准。
 
 构建源码、哈希、最终检查数量和实际发布包结果由 verification.json 与 release-history.json 记录。只有 update.json 与对应签名通过生产更新客户端后才公开新版。
+
+## 已发布构建与远端验收
+
+1.0.0-preview.21 已发布：[GitHub Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.21)。
+
+- 构建源码：74149f21a8cb921cb00265bc9702583f9c8a9977，标签指向该提交；后续文档提交不改变 EXE。
+- Windows 单文件：31739103 字节，SHA-256：74155b242686a532383cf892313de7dd991bd0e6c533a98ec9c84f2e067fc704。
+- 1,699 项检查通过（Core 974、Horizon 协议 30、UI 695），另通过架构护栏、实际裁剪程序集检查、单文件完整启动及正常退出。
+- 26 个草稿附件逐一核对 GitHub SHA-256 后公开；生产更新客户端重新从公开标签下载清单和程序，受信签名、版本判断、大小与文件哈希均通过。
+- 发布渠道为 Pre-release；无正式版时 releases/latest 返回 404，不占用正式版入口。其他平台沿用先前受信签名及原始版本链接。
+
+验收范围仍限本机 Windows 11；其他物理环境及真实 Rust 游戏会话不在本批已通过范围内。GitHub 发布工作流未被触发，本批执行的是本机发布检查与实际 GitHub 远端验证。
