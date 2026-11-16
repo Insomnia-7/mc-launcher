@@ -18,6 +18,22 @@ public sealed partial class MainWindow
     internal bool IsStartupEntranceActive=>_startupParts.Count>0;
     internal Task StartupEntranceCompletion=>_startupCompletion?.Task??Task.CompletedTask;
 
+    internal async Task PrepareStartupContentAsync(CancellationToken token)
+    {
+        if (_model is not null)
+        {
+            using var avatarBudget = CancellationTokenSource.CreateLinkedTokenSource(token);
+            avatarBudget.CancelAfter(TimeSpan.FromSeconds(8));
+            await Task.WhenAll(_model.LoadStartupAvatarAsync(avatarBudget.Token), _model.LoadAppearanceWallpaperAsync());
+        }
+        token.ThrowIfCancellationRequested();
+        UpdateSidebar(userInitiated: false);
+        Measure(ClientSize);
+        Arrange(new Rect(ClientSize));
+        UpdateLayout();
+        UpdateNavIndicator(animate: false);
+    }
+
     internal void PrepareStartupEntrance()
     {
         if(!MotionPreferences.Enabled||_model?.ShellPage!="home")return;

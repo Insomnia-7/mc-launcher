@@ -29,23 +29,29 @@ internal sealed class StartupLogoWindow : Window
         Closed+=(_,_)=>_icon.Dispose();
     }
 
-    internal static void BeforeMainWindow(IClassicDesktopStyleApplicationLifetime desktop,MainWindow main)
+    internal static bool BeforeMainWindow(IClassicDesktopStyleApplicationLifetime desktop,MainWindow main)
     {
-        if(!OperatingSystem.IsWindows()||!MotionPreferences.Enabled)return;
+        if(!OperatingSystem.IsWindows())return false;
         var splash=new StartupLogoWindow();desktop.MainWindow=splash;
+        var loading=new CancellationTokenSource();
         var closed=false;var openingMain=false;
-        splash.Closed+=(_,_)=>{closed=true;if(!openingMain)main.Close();};
+        splash.Closed+=(_,_)=>{closed=true;loading.Cancel();if(!openingMain)main.Close();};
         splash.Opened+=(_,_)=>Dispatcher.UIThread.Post(async ()=>
         {
-            if(splash.ActualTransparencyLevel==WindowTransparencyLevel.Transparent)
+            try
             {
-                await Task.Delay(MotionTokens.StartupLogoHold);
+                await Task.WhenAll(main.PrepareStartupContentAsync(loading.Token),
+                    Task.Delay(MotionPreferences.Enabled ? MotionTokens.StartupLogoHold : TimeSpan.Zero,loading.Token));
                 if(closed)return;
-                await Motion.AnimateOpacity(splash.Mark,1,0,MotionTokens.StartupLogoExit,new Avalonia.Animation.Easings.CubicEaseOut(),CancellationToken.None);
+                if(MotionPreferences.Enabled&&splash.ActualTransparencyLevel==WindowTransparencyLevel.Transparent)
+                    await Motion.AnimateOpacity(splash.Mark,1,0,MotionTokens.StartupLogoExit,new Avalonia.Animation.Easings.CubicEaseOut(),loading.Token);
+                if(closed)return;
+                openingMain=true;
+                main.PrepareStartupEntrance();desktop.MainWindow=main;main.Show();splash.Close();
             }
-            if(closed)return;
-            openingMain=true;
-            main.PrepareStartupEntrance();desktop.MainWindow=main;main.Show();splash.Close();
+            catch(OperationCanceledException)when(loading.IsCancellationRequested){}
+            finally{loading.Dispose();}
         },DispatcherPriority.Loaded);
+        return true;
     }
 }

@@ -74,7 +74,8 @@ internal static class StartupChecks
                 }
                 model.SelectedMotion=model.MotionChoices.Single(x=>x.Id=="off");
                 main=new MainWindow{DataContext=model};main.PrepareStartupEntrance();Check("关闭动画时跳过入场准备",!main.IsStartupEntranceActive);main.Close();
-                File.WriteAllText(Path.Combine(root,"startup-native.json"),JsonSerializer.Serialize(new{passed,scope="Current Windows native transparency, grayscale glyph alpha, staggered entry, opaque main window, interruption handling"},new JsonSerializerOptions{WriteIndented=true}));
+                await StartupReadinessChecks.Run(root,Check);
+                File.WriteAllText(Path.Combine(root,"startup-native.json"),JsonSerializer.Serialize(new{passed,scope="Current Windows: transparent logo, text alpha, staggered entry, opaque main, interruption, delayed profile and texture, ready first frame, navigation geometry, cancellation and timeout. Synthetic account only."},new JsonSerializerOptions{WriteIndented=true}));
                 Console.WriteLine($"{passed} native startup checks passed");exit=0;
             }
             catch(Exception e){Console.Error.WriteLine(e);}

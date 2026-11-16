@@ -49,17 +49,18 @@ public sealed partial class App : Avalonia.Application
             PlatformUi.Window = window;
             desktop.MainWindow = window;
             Log.Information("[desktop boot] 窗口构造 {Ms} ms", boot.ElapsedMilliseconds);
+            var preparedBehindLogo = false;
             window.Opened += (_, _) => Dispatcher.UIThread.Post(async () =>
             {
                 await window.StartupEntranceCompletion;
                 if(!window.IsVisible)return;
                 Log.Information("[desktop boot] 界面就绪 {Ms} ms", boot.ElapsedMilliseconds);
                 Launcher.Application.Update.SingleFileUpdate.AcknowledgeStartup(AppPaths.DataDirectory);
-                // No network, Java scan, or image decoding is needed to construct the first screen.
+                // Java scans and update checks stay behind the completed entrance animation.
                 if(Environment.GetEnvironmentVariable("FANGYU_SMOKE_TEST")=="1")
                     DispatcherTimer.RunOnce(()=>desktop.Shutdown(),TimeSpan.FromSeconds(2));
-                else model.StartBackgroundWork(checkUpdates: true);
-                await model.LoadAppearanceWallpaperAsync();
+                else model.StartBackgroundWork(checkUpdates: true, refreshSkin: !preparedBehindLogo);
+                if (!preparedBehindLogo) await model.LoadAppearanceWallpaperAsync();
             }, DispatcherPriority.Background);
             desktop.Exit += (_, _) =>
             {
@@ -73,7 +74,7 @@ public sealed partial class App : Avalonia.Application
                 PlatformUi.Window = null;
             };
             AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Fatal(e.ExceptionObject as Exception, "未处理异常");
-            StartupLogoWindow.BeforeMainWindow(desktop,window);
+            preparedBehindLogo = StartupLogoWindow.BeforeMainWindow(desktop,window);
         }
         base.OnFrameworkInitializationCompleted();
     }

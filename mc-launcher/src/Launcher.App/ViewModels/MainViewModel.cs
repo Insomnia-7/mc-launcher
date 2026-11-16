@@ -140,12 +140,12 @@ public sealed partial class MainViewModel : ObservableObject
     /// 这些都不影响窗口长什么样，但 Java 扫描要几百毫秒，摆在构造函数里会直接拖慢冷启动。
     /// 由 App 在 window.Show() 之后调用（不要挪回构造函数）。
     /// </summary>
-    public void StartBackgroundWork(bool checkUpdates = true)
+    public void StartBackgroundWork(bool checkUpdates = true, bool refreshSkin = true)
     {
         if (IsSetupOpen) _ = LoadSetupVersionsAsync();
         _ = LoadJavaOptionsAsync();
         if (checkUpdates) _ = DelayedUpdateCheckAsync();
-        _ = RefreshSkinAsync();
+        if (refreshSkin) _ = RefreshSkinAsync();
     }
 
     public string GameRoot { get; private set; }
@@ -971,21 +971,29 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSkinHeadChanged(object? value) => OnPropertyChanged(nameof(HasSkinHead));
 
-    private async Task RefreshSkinAsync()
+    public Task LoadStartupAvatarAsync(CancellationToken ct) => RefreshSkinAsync(ct);
+
+    private async Task RefreshSkinAsync(CancellationToken ct = default)
     {
         var account = Account;
         if (account is null) { SkinHead = null; return; }
         try
         {
-            var result = await _skins.FetchAsync(account.Uuid, account.Name).ConfigureAwait(true);
+            var result = await Task.Run(() => _skins.FetchAsync(account.Uuid, account.Name, ct), ct).ConfigureAwait(true);
             var url = result.Skin?.SkinUrl;
             _logger.LogInformation("皮肤：ok={Ok} reason={Reason} url={Url}", result.IsSuccess, result.Reason, url ?? "(空)");
-            SkinHead = string.IsNullOrWhiteSpace(url) ? null : await LoadHeadAsync(url).ConfigureAwait(true);
+            var head = string.IsNullOrWhiteSpace(url) ? null : await LoadHeadAsync(url, ct).ConfigureAwait(true);
+            if (Account == account && !ct.IsCancellationRequested) SkinHead = head;
+            else if (head is IDisposable disposable) disposable.Dispose();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The startup budget expired or the logo was closed; keep a usable fallback.
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "取皮肤失败");
-            SkinHead = null;
+            if (Account == account) SkinHead = null;
         }
     }
 
@@ -994,13 +1002,15 @@ public sealed partial class MainViewModel : ObservableObject
         HttpClientFactory.Create("MCLauncher-Skin/1.0", TimeSpan.FromSeconds(20));
 
     /// <summary>皮肤图是 64x64，头部在 (8,8) 的 8x8 方块；后台解码后冻结，避免跨线程访问。</summary>
-    private Task<object?> LoadHeadAsync(string url) => Task.Run<object?>(async () =>
+    private Task<object?> LoadHeadAsync(string url, CancellationToken ct = default) => Task.Run<object?>(async () =>
     {
         try
         {
-            var bytes = await SkinHttpClient.GetByteArrayAsync(url).ConfigureAwait(false);
+            var bytes = await SkinHttpClient.GetByteArrayAsync(url, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
             return PlatformUi.DecodeSkinHead(bytes);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "皮肤图解码失败：{Url}", url);

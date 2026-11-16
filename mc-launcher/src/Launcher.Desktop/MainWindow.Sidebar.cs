@@ -178,12 +178,15 @@ public sealed partial class MainWindow
 
     private void UpdateNavIndicator(bool animate = true)
     {
-        if (NavButtonName() is not { } name || this.FindControl<Button>(name) is not { } button || !button.IsEffectivelyVisible
-            || button.TranslatePoint(default, NavList) is not { } origin)
+        if (NavButtonName() is not { } name || this.FindControl<Button>(name) is not { } button || !button.IsEffectivelyVisible)
         {
             NavIndicator.IsVisible = NavSelection.IsVisible = false;
             return;
         }
+        // Selection follows layout, not a button's temporary entrance/press transform.
+        var origin = new Point();
+        for (Visual? visual = button; visual is not null && visual != NavList; visual = visual.GetVisualParent())
+            origin += new Vector(visual.Bounds.X, visual.Bounds.Y);
         var animated = animate && MotionPreferences.Enabled && _navIndicatorPlaced;
         var indicator = (TranslateTransform)NavIndicator.RenderTransform!;
         var selection = (TranslateTransform)NavSelection.RenderTransform!;
