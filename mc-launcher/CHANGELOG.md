@@ -4,6 +4,8 @@
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.22)。
 
+[源码 eda351a](https://github.com/Insomnia-7/mc-launcher/commit/eda351aa12f313ece85db939f3e584d12cb43fd5)。Windows单文件25735418字节，SHA-256：53cbd455fc4255a4a6db913deb897396d3065092bfb6349b9906a4c384df21c8。1699项检查、架构护栏、裁剪程序集、单文件启动及生产更新验签通过。
+
 - 发布包排除已无运行时引用的旧背景图，源码素材保留；当前首页横幅、品牌图标和加载器图标不变。
 - Windows 精简配置仅对 BouncyCastle 与 Avalonia 设计器支持库追加按引用裁剪，保留 Ed25519 校验及全部业务模型、JSON/DI 成员。
 - 下载器沿用 Parallel.ForEachAsync 的并发上限，移除重复的信号量等待与释放；保持正整数参数约束、取消、断点续传、校验与重试行为。

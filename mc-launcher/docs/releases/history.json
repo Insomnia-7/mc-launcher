@@ -859,5 +859,48 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.22",
+    "date": "2026-11-16",
+    "title": "单文件精简与下载同步优化",
+    "tag": "desktop-v1.0.0-preview.22",
+    "sourceCommit": "eda351aa12f313ece85db939f3e584d12cb43fd5",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/eda351aa12f313ece85db939f3e584d12cb43fd5",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.22",
+    "changes": "排除已无引用的旧背景图，按实际引用裁剪密码库和设计器支持，保持当前图片、渲染库及动画代码不变；下载器沿用既有并发上限，移除重复信号量。单文件体积降低约19%。",
+    "platform": "Windows x64",
+    "bytes": 25735418,
+    "sha256": "53cbd455fc4255a4a6db913deb897396d3065092bfb6349b9906a4c384df21c8",
+    "binaryProductVersion": "1.0.0-preview.22+eda351aa12f313ece85db939f3e584d12cb43fd5",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 974,
+      "horizonProtocol": 30,
+      "startup-native": 15,
+      "catalog-refinement": 17,
+      "page-size-native": 56,
+      "resource-interaction": 11,
+      "resource-native": 13,
+      "navigation-split": 28,
+      "horizon": 19,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 15,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1699,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]
