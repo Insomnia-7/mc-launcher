@@ -112,8 +112,13 @@ public sealed partial class MainWindow
         }
     }
 
-    private void UpdateSidebarColumn() => Shell.ColumnDefinitions[0].Width = new GridLength(
-        _sidebarState is SidebarState.Expanded or SidebarState.Compact ? Math.Max(0, SidebarPanel.Width) : 0);
+    private void UpdateSidebarColumn()
+    {
+        // Closing before the first Show removes styles and unsets Width to NaN.
+        if(double.IsNaN(SidebarPanel.Width))return;
+        Shell.ColumnDefinitions[0].Width = new GridLength(
+            _sidebarState is SidebarState.Expanded or SidebarState.Compact ? Math.Max(0, SidebarPanel.Width) : 0);
+    }
 
     private async Task FoldSidebarAsync(SidebarState state, CancellationToken token)
     {

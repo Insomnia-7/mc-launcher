@@ -44,7 +44,7 @@ jobs:
           if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
           dotnet mc-launcher/tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.dll "${{ runner.temp }}/desktop-checks"
           if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
-          foreach($mode in @('catalog-refinement','resource-interaction','resource-native')){
+          foreach($mode in @('catalog-refinement','resource-interaction','resource-native','startup-native')){
             dotnet mc-launcher/tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.dll "${{ runner.temp }}/catalog-$mode" "--$mode"
             if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
           }

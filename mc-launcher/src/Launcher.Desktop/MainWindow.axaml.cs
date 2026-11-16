@@ -63,7 +63,7 @@ public sealed partial class MainWindow : Window
         }
         PropertyChanged += (_, e) =>
         {
-            if (e.Property == WindowStateProperty) { UpdateCaption(); if(WindowState==WindowState.Minimized)PageHost.FinishTransition(); }
+            if (e.Property == WindowStateProperty) { UpdateCaption(); if(WindowState==WindowState.Minimized){PageHost.FinishTransition();FinishStartupEntrance();} }
             if (e.Property == ActualTransparencyLevelProperty) UpdateShellMaterialState();
         };
         UpdateCaption();
@@ -102,7 +102,7 @@ public sealed partial class MainWindow : Window
         // 用 LayoutUpdated 持续落位（与 DiscoverView 的 SelectionHighlight 同一做法），
         // 避免只在属性变化当帧按旧 Bounds 算一次就卡住。
         NavListLayoutUpdated();
-        SizeChanged += (_, _) => { Classes.Set("compact-page", Bounds.Width < 1100); PageHost.FinishTransition(); UpdatePage(); UpdateSidebar(userInitiated: false); };
+        SizeChanged += (_, _) => { if(_startupStarted)FinishStartupEntrance(); Classes.Set("compact-page", Bounds.Width < 1100); PageHost.FinishTransition(); UpdatePage(); UpdateSidebar(userInitiated: false); };
         Activated += (_, _) => Classes.Set("inactive", false);
         Deactivated += (_, _) => Classes.Set("inactive", true);
         Opened += (_,_) =>
@@ -116,6 +116,7 @@ public sealed partial class MainWindow : Window
         };
         Closed += (_, _) =>
         {
+            FinishStartupEntrance();
             _model?.CancelHorizonCommand.Execute(null);
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
@@ -162,12 +163,14 @@ public sealed partial class MainWindow : Window
 
     private void UpdateMotion()
     {
+        if(!MotionPreferences.Enabled)FinishStartupEntrance();
         Classes.Set("reduced-motion", !MotionPreferences.Enabled);
         if (IsLoaded && _model is not null) { UpdateSidebar(userInitiated: false); UpdateNavIndicator(animate: false); }
     }
 
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if(e.PropertyName==nameof(MainViewModel.ShellPage)&&_model?.ShellPage!="home")FinishStartupEntrance();
         // ShellPage 一次导航会发多条中间通知（先关旧页再开新页），
         // 指示条只在值稳定后落位，避免被中间态（如 "" 空页）闪隐藏。
         if (e.PropertyName == nameof(MainViewModel.HasCustomWallpaper)) UpdateShellMaterialPreference();

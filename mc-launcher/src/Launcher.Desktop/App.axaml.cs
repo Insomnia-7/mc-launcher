@@ -51,6 +51,8 @@ public sealed partial class App : Avalonia.Application
             Log.Information("[desktop boot] 窗口构造 {Ms} ms", boot.ElapsedMilliseconds);
             window.Opened += (_, _) => Dispatcher.UIThread.Post(async () =>
             {
+                await window.StartupEntranceCompletion;
+                if(!window.IsVisible)return;
                 Log.Information("[desktop boot] 界面就绪 {Ms} ms", boot.ElapsedMilliseconds);
                 Launcher.Application.Update.SingleFileUpdate.AcknowledgeStartup(AppPaths.DataDirectory);
                 // No network, Java scan, or image decoding is needed to construct the first screen.
@@ -71,6 +73,7 @@ public sealed partial class App : Avalonia.Application
                 PlatformUi.Window = null;
             };
             AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Fatal(e.ExceptionObject as Exception, "未处理异常");
+            StartupLogoWindow.BeforeMainWindow(desktop,window);
         }
         base.OnFrameworkInitializationCompleted();
     }

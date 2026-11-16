@@ -44,6 +44,7 @@ internal static class Program
         if(args.Contains("--showcase-invalid"))Environment.SetEnvironmentVariable("FANGYU_DEV_SHOWCASE","true");
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
+        if(args.Contains("--startup-native"))return StartupChecks.Start(root);
         if(args.Contains("--navigation-native"))return ShellNativeChecks.Start(root,navigation:true);
         if(args.Contains("--resource-native"))return ShellNativeChecks.Start(root,resources:true);
         if(args.Contains("--page-size-native"))return ShellNativeChecks.Start(root,pageSize:true);

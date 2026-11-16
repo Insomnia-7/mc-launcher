@@ -1,5 +1,18 @@
 # 方隅版本记录
 
+## 1.0.0-preview.21 · 透明启动标识与分区入场
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.21)。
+
+- 修复透明启动标识的文字黑边与彩边，采用纯白灰度抗锯齿，不添加描边或阴影。
+- 接入确认后的启动动效：仅图标周围透明；主界面保持实色。左侧七个导航和主页区块以单项800ms、错开80ms依次舒展。
+- 页面切换保留各自布局，修复旧页闪现与尺寸跳变；支持快速改选、缩放、最小化和关闭动画后的归位。
+- 资源分类中文显示，按类型、功能、分辨率与性能区分；游戏本体增加版本搜索，愚人节版本独立分组并提供简介；分组标题栏统一铺满。
+- 修复返回缓存资源页后搜索进度条停止，以及分类清单晚到导致结果被误清空或重复搜索；保留滚轮与连续加载。
+- CurseForge 搜索仍需可用的项目 Key；本版不内置此前被拒绝的凭据。Java/Rust 现有能力保留。
+
+验收见 docs/startup-acceptance.md 与 docs/catalog-ui-regression.md。
+
 ## 1.0.0-preview.20 · 资源滚动、检索响应与卡片淡入淡出
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.20)。

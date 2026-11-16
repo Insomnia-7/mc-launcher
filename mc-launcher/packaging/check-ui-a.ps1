@@ -19,7 +19,7 @@ if(!$SkipBuild){
     & dotnet build (Join-Path $appRoot 'MinecraftLauncher.Desktop.slnx') -c Release -m:1 -nr:false -p:UseSharedCompilation=false --nologo *> (Join-Path $OutputDirectory 'build.log')
     if($LASTEXITCODE -ne 0){throw "Build failed: $OutputDirectory/build.log"}
 }
-$modes=[ordered]@{M1=@('workbench-shell');M2=@('workbench');M3=@('workbench-manage');M4=@('workbench-catalog','catalog-refinement','resource-interaction','multiplayer');M5=@('workbench-account','workbench-consistency');M6=@('workbench-native','resource-native')}
+$modes=[ordered]@{M1=@('workbench-shell');M2=@('workbench');M3=@('workbench-manage');M4=@('workbench-catalog','catalog-refinement','resource-interaction','multiplayer');M5=@('workbench-account','workbench-consistency');M6=@('workbench-native','resource-native','startup-native')}
 if($Stage -in @('M0','All')){
     foreach($project in @('Architecture.Check','Core.Checks')){
         & dotnet (Join-Path $appRoot "tests/$project/bin/Release/net10.0/$project.dll") *> (Join-Path $OutputDirectory "$project.log")
