@@ -93,7 +93,7 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
             return await GetAsync<CfSearchResponse>("mods/search?" + string.Join('&', query_string), ct)
                 .ConfigureAwait(false) ?? new CfSearchResponse();
         }
-        catch (HttpRequestException ex) when (ex.Message.Contains("403", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
             // 个人 Core Key 常见：读单个项目没问题，搜索端点一律 403。
             throw new CurseForgeSearchUnavailableException(
@@ -213,8 +213,10 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                if(response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden && body.Contains("API Key missing or invalid",StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("CurseForge 项目 API Key 未激活、已失效或不适用于此接口，请联系启动器维护者更新；当前可使用 Modrinth。");
                 throw new HttpRequestException(
-                    $"CurseForge API 返回 {(int)response.StatusCode}：{Head(body)}");
+                    $"CurseForge API 返回 {(int)response.StatusCode}：{Head(body)}",null,response.StatusCode);
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

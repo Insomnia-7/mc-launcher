@@ -37,6 +37,13 @@ public sealed partial class LibraryEntry(InstanceCard instance,LibraryGamePrefer
 
 public sealed partial class MainViewModel
 {
+    partial void ScheduleResourceLoad(ref bool scheduled)
+    {
+        scheduled=true;
+        // Let the page and its transition render before starting first-time catalog work.
+        DispatcherTimer.RunOnce(()=>{if(IsDiscoverPage)_=Download.EnsureLoadedAsync();},
+            Launcher.Desktop.MotionPreferences.Enabled?Launcher.Desktop.MotionTokens.PageSwitch*2:TimeSpan.Zero,DispatcherPriority.Background);
+    }
     private LibraryPreferences _libraryPreferences=new(true,new());
     private string _presentationRoot="";
     private readonly List<LibraryEntry> _allLibraryEntries=[];

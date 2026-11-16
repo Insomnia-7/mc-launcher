@@ -411,8 +411,12 @@ public sealed partial class MainViewModel : ObservableObject
         BeforeMainNavigation?.Invoke();
         IsInstanceSection = false;
         Download.RefreshTarget();
-        _ = Download.EnsureLoadedAsync();
+        var scheduled=false;
+        ScheduleResourceLoad(ref scheduled);
+        if(!scheduled) _ = Download.EnsureLoadedAsync();
     }
+
+    partial void ScheduleResourceLoad(ref bool scheduled);
 
     partial void OnIsInstanceSectionChanged(bool value)
     {

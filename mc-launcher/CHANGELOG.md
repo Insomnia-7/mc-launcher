@@ -1,5 +1,18 @@
 # 方隅版本记录
 
+## 1.0.0-preview.20 · 资源滚动、检索响应与卡片淡入淡出
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.20)。
+
+- 实例与资源搜索框移除提示文字，保留输入、Enter搜索及无障碍名称。
+- 恢复资源列表可见滚动条，将搜索进度移出列表，搜索等待时仍可滚动已有结果。
+- 返回资源页复用现有结果和滚动位置，不重复检索；首次检索推迟至转场完成，手动搜索和筛选仍可刷新。
+- 按用户审看演示后的确认，替换为卡片淡出300ms、淡入300ms；旧页先移除，新卡片略微错峰出现。快速切页、减少动画、缩放及最小化中断不会留下透明内容。
+- 提供通过独立构建文件接入经许可项目API Key的能力，不把Key写进源码。实际提供的凭据被官方搜索端点以403（missing or invalid）拒绝，未内置该凭据；CurseForge搜索启用仍待正确的第三方API Key。
+- 区分Upload API Token与第三方搜索API Key；无效Key给出明确提示，不再误导为只能按项目ID查询。申请说明见docs/curseforge-project-api.md。
+
+验收与发布记录见docs/resource-search-acceptance.md。
+
 ## 1.0.0-preview.19 · Rust 客户端与导航职责拆分
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.19)。

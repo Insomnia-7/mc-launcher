@@ -133,7 +133,7 @@ internal static class LauncherServices
         services.AddSingleton<ICurseForgeClient>(_ =>
             new CurseForgeClient(
                 CurseForgeClient.CreateHttpClient($"{BuildInfo.Name}/{BuildInfo.Version}"),
-                () => CurseForgeKeyStore.Resolve(AppPaths.DataDirectory)));
+                () => CurseForgeKeyStore.Resolve(AppPaths.DataDirectory) ?? CurseForgeProjectKey.Resolve()));
         services.AddSingleton<ModInstallService>(sp => new ModInstallService(
             sp.GetRequiredService<IDownloader>(),
             sp.GetRequiredService<IModrinthClient>()));

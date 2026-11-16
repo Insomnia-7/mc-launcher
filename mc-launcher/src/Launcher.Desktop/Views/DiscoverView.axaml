@@ -62,7 +62,7 @@
       <Border x:Name="ResourceSearchPanel" Grid.Row="0" IsVisible="{Binding Download.ShowsBrowseControls}" Classes="" Padding="0" Margin="0" Grid.Column="1">
         <StackPanel Spacing="6">
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-            <TextBox Classes="compact" Text="{Binding Download.Query}" PlaceholderText="{Binding Download.SearchHint}" IsVisible="{Binding Download.IsSearchMode}">
+            <TextBox x:Name="ResourceQuery" Classes="compact" Text="{Binding Download.Query}" AutomationProperties.Name="搜索资源" IsVisible="{Binding Download.IsSearchMode}">
               <TextBox.KeyBindings>
                 <KeyBinding Gesture="Enter" Command="{Binding Download.SearchCommand}" />
               </TextBox.KeyBindings>
@@ -86,8 +86,8 @@
           <TextBlock Text="{Binding Download.TargetText}" Classes="muted" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Download.TargetText}" />
         </StackPanel>
       </Border>
-      <Grid Grid.Row="1" Grid.Column="1">
-        <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+      <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,Auto">
+        <ScrollViewer x:Name="ResourceResultsScroll" IsVisible="{Binding Download.IsResourceList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <ItemsControl x:Name="ResourceResults" ItemsSource="{Binding Download.Results}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -126,7 +126,7 @@
           <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.5" />
           <Border Background="{DynamicResource FieldBrush}" CornerRadius="14" Height="78" Opacity="0.3" />
         </StackPanel>
-        <Border IsVisible="{Binding Download.IsSearchingResources}" Background="{DynamicResource CardBrush}" CornerRadius="12" Padding="14" VerticalAlignment="Bottom" Margin="8" BoxShadow="0 4 18 0 #18000000">
+        <Border x:Name="ResourceSearchProgress" Grid.Row="1" IsVisible="{Binding Download.IsSearchingResources}" Background="{DynamicResource CardBrush}" CornerRadius="12" Padding="14" VerticalAlignment="Bottom" Margin="8" BoxShadow="0 4 18 0 #18000000">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="{Binding Download.MoreResourcesText}" IsVisible="{Binding Download.IsLoadingMore}" VerticalAlignment="Center" />

@@ -5,7 +5,8 @@ param(
     [string] $OutputDirectory = '',
     [string[]] $RestoreSources = @(),
     [switch] $Lean,
-    [switch] $Compress
+    [switch] $Compress,
+    [string] $CurseForgeApiKeyFile = ''
 )
 $ErrorActionPreference = 'Stop'
 $appRoot = Split-Path -Parent $PSScriptRoot
@@ -20,6 +21,10 @@ $publishArguments = @('publish', $project, '-c', 'Release', '-r', 'win-x64',
     '-p:DebugType=none', '-p:DebugSymbols=false',
     '-p:CopyOutputSymbolsToPublishDirectory=false', '-p:CopyDebugSymbolFilesFromPackages=false', '-o', $staging)
 if ($Compress) { $publishArguments += '-p:EnableCompressionInSingleFile=true' }
+if ($CurseForgeApiKeyFile) {
+    if (!(Test-Path -LiteralPath $CurseForgeApiKeyFile -PathType Leaf)) { throw 'CurseForge build credential file is missing.' }
+    $publishArguments += "-p:CurseForgeApiKeyFile=$([IO.Path]::GetFullPath($CurseForgeApiKeyFile))"
+}
 foreach ($source in $RestoreSources) { $publishArguments += @('--source', $source) }
 & $Dotnet @publishArguments
 if ($LASTEXITCODE -ne 0) { throw 'Desktop publish failed.' }

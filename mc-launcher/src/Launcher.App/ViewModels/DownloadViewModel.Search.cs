@@ -176,7 +176,7 @@ public sealed partial class DownloadViewModel
         try
         {
             if(source==CurseForgeSource&&!_curseForge.IsConfigured)
-            {TotalResults=0;Status="CurseForge 尚未配置 API Key；可在设置中配置，或切换到 Modrinth。";return;}
+            {TotalResults=0;Status="此构建尚未启用 CurseForge 项目接口，请使用 Modrinth 或安装启用接口的方隅版本。";return;}
             if(!append) _=LoadSearchMetadataSafelyAsync(source,category,generation,cts.Token);
             cts.Token.ThrowIfCancellationRequested();
             DownloadItem[] items;int received;long total;

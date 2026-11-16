@@ -16,7 +16,7 @@ using Launcher.Infrastructure.Meta;
 internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IResourcePresentationClient, IDownloader
 {
     public readonly List<string> Downloaded=[];
-    public int Icons,Translations,ExactCfFile;
+    public int Icons,Translations,ExactCfFile,Searches;
     public bool FailVersions,FailTranslations,MixedReleases;
     public string? LastQuery;
     public int CatalogCount, LastLimit, LastOffset;
@@ -41,7 +41,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public static ModrinthVersion Version(string id,string number,string game,string loader,string file,params ModrinthDependency[] deps)=>new(id,"sodium",number,number,[game],[loader],DateTimeOffset.Parse("2026-10-20T00:00:00Z"),[File(file)],deps){Downloads=15000,VersionType="release"};
     public Task<ModrinthSearchResponse> SearchAsync(string q,DownloadCategory category,string? game=null,string? loader=null,int limit=20,int offset=0,CancellationToken ct=default)
     {
-        LastQuery=q;LastLimit=limit;LastOffset=offset;
+        Searches++;LastQuery=q;LastLimit=limit;LastOffset=offset;
         if(PendingSearch is {} pending) {PendingSearch=null;return pending.Task.WaitAsync(ct);}
         if(FailPage) {FailPage=false;throw new HttpRequestException("page failure");}
         var project=new ModrinthProject(category==DownloadCategory.Modpack?"pack":"sodium",category==DownloadCategory.Modpack?"fixture-pack":"sodium",category==DownloadCategory.Modpack?"Fixture Pack":"Sodium","fixture original description","Fixture Author","https://fixture.invalid/icon.png",253000000,10,["fabric","neoforge","optimization"],["1.21.4","1.20.1"]){ProjectType=category.ModrinthProjectType(),AllProjectTypes=[category.ModrinthProjectType()!],DateModified=DateTimeOffset.Parse("2026-10-20T00:00:00Z")};

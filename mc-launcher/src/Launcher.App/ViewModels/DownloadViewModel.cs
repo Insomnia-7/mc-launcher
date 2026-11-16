@@ -192,7 +192,7 @@ public sealed partial class DownloadViewModel : ObservableObject
     public Task EnsureLoadedAsync()
     {
         _autoLoadEnabled = true;
-        return IsVersionMode ? EnsureVersionsAsync() : BrowseAsync();
+        return IsVersionMode ? EnsureVersionsAsync() : _lastRequest is not null ? Task.CompletedTask : BrowseAsync();
     }
 
     public ObservableCollection<CategoryItem> Categories { get; }

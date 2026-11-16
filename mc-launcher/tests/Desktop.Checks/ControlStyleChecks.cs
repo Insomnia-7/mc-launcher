@@ -48,7 +48,7 @@ internal static class ControlStyleChecks
             }
             search.Text = ""; await wait(30);
             var placeholder = Part<TextBlock>(search, "PART_Placeholder");
-            check($"{theme} 提示文字与输入行同轴", Math.Abs(placeholder.TranslatePoint(new Rect(placeholder.Bounds.Size).Center, search)!.Value.Y - search.Bounds.Height / 2) <= 1.1);
+            check($"{theme} 搜索框不显示提示文字",string.IsNullOrEmpty(search.PlaceholderText)&&string.IsNullOrEmpty(placeholder.Text));
             Save(main, Path.Combine(root, $"controls-library-{theme}.png"));
             var combo = main.GetVisualDescendants().OfType<ComboBox>().First(c => c.IsEffectivelyVisible);
             if (!native)

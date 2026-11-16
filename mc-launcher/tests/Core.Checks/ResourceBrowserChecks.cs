@@ -52,6 +52,9 @@ internal static class ResourceBrowserChecks
         try { await cf.SearchAsync(new ResourceSearchRequest("", DownloadCategory.Mod)); } catch (CurseForgeSearchUnavailableException) { denied = true; }
         check("CF 搜索无权限提供明确异常", denied, null);
         handler.Forbidden = false;
+        handler.InvalidKey=true;
+        var invalidKey=false;try{await cf.SearchAsync(new ResourceSearchRequest("",DownloadCategory.Mod));}catch(InvalidOperationException ex){invalidKey=ex.Message.Contains("API Key");}
+        check("无效项目 Key 不误导为仅支持项目ID",invalidKey,null);handler.InvalidKey=false;
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         var stopped = false;
         try { await mr.SearchAsync(new ResourceSearchRequest("", DownloadCategory.Mod), canceled.Token); } catch (OperationCanceledException) { stopped = true; }
@@ -163,7 +166,7 @@ internal static class ResourceBrowserChecks
     private static Dictionary<string,string> Query(Uri uri) => uri.Query.TrimStart('?').Split('&').Select(s => s.Split('=',2)).ToDictionary(p => Uri.UnescapeDataString(p[0]), p => Uri.UnescapeDataString(p[1]));
     private sealed class Handler : HttpMessageHandler
     {
-        public Uri? Last; public bool CategoryResponse; public bool Forbidden;
+        public Uri? Last; public bool CategoryResponse; public bool Forbidden; public bool InvalidKey;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested(); Last = request.RequestUri;
@@ -171,6 +174,7 @@ internal static class ResourceBrowserChecks
                 "[{\"name\":\"adventure\",\"project_type\":\"mod\",\"header\":\"categories\"},{\"name\":\"realistic\",\"project_type\":\"shader\",\"header\":\"categories\"}]" : "{\"data\":[{\"id\":42,\"name\":\"Adventure\"}]}" :
                 "{\"hits\":[],\"total_hits\":0,\"offset\":0,\"limit\":20,\"data\":[]}";
             if (Last!.AbsolutePath.EndsWith("/version")) body = "[]";
+            if(InvalidKey)return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden){Content=new StringContent("Forbidden: API Key missing or invalid")});
             return Task.FromResult(new HttpResponseMessage(Forbidden ? HttpStatusCode.Forbidden : HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8,"application/json") });
         }
     }

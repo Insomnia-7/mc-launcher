@@ -12,7 +12,7 @@ using Launcher.Desktop.Views;
 internal static class PageMotionChecks
 {
     private static ContentPresenter[] Layers(AnimatedContentHost host) => host.Children.OfType<ContentPresenter>().ToArray();
-    private static bool Settled(AnimatedContentHost host) => Layers(host).Count(x => x.Content is not null) == 1 &&
+    private static bool Settled(AnimatedContentHost host) => !host.IsTransitioning && Layers(host).Count(x => x.Content is not null) == 1 &&
         Layers(host).Where(x => x.Content is not null).All(x => x.Opacity == 1 && x.RenderTransform!.Value.M32 == 0);
 
     public static void Run(MainViewModel model, MainWindow window, Action<int> pump, Action<string,bool> check, Func<int> requests)
@@ -35,8 +35,8 @@ internal static class PageMotionChecks
         var before = requests();
         // Inspect ownership synchronously: software rendering a full settings page can exceed 110ms.
         host.Content=preferences;
-        check("整页滑动只挂载相邻两页", Layers(host).Count(x => x.Content is not null) == 2 && preferences is PreferencesView);
-        check("滑出页不接受输入，仅入场页接受交互", !Layers(host)[0].IsHitTestVisible && Layers(host)[1].IsHitTestVisible);
+        check("淡出淡入最多挂载相邻两页", Layers(host).Count(x => x.Content is not null) == 2 && preferences is PreferencesView);
+        check("旧卡片淡出时两页均不接受误点击", !Layers(host)[0].IsHitTestVisible && !Layers(host)[1].IsHitTestVisible);
         check("宿主实色背景不随页面淡出", host.Background is ISolidColorBrush {Color.A:255} && host.Opacity == 1);
         model.OpenAppearanceCommand.Execute(null);pump(380); check("过渡结束清空旧层并归位当前页", EndSettled());
         model.ShowInstancesCommand.Execute(null); pump(380);
@@ -103,17 +103,21 @@ internal static class PageMotionChecks
         var library=host.Content;
         model.OpenAppearanceCommand.Execute(null);
         var layers=Layers(host);
-        // The first native render tick can arrive after a navigation callback; sample until it advances.
-        for(var i=0;i<10;i++)
+        Control[] cards=[];var observed=false;
+        for(var i=0;i<20;i++)
         {
             await Task.Delay(12);
-            if(Math.Abs(layers[1].RenderTransform!.Value.M32)>1 && Math.Abs(layers[1].RenderTransform!.Value.M32)<host.Bounds.Height)break;
+            if(layers[0].Content is Control old){cards=AnimatedContentHost.FadeTargets(old);observed=cards.Any(c=>c.Opacity>0.01&&c.Opacity<0.99);}
+            if(observed)break;
         }
-        Console.WriteLine($"Native page frame: incoming opacity={layers[1].Opacity:F3}, y={layers[1].RenderTransform!.Value.M32:F3}; outgoing opacity={layers[0].Opacity:F3}");
-        Check("真实窗口两页始终不透明不叠印",layers[1].Opacity==1 && layers[0].Opacity==1 && layers.All(x=>x.Background is ISolidColorBrush {Color.A:255}));
-        Check("真实窗口整页垂直滑动存在中间帧",Math.Abs(layers[1].RenderTransform!.Value.M32)>0 && Math.Abs(layers[1].RenderTransform!.Value.M32)<host.Bounds.Height);
-        Check("真实窗口两页衔接距离等于完整页高",Math.Abs(Math.Abs(layers[1].RenderTransform!.Value.M32-layers[0].RenderTransform!.Value.M32)-host.Bounds.Height)<1);
-        Check("真实窗口始终有实色背景与可交互新页",host.Background is ISolidColorBrush {Color.A:255} && layers[1].IsHitTestVisible);
+        Check("真实窗口旧卡片存在淡出中间帧",observed);
+        Check("淡出期间新页完全隐藏不叠印",layers[1].Opacity==0&&layers[0].IsVisible);
+        Check("卡片淡入淡出不发生垂直位移",layers.All(x=>x.RenderTransform!.Value.M32==0));
+        Check("宿主实色背景保留且退场不接受点击",host.Background is ISolidColorBrush {Color.A:255}&&!layers[0].IsHitTestVisible&&!layers[1].IsHitTestVisible);
+        var entered=false;
+        for(var i=0;i<45;i++){await Task.Delay(12);if(layers[0].Content is null&&layers[1].Content is Control page&&AnimatedContentHost.FadeTargets(page).Any(c=>c.Opacity>0.01&&c.Opacity<0.99)){entered=true;break;}}
+        Check("真实窗口新卡片存在淡入中间帧",entered);
+        Check("新卡片淡入前旧页已从渲染树移除",layers[0].Content is null&&library!.GetVisualAncestors().OfType<Window>().Any()==false);
         using(var picture=new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96)))
         {picture.Render(window);picture.Save(Path.Combine(root,"page-transition.png"),PngBitmapEncoderOptions.Default);}
         await Task.Delay(380);await WaitSettled();Check("真实过渡结束不残留退场页",Settled(host));
@@ -122,10 +126,10 @@ internal static class PageMotionChecks
         Check("真实窗口连续切页复用游戏库并归位",ReferenceEquals(library,host.Content) && Settled(host));
         model.OpenAppearanceCommand.Execute(null);await Task.Delay(380);await WaitSettled();
         model.ShowInstancesCommand.Execute(null);await Task.Delay(40);
-        Check("反向导航从上方进入且旧页向下退出",layers[1].RenderTransform!.Value.M32<0 && layers[0].RenderTransform!.Value.M32>0);
+        Check("反向导航同样先淡出且不移动页面",host.IsTransitioning&&layers[1].Opacity==0&&layers.All(x=>x.RenderTransform!.Value.M32==0));
         await Task.Delay(380);await WaitSettled();
-        model.OpenAppearanceCommand.Execute(null);await Task.Delay(20);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
-        Check("真实窗口中途关闭动画立即归位",Settled(host));
+        model.OpenAppearanceCommand.Execute(null);await Task.Delay(420);model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
+        Check("真实窗口淡入中途关闭动画恢复所有卡片",Settled(host)&&AnimatedContentHost.FadeTargets((Control)host.Content!).All(c=>c.Opacity>0.99));
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");model.ShowInstancesCommand.Execute(null);await Task.Delay(20);
         window.WindowState=WindowState.Minimized;await Task.Delay(380);window.WindowState=WindowState.Normal;await Task.Delay(100);
         Check("最小化中断后还原页面仍可见",Settled(host));

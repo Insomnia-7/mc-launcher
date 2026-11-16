@@ -45,6 +45,7 @@ internal static class Program
         var root = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? Path.Combine(Path.GetTempPath(), "mclauncher-desktop-checks-" + Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(root);
         if(args.Contains("--navigation-native"))return ShellNativeChecks.Start(root,navigation:true);
+        if(args.Contains("--resource-native"))return ShellNativeChecks.Start(root,resources:true);
         if(args.Contains("--controls-native"))return ShellNativeChecks.Start(root,controls:true);
         if(args.Contains("--motion-preview-native"))return ShellNativeChecks.Start(root,preview:true);
         if(args.Contains("--workbench-native"))return ShellNativeChecks.Start(root,workbench:true);
@@ -110,6 +111,8 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--card-fade-preview")){CardFadePreview.Record(model,window,root,Pump);return 0;}
+            if(args.Contains("--resource-interaction")){ResourceInteractionChecks.Run(model,window,resourceFixture,root,Pump,Check,Capture);Check("资源交互无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} resource interaction checks passed");return 0;}
             if(args.Contains("--horizon")){HorizonUiChecks.Run(model,window,root,Pump,Check,Capture);Check("Rust 页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} Horizon UI checks passed");return 0;}
             if(args.Contains("--navigation-split")){NavigationSeparationChecks.Run(model,window,Pump,Check,Capture);Check("独立网络与设置无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation separation checks passed");return 0;}
             if(args.Contains("--controls")){var task=ControlStyleChecks.Run(model,window,root,ms=>{Pump(ms);return Task.CompletedTask;},Check);task.GetAwaiter().GetResult();Check("控件样式无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} control style checks passed");return 0;}

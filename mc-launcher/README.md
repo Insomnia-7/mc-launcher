@@ -1,6 +1,6 @@
 # 方隅 · 源码
 
-当前 Windows 版本：`1.0.0-preview.19`。
+当前 Windows 版本：`1.0.0-preview.20`。
 
 Minecraft Java 版启动器，支持可选的 Horizon Rust 客户端。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
 
