@@ -22,6 +22,9 @@ internal static class ResourceInteractionChecks
         model.ShowDownloadsCommand.Execute(null);await Task.Delay(150);await vm.SearchCommand.ExecuteAsync(null);await Task.Delay(150);
         var scroll=window.GetVisualDescendants().OfType<ScrollViewer>().Single(x=>x.Name=="ResourceResultsScroll");
         var handle=window.TryGetPlatformHandle()!.Handle;var point=Pack(scroll.PointToScreen(new Point(120,100)));
+        var cursor=scroll.TranslatePoint(new Point(120,100),window)!.Value;
+        SendMessage(handle,0x200,0,Pack(new PixelPoint((int)(cursor.X*window.RenderScaling),(int)(cursor.Y*window.RenderScaling))));
+        await Task.Delay(100); // Native input hit testing is refreshed on the next compositor frame.
         SendMessage(handle,0x20A,(nint)(-360<<16),point);await Task.Delay(120);
         Check("Windows 原生滚轮能移动资源列表",scroll.Offset.Y>0);
         Check("Windows 原生资源滚动条可见",scroll.GetVisualDescendants().OfType<ScrollBar>().Any(x=>x.IsVisible&&x.Maximum>0));
@@ -30,10 +33,33 @@ internal static class ResourceInteractionChecks
         Check("Windows 搜索等待中仍可滚动已有资源",vm.IsSearchingResources&&scroll.Offset.Y>before);
         var progress=window.GetVisualDescendants().OfType<Border>().Single(x=>x.Name=="ResourceSearchProgress");
         Check("Windows 搜索进度不再覆盖资源列表",scroll.TranslatePoint(new Point(0,scroll.Bounds.Height),window)!.Value.Y<=progress.TranslatePoint(default,window)!.Value.Y+1);
+        var indicator=progress.GetVisualDescendants().OfType<Border>().First(x=>x.Name=="IndeterminateProgressBarIndicator");
+        var positions=new List<double>();
+        for(var i=0;i<8;i++){await Task.Delay(110);positions.Add(indicator.RenderTransform?.Value.M31??0);}
+        Console.WriteLine("Search indicator positions: "+string.Join(",",positions));
+        Check("Windows 搜索等待期间进度条持续运动",positions.Max()-positions.Min()>10);
         vm.CancelCommand.Execute(null);await pending;await vm.SearchCommand.ExecuteAsync(null);
         var count=fixture.Searches;model.ShowInstancesCommand.Execute(null);await Task.Delay(50);model.ShowDownloadsCommand.Execute(null);await Task.Delay(150);
         Check("Windows 返回资源页不触发重复请求",fixture.Searches==count);
         Check("Windows 搜索框为空白且可编辑",window.GetVisualDescendants().OfType<TextBox>().Single(x=>x.Name=="ResourceQuery") is {PlaceholderText:null,IsEffectivelyEnabled:true});
+        foreach(var theme in new[]{"light","dark"})
+        {
+            model.SelectThemeModeCommand.Execute(theme);
+            model.SelectedMotion=model.MotionChoices.Single(x=>x.Id=="smooth");
+            fixture.PendingSearch=new(TaskCreationOptions.RunContinuationsAsynchronously);pending=vm.SearchCommand.ExecuteAsync(null);await Task.Delay(150);
+            model.ShowInstancesCommand.Execute(null);await Task.Delay(700);
+            model.ShowDownloadsCommand.Execute(null);await Task.Delay(700);
+            indicator=progress.GetVisualDescendants().OfType<Border>().First(x=>x.Name=="IndeterminateProgressBarIndicator");
+            positions.Clear();for(var i=0;i<8;i++){await Task.Delay(110);positions.Add(indicator.RenderTransform?.Value.M31??0);}
+            Console.WriteLine(theme+" reattached indicator positions: "+string.Join(",",positions));
+            Check(theme+" 搜索中离开再返回后进度持续运动",positions.Max()-positions.Min()>10);
+            window.Width=1000;await Task.Delay(200);
+            positions.Clear();for(var i=0;i<16;i++){await Task.Delay(150);positions.Add(indicator.RenderTransform?.Value.M31??0);}
+            Check(theme+" 改变窗口大小后进度仍循环运动",positions.Max()-positions.Min()>10&&positions.Zip(positions.Skip(1)).Any(p=>p.Second<p.First-10));
+            vm.CancelCommand.Execute(null);await pending;
+            Check(theme+" 取消后进度结束且结果保留",!vm.IsSearchingResources&&vm.Results.Count>0);
+            window.Width=1180;await Task.Delay(100);
+        }
         window.UpdateLayout();using var image=new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96));image.Render(window);image.Save(Path.Combine(root,"resource-native.png"),Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
         Console.WriteLine($"{passed} native resource checks passed");
     }

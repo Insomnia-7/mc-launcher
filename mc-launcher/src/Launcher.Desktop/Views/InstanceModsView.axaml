@@ -177,7 +177,7 @@
         </StackPanel>
       </ScrollViewer>
       <StackPanel Grid.Row="2" Spacing="10">
-        <ProgressBar IsVisible="{Binding IsModPreviewBusy}" IsIndeterminate="True" Height="3"/>
+        <icons:ActivityProgressBar IsVisible="{Binding IsModPreviewBusy}" IsIndeterminate="True" Height="3"/>
         <TextBlock Text="{Binding ModPlanHint}" Classes="optional" TextWrapping="Wrap" MaxHeight="70"/>
         <WrapPanel>
           <Button x:Name="ApplyModPlanButton" Classes="primary" Command="{Binding ApplyPreparedModPlanCommand}" IsEnabled="{Binding HasPreparedModPlan}" Margin="0,0,8,6">

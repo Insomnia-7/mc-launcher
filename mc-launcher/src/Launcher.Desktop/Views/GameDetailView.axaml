@@ -49,6 +49,6 @@
         <TransitioningContentControl x:Name="DetailTabHost" IsVisible="{Binding !IsOverviewTab}"/>
       </Grid>
     </Grid>
-    <StackPanel Grid.Row="2" Spacing="8"><ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3"/><TextBlock Text="{Binding WorkspaceHint}" Classes="optional" TextWrapping="Wrap"/><TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="12" TextWrapping="Wrap" MaxHeight="50"/></StackPanel>
+    <StackPanel Grid.Row="2" Spacing="8"><icons:ActivityProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3"/><TextBlock Text="{Binding WorkspaceHint}" Classes="optional" TextWrapping="Wrap"/><TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="12" TextWrapping="Wrap" MaxHeight="50"/></StackPanel>
   </Grid>
 </UserControl>

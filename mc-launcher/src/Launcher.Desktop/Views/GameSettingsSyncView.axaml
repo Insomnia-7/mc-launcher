@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameSettingsSyncView">
+<UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.GameSettingsSyncView">
   <Grid RowDefinitions="*,Auto" RowSpacing="10">
     <ScrollViewer x:Name="SyncEditorScroll" IsVisible="{Binding !HasSettingsSyncPlan}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
       <StackPanel Spacing="16">
@@ -50,6 +50,6 @@
           </ScrollViewer>
           <Button Grid.Row="2" x:Name="ApplySettingsSyncButton" Command="{Binding ApplySettingsSyncCommand}" IsEnabled="{Binding CanEditSyncTarget}" Classes="primary" HorizontalAlignment="Left"><TextBlock Text="应用所选差异" Foreground="{Binding $parent[Button].Foreground}"/></Button>
         </Grid>
-    <StackPanel Grid.Row="1" Spacing="7"><ProgressBar IsVisible="{Binding SettingsSyncBusy}" IsIndeterminate="True" Height="3"/><TextBlock Text="{Binding SettingsSyncHint}" Classes="muted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/></StackPanel>
+    <StackPanel Grid.Row="1" Spacing="7"><icons:ActivityProgressBar IsVisible="{Binding SettingsSyncBusy}" IsIndeterminate="True" Height="3"/><TextBlock Text="{Binding SettingsSyncHint}" Classes="muted" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/></StackPanel>
   </Grid>
 </UserControl>

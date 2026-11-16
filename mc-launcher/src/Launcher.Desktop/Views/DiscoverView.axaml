@@ -67,7 +67,8 @@
                 <KeyBinding Gesture="Enter" Command="{Binding Download.SearchCommand}" />
               </TextBox.KeyBindings>
             </TextBox>
-            <Button Classes="quiet compact" Command="{Binding ChooseGameRootCommand}" Content="选择游戏保存位置…" IsVisible="{Binding Download.IsVersionMode}" HorizontalContentAlignment="Left" />
+            <TextBox x:Name="GameVersionQuery" Classes="compact" Text="{Binding Download.VersionQuery}" IsVisible="{Binding Download.IsVersionList}" AutomationProperties.Name="搜索游戏版本" />
+            <Button Grid.Column="1" Classes="quiet compact" Command="{Binding ChooseGameRootCommand}" Content="选择游戏保存位置…" IsVisible="{Binding Download.IsVersionMode}" HorizontalContentAlignment="Left" />
             <Button Grid.Column="1" Classes="primary compact" Command="{Binding Download.SearchCommand}" IsVisible="{Binding Download.IsSearchMode}" AutomationProperties.Name="搜索">
               <icons:IconLabel Icon="ActionSearch" Text="搜索" Foreground="{Binding $parent[Button].Foreground}" />
             </Button>
@@ -133,7 +134,7 @@
               <TextBlock Text="正在搜索资源…" IsVisible="{Binding !Download.IsLoadingMore}" VerticalAlignment="Center" />
               <Button Grid.Column="1" Classes="quiet compact" Content="取消" Command="{Binding Download.CancelCommand}" />
             </Grid>
-            <ProgressBar IsIndeterminate="True" Height="3" />
+            <icons:ActivityProgressBar IsIndeterminate="True" Height="3" />
           </StackPanel>
         </Border>
         <TextBlock Text="{Binding Download.SearchStateText}" IsVisible="{Binding Download.IsResourceList}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="480" IsHitTestVisible="False" />
@@ -220,7 +221,7 @@
           </ScrollViewer>
           <ScrollViewer Grid.Row="3" x:Name="ResourceReleaseScroll" IsVisible="{Binding Download.ShowsResourceVersions}" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="10">
-              <ProgressBar IsVisible="{Binding Download.IsLoadingResourceVersions}" IsIndeterminate="True" Height="3" />
+              <icons:ActivityProgressBar IsVisible="{Binding Download.IsLoadingResourceVersions}" IsIndeterminate="True" Height="3" />
               <TextBlock Text="{Binding Download.ResourceVersionsStatus}" Classes="muted" TextWrapping="Wrap" />
               <ItemsControl ItemsSource="{Binding Download.ResourceReleaseGroups}">
                 <ItemsControl.ItemTemplate>
@@ -257,10 +258,11 @@
             </StackPanel>
           </ScrollViewer>
         </Grid>
-        <ScrollViewer IsVisible="{Binding Download.IsVersionList}" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="GameVersionsScroll" IsVisible="{Binding Download.IsVersionList}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="12">
-            <TextBlock Text="最新版本" Classes="muted" />
-            <ItemsControl ItemsSource="{Binding Download.LatestVersions}">
+            <TextBlock Text="{Binding Download.VersionSearchSummary}" Classes="muted" />
+            <TextBlock Text="最新版本" Classes="muted" IsVisible="{Binding Download.ShowsLatestVersions}" />
+            <ItemsControl ItemsSource="{Binding Download.LatestVersions}" IsVisible="{Binding Download.ShowsLatestVersions}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:VersionItem">
                   <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,3">
@@ -279,7 +281,12 @@
                     <ItemsControl ItemsSource="{Binding Versions}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:VersionItem">
-                          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Content="{Binding Id}" Margin="0,3" />
+                          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Command="{Binding SelectCommand}" CommandParameter="{Binding}" Margin="0,3">
+                            <StackPanel Spacing="5">
+                              <TextBlock Text="{Binding Id}" FontWeight="Medium" />
+                              <TextBlock Text="{Binding EventDescription}" IsVisible="{Binding HasEventDescription}" Classes="muted" FontSize="13" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Button>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -329,7 +336,7 @@
               <StackPanel Spacing="12">
                 <TextBlock Text="加载器版本" FontWeight="SemiBold" />
                 <ComboBox x:Name="InstallLoaderVersion" ItemsSource="{Binding Download.InstallLoaderVersions}" SelectedItem="{Binding Download.SelectedInstallLoaderVersion}" PlaceholderText="请选择加载器版本" IsEnabled="{Binding Download.CanConfigureVersion}" AutomationProperties.Name="加载器版本" />
-                <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding Download.IsLoadingLoaderVersions}" />
+                <icons:ActivityProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding Download.IsLoadingLoaderVersions}" />
                 <TextBlock Text="{Binding Download.LoaderVersionStatus}" TextWrapping="Wrap" Classes="muted" />
                 <Button Classes="quiet" Content="刷新版本列表" Command="{Binding Download.ReloadLoaderVersionsCommand}" IsEnabled="{Binding Download.CanConfigureVersion}" HorizontalAlignment="Left" />
               </StackPanel>

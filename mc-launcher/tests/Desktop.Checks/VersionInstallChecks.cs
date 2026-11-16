@@ -20,7 +20,8 @@ internal sealed class VersionInstallFixture : IVersionMetaClient, ILoaderMetaCli
     public bool Empty, FailQuery, FailInstall, CancelInstall;
     public TaskCompletionSource<IReadOnlyList<string>>? Pending;
     public (LoaderKind Kind, string Game, string Version)? LastInstall;
-    public Task<VersionManifest> GetManifestAsync(CancellationToken ct=default) => Task.FromResult(new VersionManifest { Versions=[new(){Id="1.21.4", Type="release"}] });
+    public VersionManifest Manifest {get;set;}=new() { Versions=[new(){Id="1.21.4", Type="release"}] };
+    public Task<VersionManifest> GetManifestAsync(CancellationToken ct=default) => Task.FromResult(Manifest);
     public Task<VersionJson> GetVersionAsync(string id,CancellationToken ct=default) => Task.FromResult(BaseVersion(id));
     public Task<AssetIndex> GetAssetIndexAsync(AssetIndexRef reference,CancellationToken ct=default) => Task.FromResult(new AssetIndex());
     public static VersionJson BaseVersion(string id) => new() { Id=id, Type="release", MainClass="net.minecraft.client.main.Main", JavaVersion=new(){MajorVersion=21} };

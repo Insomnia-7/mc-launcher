@@ -19,7 +19,7 @@ if(!$SkipBuild){
     & dotnet build (Join-Path $appRoot 'MinecraftLauncher.Desktop.slnx') -c Release -m:1 -nr:false -p:UseSharedCompilation=false --nologo *> (Join-Path $OutputDirectory 'build.log')
     if($LASTEXITCODE -ne 0){throw "Build failed: $OutputDirectory/build.log"}
 }
-$modes=[ordered]@{M1=@('workbench-shell');M2=@('workbench');M3=@('workbench-manage');M4=@('workbench-catalog','multiplayer');M5=@('workbench-account','workbench-consistency');M6=@('workbench-native')}
+$modes=[ordered]@{M1=@('workbench-shell');M2=@('workbench');M3=@('workbench-manage');M4=@('workbench-catalog','catalog-refinement','resource-interaction','multiplayer');M5=@('workbench-account','workbench-consistency');M6=@('workbench-native','resource-native')}
 if($Stage -in @('M0','All')){
     foreach($project in @('Architecture.Check','Core.Checks')){
         & dotnet (Join-Path $appRoot "tests/$project/bin/Release/net10.0/$project.dll") *> (Join-Path $OutputDirectory "$project.log")
@@ -30,7 +30,7 @@ if($Stage -in @('M0','All')){
 foreach($entry in $modes.GetEnumerator()){
     if($Stage -notin @('All',$entry.Key)){continue}
     foreach($mode in $entry.Value){
-        if($mode -eq 'workbench-native' -and !$IsWindows){Write-Output 'M6 native Windows check pending: Windows environment required.';continue}
+        if($mode.EndsWith('-native') -and !$IsWindows){Write-Output 'M6 native Windows check pending: Windows environment required.';continue}
         $case=Join-Path $OutputDirectory $mode
         & dotnet (Join-Path $appRoot 'tests/Desktop.Checks/bin/Release/net10.0/Desktop.Checks.dll') $case "--$mode" *> (Join-Path $OutputDirectory "$mode.log")
         if($LASTEXITCODE -ne 0){throw "$($entry.Key) $mode failed: $OutputDirectory/$mode.log"}

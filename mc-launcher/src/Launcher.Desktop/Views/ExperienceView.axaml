@@ -80,7 +80,7 @@
         </Grid>
         <TextBlock Text="{Binding LocalSkinHint}" Classes="muted" TextWrapping="Wrap" />
         <TextBlock x:Name="WardrobeStatus" Text="{Binding WardrobeHint}" TextWrapping="Wrap" />
-        <ProgressBar IsVisible="{Binding WardrobeBusy}" IsIndeterminate="True" Height="3" />
+        <icons:ActivityProgressBar IsVisible="{Binding WardrobeBusy}" IsIndeterminate="True" Height="3" />
       </StackPanel>
     </ScrollViewer>
     <Grid RowDefinitions="Auto,*" RowSpacing="20" Grid.Row="1" IsVisible="{Binding IsToolsTab}">
@@ -134,7 +134,7 @@
       </ScrollViewer>
     </Grid>
     <StackPanel Grid.Row="2" Spacing="7">
-      <ProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3" />
+      <icons:ActivityProgressBar IsVisible="{Binding ExperienceBusy}" IsIndeterminate="True" Height="3" />
       <TextBlock Text="{Binding ExperienceHint}" Classes="optional" FontSize="13" TextWrapping="Wrap" MaxHeight="50" />
     </StackPanel>
   </Grid>

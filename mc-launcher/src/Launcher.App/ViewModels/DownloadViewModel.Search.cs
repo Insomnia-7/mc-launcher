@@ -61,6 +61,7 @@ public sealed partial class DownloadViewModel
     private ResourceSearchRequest? _lastRequest;
     private ResourceSearchRequest? _installRequest;
     private string? _taxonomyKey;
+    private bool _updatingTaxonomy;
     private bool _searchVersionsLoaded;
     public ObservableCollection<string> GameVersions { get; } = ["全部"];
     public ObservableCollection<string> Loaders { get; } = ["全部", "fabric", "forge", "neoforge", "quilt", "liteloader"];
@@ -102,7 +103,7 @@ public sealed partial class DownloadViewModel
     partial void OnSelectedSortChanged(ResourceSortOption? value) => ClearSearchResults();
     partial void OnSelectedTagChanged(ResourceTag? oldValue, ResourceTag? newValue)
     {
-        if (FilterValue(oldValue?.Id) != FilterValue(newValue?.Id)) ClearSearchResults();
+        if (!_updatingTaxonomy && FilterValue(oldValue?.Id) != FilterValue(newValue?.Id)) ClearSearchResults();
     }
     private void ClearSearchResults()
     {
@@ -269,9 +270,16 @@ public sealed partial class DownloadViewModel
                 ct.ThrowIfCancellationRequested();
                 if (generation != _browserGeneration || SelectedSource != source || SelectedCategory?.Category != category) return;
                 var selected = SelectedTag?.Id;
-                ResourceTags.Clear(); ResourceTags.Add(new("", "全部"));
-                foreach (var tag in tags) ResourceTags.Add(tag);
-                SelectedTag = ResourceTags.FirstOrDefault(t => t.Id == selected) ?? ResourceTags[0];
+                // ComboBox temporarily writes null when its selected item is removed. This is
+                // metadata refresh, not a user filter edit; it must not cancel/clear the search.
+                _updatingTaxonomy = true;
+                try
+                {
+                    ResourceTags.Clear(); ResourceTags.Add(new("", "全部"));
+                    foreach (var tag in tags) ResourceTags.Add(tag);
+                    SelectedTag = ResourceTags.FirstOrDefault(t => t.Id == selected) ?? ResourceTags[0];
+                }
+                finally { _updatingTaxonomy = false; }
                 _taxonomyKey = key;
             }
             catch (Exception ex) when (ex is not OperationCanceledException) { _logger.LogDebug(ex, "分类列表暂不可用"); }

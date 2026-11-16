@@ -106,7 +106,8 @@ public sealed partial class CurseForgeClient : ICurseForgeClient
     {
         if (_categoryCache.TryGetValue(category, out var cached)) return cached;
         var response = await GetAsync<CfCategoryResponse>($"categories?gameId={MinecraftGameId}&classId={category.CurseForgeClassId()}", ct).ConfigureAwait(false);
-        var tags = (response?.Data ?? []).Select(t => new ResourceTag(t.Id.ToString(), t.Name)).OrderBy(t => t.Name).ToArray();
+        var tags = (response?.Data ?? []).Select(t => new ResourceTag(t.Id.ToString(), ResourceCategoryNames.Translate(t.Name), "类型"))
+            .OrderBy(t => t.Name, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("zh-CN"), false)).ToArray();
         _categoryCache[category] = tags;
         return tags;
     }

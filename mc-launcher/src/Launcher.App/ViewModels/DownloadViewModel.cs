@@ -58,7 +58,9 @@ public sealed partial class VersionItem(string id, string type, DateTimeOffset r
 
     public string ReleaseDateText => ReleaseTime.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
 
-    public string TypeText => VersionClassification.IsEvent(Id) ? "活动版" : Type switch
+    public string EventDescription => VersionClassification.EventDescription(Id);
+    public bool HasEventDescription => EventDescription.Length > 0;
+    public string TypeText => VersionClassification.IsEvent(Id) ? "愚人节版本" : Type switch
     {
         "release" => "正式版",
         "snapshot" => "快照",
@@ -203,6 +205,10 @@ public sealed partial class DownloadViewModel : ObservableObject
 
     /// <summary>顶部「最新版本」卡片：最新正式版 + 最新预览版（跟 PCL 一样放最上面）。</summary>
     public ObservableCollection<VersionItem> LatestVersions { get; } = [];
+    [ObservableProperty] private string _versionQuery = "";
+    public bool ShowsLatestVersions => string.IsNullOrWhiteSpace(VersionQuery);
+    public string VersionSearchSummary => VersionGroups.Sum(g => g.Count) is var count && count > 0 ? $"共 {count} 个匹配版本" : "没有匹配版本";
+    partial void OnVersionQueryChanged(string value) { OnPropertyChanged(nameof(ShowsLatestVersions)); ApplyVersionFilter(); }
 
     public ObservableCollection<string> Sources { get; } = [ModrinthSource, CurseForgeSource];
 
@@ -786,12 +792,16 @@ public sealed partial class DownloadViewModel : ObservableObject
 
         foreach (var group in VersionClassification.Groups)
         {
-            var items = _allVersions.Where(v => VersionClassification.Group(v.Id, v.Type) == group).ToList();
+            var query = VersionQuery.Trim();
+            var items = _allVersions.Where(v => VersionClassification.Group(v.Id, v.Type) == group &&
+                (query.Length == 0 || v.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || v.EventDescription.Contains(query, StringComparison.OrdinalIgnoreCase) || group.Contains(query, StringComparison.OrdinalIgnoreCase))).ToList();
             if (items.Count == 0) continue;
             var bucket = new VersionGroup(group);   // 抽屉默认全部关闭，避免「正式版/活动版」一进页面就是展开态
             foreach (var item in items) bucket.Versions.Add(item);
+            bucket.IsExpanded = VersionQuery.Trim().Length > 0;
             VersionGroups.Add(bucket);
         }
+        OnPropertyChanged(nameof(VersionSearchSummary));
 
         // 选中的版本被清空后（重新拉清单）要把选择也清掉，否则「下载并安装」会指向列表里看不到的东西
         if (SelectedVersion is not null && !_allVersions.Contains(SelectedVersion))

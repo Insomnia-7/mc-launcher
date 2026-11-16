@@ -79,7 +79,7 @@ internal static class Program
         using var services = LauncherServices.Create(s => { s.AddSingleton(new HttpClient(http)); s.AddSingleton<IJavaLocator>(new TestJava(javaPath)); s.AddSingleton<IProcessLauncher>(launch);s.AddSingleton<Launcher.Application.Accounts.IPlayerAppearanceClient>(appearanceFixture);s.AddSingleton<Launcher.Application.Accounts.ISkinService>(appearanceFixture); s.AddSingleton<IVersionMetaClient>(installFixture); s.AddSingleton<ILoaderMetaClient>(installFixture); s.AddSingleton<IDownloader>(installFixture); s.AddSingleton<Launcher.Application.Java.IJavaProvisioner>(installFixture); s.AddSingleton<IForgeInstaller>(installFixture); s.AddSingleton<INeoForgeInstaller>(installFixture); s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture); s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture); s.AddSingleton<IDownloader>(resourceFixture);
             s.AddSingleton(workbenchFixture.Plans);
             if(args.Contains("--workbench") || args.Contains("--multiplayer") || args.Contains("--home") || args.Contains("--components") || args.Contains("--showcase")) {var fixture=new MultiplayerFixture();s.AddSingleton(fixture);s.AddSingleton<Launcher.Application.Multiplayer.ILanWorldDiscovery>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IGameServerStatusClient>(fixture);s.AddSingleton<Launcher.Application.Multiplayer.IRoomNetwork>(fixture);}
-            if(args.Contains("--live-catalog"))
+            if(args.Contains("--live-catalog")||args.Contains("--live-scroll"))
             {
                 var handler=new HttpClientHandler();
                 if(Environment.GetEnvironmentVariable("MCLAUNCHER_TEST_PROXY") is {Length:>0} proxy) {handler.Proxy=new WebProxy(proxy);handler.UseProxy=true;}
@@ -112,7 +112,9 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--live-scroll")){LiveCatalogScrollChecks.Run(model,window,Pump,Check,Capture);Check("真实检索与滚动无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} live catalog scroll checks passed");return 0;}
             if(args.Contains("--card-fade-preview")){CardFadePreview.Record(model,window,root,Pump);return 0;}
+            if(args.Contains("--catalog-refinement")){CatalogRefinementChecks.Run(model,window,resourceFixture,installFixture,Pump,Check,Capture);Check("资源分类与版本检索无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} catalog refinement checks passed");return 0;}
             if(args.Contains("--resource-interaction")){ResourceInteractionChecks.Run(model,window,resourceFixture,root,Pump,Check,Capture);Check("资源交互无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} resource interaction checks passed");return 0;}
             if(args.Contains("--horizon")){HorizonUiChecks.Run(model,window,root,Pump,Check,Capture);Check("Rust 页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} Horizon UI checks passed");return 0;}
             if(args.Contains("--navigation-split")){NavigationSeparationChecks.Run(model,window,Pump,Check,Capture);Check("独立网络与设置无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation separation checks passed");return 0;}

@@ -13,5 +13,6 @@
     <ProjectReference Include="..\..\src\Launcher.Application\Launcher.Application.csproj" />
     <ProjectReference Include="..\..\src\Launcher.Infrastructure\Launcher.Infrastructure.csproj" />
   <None Include="../TestFixtures/HorizonSigned/*" Link="HorizonSigned/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  <None Include="../TestFixtures/ModrinthCategories.json" Link="ModrinthCategories.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

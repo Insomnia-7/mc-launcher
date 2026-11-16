@@ -111,7 +111,8 @@ public sealed class ModrinthClient(HttpClient http) : IModrinthClient
         var tags = _tags ??= await http.GetFromJsonAsync<List<ModrinthTag>>("tag/category", Json, ct).ConfigureAwait(false) ?? [];
         var type = category == DownloadCategory.Datapack ? "mod" : category.ModrinthProjectType();
         return tags.Where(t => t.ProjectType == type && t.Header != "loaders")
-            .Select(t => new ResourceTag(t.Name, t.Name)).DistinctBy(t => t.Id).OrderBy(t => t.Name).ToArray();
+            .Select(t => new ResourceTag(t.Name, ResourceCategoryNames.Translate(t.Name), ResourceCategoryNames.Group(t.Header)))
+            .DistinctBy(t => t.Id).OrderBy(t => t.Group).ThenBy(t => t.Name, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("zh-CN"), false)).ToArray();
     }
 
     private sealed record ModrinthTag(

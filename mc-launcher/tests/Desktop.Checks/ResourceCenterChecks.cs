@@ -22,6 +22,12 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     public int CatalogCount, LastLimit, LastOffset;
     public bool FailPage;
     public TaskCompletionSource<ModrinthSearchResponse>? PendingSearch;
+    public TaskCompletionSource<IReadOnlyList<ResourceTag>>? PendingCategories;
+    public Task<IReadOnlyList<ResourceTag>> GetCategoriesAsync(DownloadCategory category,CancellationToken ct=default)
+    {
+        if(PendingCategories is {} pending){PendingCategories=null;return pending.Task.WaitAsync(ct);}
+        return Task.FromResult<IReadOnlyList<ResourceTag>>([new("adventure","冒险探索","类型"),new("utility","实用功能","类型")]);
+    }
     public TaskCompletionSource<IReadOnlyList<ModrinthVersion>>? PendingVersions;
     public TaskCompletionSource<DownloadSummary>? PendingDownload;
     public TaskCompletionSource<ModrinthProjectInfo?>? PendingDependency;

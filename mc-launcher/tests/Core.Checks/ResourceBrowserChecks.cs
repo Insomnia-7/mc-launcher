@@ -14,9 +14,20 @@ internal static class ResourceBrowserChecks
     public static async Task RunAsync(Action<string, bool, string?> check)
     {
         foreach (var id in new[] { "15w14a", "1.RV-Pre1", "3D Shareware v1.34", "20w14infinite", "22w13oneblockatatime", "23w13a_or_b", "24w14potato", "25w14craftmine", "26w14a" })
-            check("官方活动版独立分组 " + id, VersionClassification.Group(id, "snapshot") == "活动版", null);
+            check("官方活动版独立分组 " + id, VersionClassification.Group(id, "snapshot") == "愚人节版本", null);
         check("普通预览版不按日期误归活动版", VersionClassification.Group("26.4-snapshot-4", "snapshot") == "预览版", null);
         check("两个远古组独立", VersionClassification.Group("b1.7.3", "old_beta") != VersionClassification.Group("a1.2.6", "old_alpha"), null);
+        foreach(var id in new[]{"2.0","2.0_red","2.0_blue","2.0_purple","15w14a","1.RV-Pre1","3D Shareware v1.34","20w14infinite","22w13oneblockatatime","23w13a_or_b","24w14potato","25w14craftmine","26w14a"})
+            check("愚人节版本具有独立简介 "+id,VersionClassification.EventDescription(id).Length>15,null);
+        check("普通快照没有虚构的愚人节简介",VersionClassification.EventDescription("23w13a")==""&&!VersionClassification.IsEvent("23w13a"),null);
+        using(var taxonomy=JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"ModrinthCategories.json"))))
+        {
+            foreach(var tag in taxonomy.RootElement.EnumerateArray().Where(t=>new[]{"mod","modpack","resourcepack","shader"}.Contains(t.GetProperty("project_type").GetString())))
+            {
+                var name=tag.GetProperty("name").GetString()!;var header=tag.GetProperty("header").GetString()!;
+                check("官方分类汉化 "+tag.GetProperty("project_type").GetString()+"/"+name,ResourceCategoryNames.Translate(name)!=name&&ResourceCategoryNames.Group(header).Length>0,null);
+            }
+        }
         var handler = new Handler();
         using var http = new HttpClient(handler) { BaseAddress = new("https://fixture.test/") };
         var mr = new ModrinthClient(http); var cf = new CurseForgeClient(http, () => "fixture-key");
@@ -43,10 +54,12 @@ internal static class ResourceBrowserChecks
         handler.CategoryResponse = true;
         var tags = await mr.GetCategoriesAsync(DownloadCategory.Mod);
         check("MR 分类依资源类型区分", tags.Count == 1 && tags[0].Id == "adventure", null);
+        check("MR 中文分类保留原始检索标识",tags[0].Name=="冒险探索"&&tags[0].ToString()=="类型 · 冒险探索",null);
         tags = await mr.GetCategoriesAsync(DownloadCategory.Shader);
         check("MR 光影分类来自光影标签", tags.Single().Id == "realistic", null);
         tags = await cf.GetCategoriesAsync(DownloadCategory.Mod);
         check("CF 分类使用平台数字 ID", tags.Single().Id == "42", null);
+        check("CF 分类使用中文名称",tags.Single().Name=="冒险探索",null);
         handler.CategoryResponse = false; handler.Forbidden = true;
         var denied = false;
         try { await cf.SearchAsync(new ResourceSearchRequest("", DownloadCategory.Mod)); } catch (CurseForgeSearchUnavailableException) { denied = true; }

@@ -57,7 +57,7 @@
                   <Button x:Name="InstallRoomEngineButton" Classes.is-success="{Binding Multiplayer.InstallEngineSucceeded}" Classes.is-error="{Binding Multiplayer.InstallEngineFailed}" Grid.Column="1" Command="{Binding Multiplayer.InstallEngineCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                       <TextBlock Text="{Binding Multiplayer.InstallEngineLabel}" />
-                      <ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.EngineInstallBusy}" />
+                      <icons:ActivityProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.EngineInstallBusy}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -78,7 +78,7 @@
                 <Button x:Name="CreateRoomButton" Classes.is-success="{Binding Multiplayer.CreateRoomSucceeded}" Classes.is-error="{Binding Multiplayer.CreateRoomFailed}" Classes="primary" HorizontalAlignment="Right" Command="{Binding Multiplayer.CreateRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}">
                   <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Multiplayer.CreateRoomLabel}" Foreground="{Binding $parent[Button].Foreground}" />
-                    <ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.RoomBusy}" Foreground="{Binding $parent[Button].Foreground}" />
+                    <icons:ActivityProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.RoomBusy}" Foreground="{Binding $parent[Button].Foreground}" />
                   </StackPanel>
                 </Button>
               </StackPanel>
@@ -90,7 +90,7 @@
                 <Button x:Name="JoinRoomButton" Classes.is-success="{Binding Multiplayer.JoinRoomSucceeded}" Classes.is-error="{Binding Multiplayer.JoinRoomFailed}" HorizontalAlignment="Right" Command="{Binding Multiplayer.JoinRoomCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}">
                   <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Multiplayer.JoinRoomLabel}" />
-                    <ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.JoinRoomBusy}" />
+                    <icons:ActivityProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.JoinRoomBusy}" />
                   </StackPanel>
                 </Button>
               </StackPanel>
@@ -102,7 +102,7 @@
                   <Button x:Name="DisconnectRoomButton" Grid.Column="1" Command="{Binding Multiplayer.DisconnectCommand}" IsEnabled="{Binding !Multiplayer.IsBusy}">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                       <TextBlock Text="{Binding Multiplayer.DisconnectLabel}" />
-                      <ProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.DisconnectBusy}" />
+                      <icons:ActivityProgressBar Width="14" Height="14" IsIndeterminate="True" IsVisible="{Binding Multiplayer.DisconnectBusy}" />
                     </StackPanel>
                   </Button>
                 </Grid>

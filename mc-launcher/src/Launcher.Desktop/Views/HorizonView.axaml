@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:horizon="using:Launcher.Infrastructure.Horizon" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.HorizonView">
+<UserControl xmlns:icons="using:Launcher.Desktop.Controls" xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:horizon="using:Launcher.Infrastructure.Horizon" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.HorizonView">
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
     <StackPanel Spacing="8"><Button Classes="link" Content="‹ Java 游戏实例" Command="{Binding ShowInstancesCommand}" HorizontalAlignment="Left"/><TextBlock Text="Rust 客户端" Classes="page-title"/><TextBlock Text="Horizon · 实验性客户端，使用独立的实例与存档。" Classes="muted"/></StackPanel>
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -16,6 +16,6 @@
         </StackPanel></Border>
       </StackPanel>
     </ScrollViewer>
-    <Border Grid.Row="2" Classes="inset"><StackPanel Spacing="8"><ProgressBar IsVisible="{Binding HorizonBusy}" IsIndeterminate="True" Height="3"/><TextBlock x:Name="HorizonStatus" Text="{Binding HorizonHint}" TextWrapping="Wrap" MaxHeight="100"/><Button Content="取消当前操作" Command="{Binding CancelHorizonCommand}" IsVisible="{Binding HorizonBusy}" HorizontalAlignment="Left"/></StackPanel></Border>
+    <Border Grid.Row="2" Classes="inset"><StackPanel Spacing="8"><icons:ActivityProgressBar IsVisible="{Binding HorizonBusy}" IsIndeterminate="True" Height="3"/><TextBlock x:Name="HorizonStatus" Text="{Binding HorizonHint}" TextWrapping="Wrap" MaxHeight="100"/><Button Content="取消当前操作" Command="{Binding CancelHorizonCommand}" IsVisible="{Binding HorizonBusy}" HorizontalAlignment="Left"/></StackPanel></Border>
   </Grid>
 </UserControl>

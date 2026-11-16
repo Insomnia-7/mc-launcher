@@ -203,7 +203,7 @@ internal static partial class UiCheck
         browser.SelectedSource = DownloadViewModel.ModrinthSource;
         browser.SelectedCategory = browser.Categories.Single(c => c.Category == DownloadCategory.MinecraftVersion);
         Pump(browser.EnsureLoadedAsync());
-        Check("活动版与两个远古版分别归组", browser.VersionGroups.Any(g => g.Key == "活动版" && g.Versions.Single().Id == "24w14potato") && browser.VersionGroups.Any(g => g.Key == "远古 Beta") && browser.VersionGroups.Any(g => g.Key == "远古 Alpha"));
+        Check("活动版与两个远古版分别归组", browser.VersionGroups.Any(g => g.Key == "愚人节版本" && g.Versions.Single().Id == "24w14potato") && browser.VersionGroups.Any(g => g.Key == "远古 Beta") && browser.VersionGroups.Any(g => g.Key == "远古 Alpha"));
         Check("活动版本不会混入预览组", browser.VersionGroups.Single(g => g.Key == "预览版").Versions.All(v => v.Id != "24w14potato"));
         Render(window, 1000, 640, "versions-1000.png");
         window.Close();

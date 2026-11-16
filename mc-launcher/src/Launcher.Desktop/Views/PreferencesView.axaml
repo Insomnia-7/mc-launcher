@@ -108,7 +108,7 @@
                 <TextBlock Text="存储管理" FontSize="20" FontWeight="SemiBold" />
                 <Button x:Name="ScanStorageButton" Grid.Column="1" Command="{Binding ScanStorageCommand}" Content="重新扫描" IsEnabled="{Binding CanManageStorage}" />
               </Grid>
-              <ProgressBar IsVisible="{Binding StorageBusy}" IsIndeterminate="True" Height="3" />
+              <icons:ActivityProgressBar IsVisible="{Binding StorageBusy}" IsIndeterminate="True" Height="3" />
               <Button Command="{Binding CancelStorageScanCommand}" Content="停止扫描" IsVisible="{Binding StorageBusy}" HorizontalAlignment="Left" />
               <TextBlock Text="{Binding LocationSummary}" TextWrapping="Wrap" />
               <WrapPanel IsEnabled="{Binding !IsBusy}">
