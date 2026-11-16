@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:horizon="using:Launcher.Infrastructure.Horizon" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.HorizonView">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
+    <StackPanel Spacing="8"><Button Classes="link" Content="‹ Java 游戏实例" Command="{Binding ShowInstancesCommand}" HorizontalAlignment="Left"/><TextBlock Text="Rust 客户端" Classes="page-title"/><TextBlock Text="Horizon · 实验性客户端，使用独立的实例与存档。" Classes="muted"/></StackPanel>
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="20">
+        <Border Classes="card"><StackPanel Spacing="14"><TextBlock Text="客户端构建" Classes="section-title"/><TextBlock Text="安装经过官方签名验证的 Nightly，或导入完整本地构建。Java 的 Fabric、Forge 等模组不能直接在此运行。" Classes="muted" TextWrapping="Wrap"/>
+          <WrapPanel IsEnabled="{Binding CanEditHorizon}"><Button x:Name="InstallHorizonButton" Classes="primary" Content="安装官方 Nightly" Command="{Binding InstallHorizonCommand}" Margin="0,0,8,8"/><Button Content="导入本地构建" Command="{Binding ImportHorizonCommand}" Margin="0,0,0,8"/></WrapPanel>
+          <ComboBox x:Name="HorizonBuildChoice" ItemsSource="{Binding HorizonBuilds}" SelectedItem="{Binding SelectedHorizonBuild}" PlaceholderText="先安装或导入构建" IsEnabled="{Binding CanEditHorizon}"><ComboBox.ItemTemplate><DataTemplate x:DataType="horizon:HorizonBuild"><TextBlock Text="{Binding Title}" TextWrapping="Wrap"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" IsEnabled="{Binding CanEditHorizon}"><TextBox x:Name="HorizonInstanceName" Text="{Binding HorizonName}" MaxLength="80" PlaceholderText="Rust 实例名称"/><Button x:Name="CreateHorizonInstanceButton" Grid.Column="1" Content="新建 Rust 实例" Command="{Binding CreateHorizonInstanceCommand}"/></Grid>
+        </StackPanel></Border>
+        <Border Classes="card"><StackPanel Spacing="14"><TextBlock Text="我的 Rust 实例" Classes="section-title"/><TextBlock Text="还没有 Rust 实例。完成上方的构建安装后新建一个。" Classes="muted" IsVisible="{Binding !HasHorizonInstances}" TextWrapping="Wrap"/>
+          <ListBox x:Name="HorizonInstanceList" ItemsSource="{Binding HorizonInstances}" SelectedItem="{Binding SelectedHorizonInstance}" MaxHeight="220" IsEnabled="{Binding CanEditHorizon}"><ListBox.ItemTemplate><DataTemplate x:DataType="horizon:HorizonInstance"><StackPanel Spacing="5"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Build.Title}" Classes="muted"/></StackPanel></DataTemplate></ListBox.ItemTemplate></ListBox>
+          <TextBlock Text="{Binding HorizonSelectedInfo}" Classes="muted" TextWrapping="Wrap"/>
+          <WrapPanel IsEnabled="{Binding CanEditHorizon}"><Button x:Name="PrepareHorizonButton" Content="准备游戏资源" Command="{Binding PrepareHorizonCommand}" Margin="0,0,8,8"/><Button x:Name="LaunchHorizonButton" Classes="primary" Content="启动 Rust 客户端" Command="{Binding LaunchHorizonCommand}" Margin="0,0,8,8"/><Button Classes="quiet" Content="打开实例目录" Command="{Binding OpenHorizonFolderCommand}" Margin="0,0,0,8"/></WrapPanel>
+          <TextBlock Text="启动需要已购买 Java 版的微软账号。首次资源转换仍使用 Java；游戏客户端本身由 Rust 编译运行。" Classes="label" TextWrapping="Wrap"/>
+        </StackPanel></Border>
+      </StackPanel>
+    </ScrollViewer>
+    <Border Grid.Row="2" Classes="inset"><StackPanel Spacing="8"><ProgressBar IsVisible="{Binding HorizonBusy}" IsIndeterminate="True" Height="3"/><TextBlock x:Name="HorizonStatus" Text="{Binding HorizonHint}" TextWrapping="Wrap" MaxHeight="100"/><Button Content="取消当前操作" Command="{Binding CancelHorizonCommand}" IsVisible="{Binding HorizonBusy}" HorizontalAlignment="Left"/></StackPanel></Border>
+  </Grid>
+</UserControl>

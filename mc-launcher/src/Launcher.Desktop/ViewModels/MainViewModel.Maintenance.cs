@@ -175,7 +175,7 @@ public sealed partial class MainViewModel
         }
     }
     [RelayCommand] private async Task OpenStorageSettingsAsync()
-    { OpenNetwork(); ShowsStorage = true; await ScanStorageAsync(); }
+    { OpenAppearance(); ShowsStorage = true; await ScanStorageAsync(); }
     private CancellationTokenSource? _storageScanCts;
     [RelayCommand] private void CancelStorageScan() => _storageScanCts?.Cancel();
     [RelayCommand] private async Task ScanStorageAsync()

@@ -15,9 +15,6 @@
           <Button x:Name="AppearanceSettingsTab" Classes="nav" Classes.active="{Binding IsAppearanceSettings}" Command="{Binding OpenAppearanceCommand}" HorizontalContentAlignment="Left" AutomationProperties.Name="外观" HorizontalAlignment="Stretch">
             <icons:IconLabel Icon="ActionSettings" Text="外观" />
           </Button>
-          <Button x:Name="NetworkSettingsTab" Classes="nav" Classes.active="{Binding IsNetworkSettings}" Command="{Binding OpenNetworkCommand}" HorizontalContentAlignment="Left" AutomationProperties.Name="网络" HorizontalAlignment="Stretch">
-            <icons:IconLabel Icon="ActionGlobe" Text="网络" />
-          </Button>
           <Button x:Name="StorageSettingsTab" Classes="nav" Classes.active="{Binding ShowsStorage}" Command="{Binding OpenStorageSettingsCommand}" Content="存储" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
           <Button x:Name="LauncherUpdateSettingsTab" Classes="nav" Classes.active="{Binding ShowsLauncherUpdates}" Command="{Binding OpenLauncherUpdatesCommand}" Content="关于与更新" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
           <Button x:Name="SettingsSyncTab" Classes="nav" Classes.active="{Binding ShowsSettingsSync}" Command="{Binding OpenSettingsSyncCommand}" Content="游戏同步" HorizontalContentAlignment="Left" HorizontalAlignment="Stretch" />
@@ -72,23 +69,6 @@
               <Button Command="{Binding CloseAppearanceCommand}" HorizontalAlignment="Right" Classes="primary" AutomationProperties.Name="完成">
                 <icons:IconLabel Icon="ActionCheck" Text="完成" Foreground="{Binding $parent[Button].Foreground}" />
               </Button>
-            </StackPanel>
-          </ScrollViewer>
-          <ScrollViewer IsVisible="{Binding IsNetworkSettings}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-            <StackPanel Spacing="16">
-              <TextBlock Text="连接方式" FontWeight="SemiBold" />
-              <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap" />
-              <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}" />
-              <TextBox Text="{Binding ProxyAddress}" PlaceholderText="http://127.0.0.1:7890" IsVisible="{Binding IsCustomProxy}" />
-              <TextBlock Text="{Binding NetworkHint}" Classes="muted" TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="*,Auto">
-                <Button Command="{Binding CloseNetworkCommand}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
-                  <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" />
-                </Button>
-                <Button Grid.Column="1" Classes="primary" Command="{Binding SaveNetworkCommand}" AutomationProperties.Name="保存">
-                  <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}" />
-                </Button>
-              </Grid>
             </StackPanel>
           </ScrollViewer>
           <ScrollViewer IsVisible="{Binding ShowsLauncherUpdates}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">

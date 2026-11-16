@@ -56,25 +56,27 @@ public sealed partial class MainViewModel
     public ObservableCollection<string> LibraryGroups {get;}=["全部分组","未分组"];
     public string LibraryResultText=>$"{LibraryEntries.Count} / {Instances.Count}";
     public bool LibraryHasNoResults=>LibraryEntries.Count==0&&HasInstances;
-    public string ShellPage=>IsPreferencesOpen?"settings":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsDevShowcaseEnabled&&IsShowcaseOpen?"showcase":IsHomeSection?"home":IsInstanceSection?"library":"discover";
+    public string ShellPage=>IsNetworkOpen?"network":IsPreferencesOpen?"settings":IsHorizonOpen?"horizon":IsExperienceOpen?"experience":IsMultiplayerOpen?"multiplayer":IsDetailOpen&&SelectedInstance is not null?"detail":IsDevShowcaseEnabled&&IsShowcaseOpen?"showcase":IsHomeSection?"home":IsInstanceSection?"library":"discover";
     public string ShellPageTitle => ShellPage switch
     {
         "home" => "主页",
         "showcase" => "UI 预览 · Dev",
         "settings" => "设置",
+        "network" => "网络与连接",
+        "horizon" => "Rust 客户端",
         "experience" => ExperiencePageTitle,
         "multiplayer" => "联机",
         "detail" => SelectedGameName,
         "discover" => "资源",
         _ => "实例"
     };
-    public bool IsLibraryPage=>ShellPage is "library" or "detail";
+    public bool IsLibraryPage=>ShellPage is "library" or "detail" or "horizon";
     public bool IsDiscoverPage=>ShellPage=="discover";
     public bool IsRolePage=>ShellPage=="experience"&&IsWardrobeTab;
     public bool IsTaskPage=>ShellPage=="experience"&&IsToolsTab;
     public bool IsSettingsPage=>ShellPage=="settings";
-    public bool IsNetworkSettingsPage => IsSettingsPage && IsNetworkOpen;
-    public bool IsGeneralSettingsPage => IsSettingsPage && !IsNetworkOpen;
+    public bool IsNetworkSettingsPage => ShellPage=="network";
+    public bool IsGeneralSettingsPage => IsSettingsPage;
     public string ExperiencePageTitle=>IsWardrobeTab?"角色":"下载任务";
     public string ExperiencePageCaption=>IsWardrobeTab?"换上喜欢的皮肤，准备下一次出发。":"查看下载进度，暂停、恢复或清理未完成的任务。";
     public bool IsOverviewTab=>DetailTab==0;
@@ -102,7 +104,7 @@ public sealed partial class MainViewModel
     private LibraryGamePreferences PreferencesFor(string id)=>_libraryPreferences.Games.GetValueOrDefault(id)??new();
     private void InitializeWorkspace()
     {
-        BeforeMainNavigation=()=>{IsHomeSection=false;IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
+        BeforeMainNavigation=()=>{IsHorizonOpen=false;IsHomeSection=false;IsExperienceOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;IsDetailOpen=false;IsMultiplayerOpen=false;WorkspaceHint="";};
         // 删除成功后回到游戏库主页面：关详情页、复位标签、清理展示偏好/封面、提示结果（大纲 4.6/4.5）。
         InstanceDeleted=(id,name,shared)=>
         {
@@ -139,7 +141,7 @@ public sealed partial class MainViewModel
     }
     private void NotifyWorkspaceNavigation()
     {
-        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsShowcasePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsNetworkSettingsPage),nameof(IsGeneralSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
+        foreach(var property in new[]{nameof(ShellPageTitle),nameof(ShellPage),nameof(IsHomePage),nameof(IsHorizonPage),nameof(IsShowcasePage),nameof(IsLibraryPage),nameof(IsDiscoverPage),nameof(IsRolePage),nameof(IsTaskPage),nameof(IsSettingsPage),nameof(IsNetworkSettingsPage),nameof(IsGeneralSettingsPage),nameof(IsMultiplayerPage),nameof(ExperiencePageTitle),nameof(ExperiencePageCaption)})OnPropertyChanged(property);
         OnPropertyChanged(nameof(PreviewActive));
     }
     private void NotifySelectedGame()

@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:vm="using:Launcher.App.ViewModels" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.NetworkView">
+  <Grid RowDefinitions="Auto,*" RowSpacing="24">
+    <StackPanel Spacing="6"><TextBlock Text="网络与连接" Classes="page-title"/><TextBlock Text="管理方隅的联网方式与代理。创建房间和加入世界请前往联机大厅。" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+          <ScrollViewer x:Name="NetworkConnectionSettings" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="16">
+              <Border Classes="card"><StackPanel Spacing="12"><TextBlock Text="当前连接" Classes="section-title"/><TextBlock Text="{Binding HomeNetworkSummary}" Classes="muted" TextWrapping="Wrap"/><Grid ColumnDefinitions="*,*" ColumnSpacing="20"><StackPanel Spacing="6"><TextBlock Text="房间服务" Classes="label"/><TextBlock Text="{Binding HomeMultiplayerStateText}"/></StackPanel><StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="最近服务器延迟" Classes="label"/><TextBlock Text="{Binding HomeLatencyText}"/></StackPanel></Grid></StackPanel></Border>
+              <Border Classes="card"><StackPanel Spacing="10"><TextBlock Text="游戏文件下载源" Classes="section-title"/><TextBlock Text="用于游戏版本、资源和加载器下载。此为启动器全局设置。" Classes="muted" TextWrapping="Wrap"/><ComboBox x:Name="NetworkDownloadSource" ItemsSource="{Binding DownloadSources}" SelectedIndex="{Binding DownloadSourceIndex}"/></StackPanel></Border>
+              <TextBlock Text="启动器代理" Classes="section-title"/><TextBlock Text="此处影响登录、下载与在线服务；游戏连接和房间由联机大厅管理。" Classes="muted" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ActiveNetworkText}" Classes="muted" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding ProxyModes}" SelectedIndex="{Binding ProxyModeIndex}" />
+              <TextBox Text="{Binding ProxyAddress}" PlaceholderText="http://127.0.0.1:7890" IsVisible="{Binding IsCustomProxy}" />
+              <TextBlock Text="{Binding NetworkHint}" Classes="muted" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto">
+                <Button Command="{Binding OpenNetworkCommand}" HorizontalAlignment="Left" AutomationProperties.Name="还原代理设置">
+                  <icons:IconLabel Icon="ActionRefresh" Text="还原代理设置" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+                <Button Grid.Column="1" Classes="primary" Command="{Binding SaveNetworkCommand}" AutomationProperties.Name="保存">
+                  <icons:IconLabel Icon="ActionCheck" Text="保存" Foreground="{Binding $parent[Button].Foreground}" />
+                </Button>
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+  </Grid>
+</UserControl>

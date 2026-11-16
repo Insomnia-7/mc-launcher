@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey?style=flat-square)](#平台支持)
 
-一款 Minecraft Java 版启动器，用 C# 与 Avalonia 写成，Windows 上以单文件分发。
+一款 Minecraft Java 版启动器，可选接入 Horizon Rust 客户端，用 C# 与 Avalonia 写成，Windows 上以单文件分发。
 
-**当前版本**：1.0.0-preview.14（预览版）
+**当前版本**：1.0.0-preview.19（预览版）
 
 ## 简介
 

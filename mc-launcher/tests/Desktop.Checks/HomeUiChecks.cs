@@ -85,7 +85,7 @@ internal static class HomeUiChecks
         model.ShowHomeCommand.Execute(null);pump(150);
         check("资源包、目录和导入快捷入口连接现有命令",Find<Button>("HomeManageResources").Command==model.OpenGameResourceFolderCommand && Find<Button>("HomeManageResources").CommandParameter as string=="resourcepacks" && Find<Button>("HomeOpenGameDirectory").Command==model.OpenGameDirectoryCommand && Find<Button>("HomeImportModpack").Command==model.ImportModpackCommand);
         click(Find<Button>("HomeNewInstance"));check("新建实例打开已有安装向导",model.IsSetupOpen);model.CloseSetupCommand.Execute(null);pump(60);
-        click(Find<Button>("HomeNetworkEntry"));check("网络状态直达设置网络页",model.IsNetworkOpen && model.IsPreferencesOpen);model.ShowHomeCommand.Execute(null);pump(120);
+        click(Find<Button>("HomeNetworkEntry"));check("网络状态直达独立网络页",model.IsNetworkOpen && !model.IsPreferencesOpen && model.ShellPage=="network");model.ShowHomeCommand.Execute(null);pump(120);
         var runtimeSummary=model.HomeNetworkSummary;model.ProxyModeIndex=2;model.ProxyAddress="http://127.0.0.1:45678";model.SaveNetworkCommand.Execute(null);
         check("保存待重启代理不冒充运行中的网络模式",model.HomeNetworkSummary==runtimeSummary);
         model.DownloadSourceIndex=model.DownloadSourceIndex==1?0:1;pump(20);

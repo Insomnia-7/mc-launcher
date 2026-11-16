@@ -31,6 +31,8 @@ using Launcher.Infrastructure.Meta;
 using Launcher.Infrastructure.Modpacks;
 using Launcher.Infrastructure.Security;
 
+if (HorizonFixture.IsFixture) return HorizonFixture.Run(args);
+
 if (OptimizationChecks.IsJavaFixture(args)) return OptimizationChecks.RunJavaFixture();
 
 var failures = new List<string>();
@@ -42,6 +44,10 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--horizon"))
+{
+    await HorizonChecks.RunAsync(Check);Console.WriteLine($"Horizon: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
+}
 if(args.Contains("--multiplayer")||args.Contains("--multiplayer-engine")||args.Contains("--multiplayer-public"))
 {
     await MultiplayerChecks.RunAsync(Check,args.Contains("--multiplayer-engine")||args.Contains("--multiplayer-public"),args.Contains("--multiplayer-public"));Console.WriteLine($"Multiplayer: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;

@@ -7,7 +7,7 @@ public sealed partial class MainViewModel
 {
     public bool IsLightTheme => _appearance?.IsEffectiveLight ?? false;
     public bool HasInstances => Instances.Count > 0;
-    public string InstanceCountText => $"{Instances.Count} 个游戏实例";
+    public string InstanceCountText => $"{Instances.Count+HorizonInstances.Count} 个游戏实例";
     public string WorldVersion => SelectedInstance?.BaseVersion ?? "添加你的第一个世界";
     public string WorldDisplayName => SelectedGameName;
     public bool IsModpackSelection => SelectedInstance?.IsModpack == true;
@@ -17,7 +17,7 @@ public sealed partial class MainViewModel
     public string LaunchTitle => IsBusy ? "正在准备…" : "启动游戏";
     public string WorldCaption => HasInstances ? "你的世界，随时出发。" : "从一个新世界开始。";
     public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsConfirmOpen || DataRestartRequired;
-    public bool IsPreferencesOpen => IsAppearanceOpen || IsNetworkOpen;
+    public bool IsPreferencesOpen => IsAppearanceOpen;
     partial void OnIsNetworkOpenChanged(bool value)
     {
         if (value) { IsAppearanceOpen=false; IsExperienceOpen=false; IsAccountsOpen=false; IsSetupOpen=false; }

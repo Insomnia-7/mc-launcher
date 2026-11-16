@@ -162,10 +162,11 @@ public sealed partial class MainWindow
     {
         "home" => "HomeNav",
         "showcase" => "ShowcaseNav",
-        "library" or "detail" => "LibraryNav",
+        "library" or "detail" or "horizon" => "LibraryNav",
         "discover" => "DiscoverNav",
         "multiplayer" => "MultiplayerNav",
-        "settings" => _model.IsNetworkSettingsPage ? "NetworkNav" : "SettingsEntry",
+        "network" => "NetworkNav",
+        "settings" => "SettingsEntry",
         "experience" => _model.IsRolePage ? null : _model.IsTaskPage ? "TaskCenterEntry" : null,
         _ => null
     };

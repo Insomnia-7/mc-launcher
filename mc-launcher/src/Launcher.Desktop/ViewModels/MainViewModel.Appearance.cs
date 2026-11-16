@@ -321,7 +321,7 @@ public sealed partial class MainViewModel
         SaveAppearance();
     }
 
-    [RelayCommand] private void OpenAppearance() { IsAppearanceOpen = true; }
+    [RelayCommand] private void OpenAppearance() { ShowsStorage=false; ShowsLauncherUpdates=false; ShowsSettingsSync=false; IsAppearanceOpen = true; }
 
     partial void OnIsAppearanceOpenChanged(bool value)
     {

@@ -46,7 +46,7 @@ public sealed partial class MainViewModel
     partial void OnShowsLauncherUpdatesChanged(bool value)
     { OnPropertyChanged(nameof(IsNetworkSettings)); OnPropertyChanged(nameof(IsAppearanceSettings)); }
     [RelayCommand] private void OpenLauncherUpdates()
-    { OpenNetwork(); ShowsLauncherUpdates = true; }
+    { OpenAppearance(); ShowsLauncherUpdates = true; }
     [RelayCommand] private void ConfirmLauncherUpdate()
     {
         if(!CanInstallLauncherUpdate) return;

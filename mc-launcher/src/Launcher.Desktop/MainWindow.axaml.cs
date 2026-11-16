@@ -32,6 +32,8 @@ public sealed partial class MainWindow : Window
     private DialogLayers? _dialogs;
     private ExperienceView? _experience;
     private PreferencesView? _preferences;
+    private NetworkView? _network;
+    private HorizonView? _horizon;
     private GameDetailView? _detail;
     private MultiplayerView? _multiplayer;
     private UiShowcaseView? _showcase;
@@ -84,6 +86,8 @@ public sealed partial class MainWindow : Window
             if (_dialogs is not null) _dialogs.DataContext=_model;
             if (_experience is not null) _experience.DataContext=_model;
             if (_preferences is not null) _preferences.DataContext=_model;
+            if (_horizon is not null) _horizon.DataContext=_model;
+            if (_network is not null) _network.DataContext=_model;
             if (_detail is not null) _detail.DataContext=_model;
             if (_multiplayer is not null) _multiplayer.DataContext=_model;
             if (_model is not null) _model.PropertyChanged += ModelChanged;
@@ -112,6 +116,7 @@ public sealed partial class MainWindow : Window
         };
         Closed += (_, _) =>
         {
+            _model?.CancelHorizonCommand.Execute(null);
             if (_model is not null) _model.PropertyChanged -= ModelChanged;
             MotionPreferences.Changed -= UpdateMotion;
             _model?.Toasts.Dispose();
@@ -192,8 +197,8 @@ public sealed partial class MainWindow : Window
         if (_model is null) return;
         var order = _model.ShellPage switch
         {
-            "home"=>0, "library" or "detail"=>1, "multiplayer"=>2,
-            "settings" when _model.IsNetworkSettingsPage=>3, "discover"=>4,
+            "home"=>0, "library" or "detail" or "horizon"=>1, "multiplayer"=>2,
+            "network"=>3, "discover"=>4,
             "experience" when _model.IsTaskPage=>5, "settings"=>6, _=>7
         };
         PageHost.Direction = order >= _pageOrder ? 1 : -1;
@@ -205,6 +210,8 @@ public sealed partial class MainWindow : Window
             "discover" => _discover ??= new DiscoverView { DataContext = _model },
             "experience" => _experience ??= new ExperienceView { DataContext = _model },
             "settings" => _preferences ??= new PreferencesView { DataContext = _model },
+            "network" => _network ??= new NetworkView { DataContext = _model },
+            "horizon" => _horizon ??= new HorizonView { DataContext = _model },
             "detail" => _detail ??= new GameDetailView { DataContext = _model },
             "multiplayer" => _multiplayer ??= new MultiplayerView { DataContext = _model },
             _ => _library

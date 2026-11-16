@@ -87,7 +87,7 @@
           </DockPanel>
           <Border x:Name="NavIndicator" Width="3" Height="16" CornerRadius="2" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{DynamicResource AccentBrush}" IsHitTestVisible="False" IsVisible="False"><Border.RenderTransform><TranslateTransform/></Border.RenderTransform></Border>
         </Grid>
-        <StackPanel x:Name="SidebarBottomText" Grid.Row="2" Margin="12,0" Spacing="4"><TextBlock Text="{Binding InstanceCountText}" Classes="label"/><TextBlock Text="Java Edition" FontSize="10" Foreground="{DynamicResource FaintBrush}"/></StackPanel>
+        <StackPanel x:Name="SidebarBottomText" Grid.Row="2" Margin="12,0" Spacing="4"><TextBlock Text="{Binding InstanceCountText}" Classes="label"/><TextBlock Text="Java / Rust" FontSize="10" Foreground="{DynamicResource FaintBrush}"/></StackPanel>
         <StackPanel x:Name="SidebarBottomCompact" Grid.Row="2" IsVisible="False"/>
       </Grid>
     </Border>

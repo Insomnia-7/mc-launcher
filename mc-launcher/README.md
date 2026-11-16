@@ -1,8 +1,8 @@
 # 方隅 · 源码
 
-当前 Windows 版本：`1.0.0-preview.14`。
+当前 Windows 版本：`1.0.0-preview.19`。
 
-Minecraft Java 版启动器。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
+Minecraft Java 版启动器，支持可选的 Horizon Rust 客户端。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
 
 界面在 `src/Launcher.Desktop`。旧的 WPF 入口 `src/Launcher.App` 还留着，能编译能跑，但只在 Windows 用，也不再出新功能。
 
@@ -37,6 +37,14 @@ dotnet run --project src/Launcher.Desktop/Launcher.Desktop.csproj -c Release
 ```
 
 或者用现成脚本：Windows 是 `run-desktop.cmd`，Linux / macOS 是 `sh run-desktop.sh`。
+
+## Rust 客户端
+
+主页快速启动区或游戏实例页的「Rust 客户端」打开独立页面。安装经过官方签名与 SHA-256 验证的 Horizon Nightly，或导入包含客户端、资源准备器、research-lock.json 和 exporters 的完整构建，然后新建 Rust 实例。
+
+资源准备与启动均要求登录拥有 Minecraft: Java Edition 的微软账号。方隅使用现有登录配置，不借用上游应用身份。首次准备会按构建要求下载游戏文件并配置转换工具需要的 Java；原生客户端使用独立存档，不能直接运行 Java 模组。上游仍为实验性项目，本次已验签并检查真实程序接口，完整游戏内实测待合法账号。
+
+网络页管理全局下载源、代理和连接状态。外观、存储、同步与更新统一在设置；创建/加入房间位于联机大厅。详情见 [接入与验收](docs/runtime-navigation-acceptance.md) 及 [第三方说明](docs/third-party-horizon.md)。
 
 ## 出包
 

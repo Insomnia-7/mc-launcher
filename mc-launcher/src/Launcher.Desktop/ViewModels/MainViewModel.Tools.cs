@@ -36,7 +36,7 @@ public sealed partial class MainViewModel
     [RelayCommand] private async Task AutoDetectGameRootAsync()
     {
         if (!CanRunTool()) return;
-        OpenNetwork(); ShowsStorage = true; ShowsLibraryDiscovery = true;
+        OpenAppearance(); ShowsStorage = true; ShowsLibraryDiscovery = true;
         await FindLibrariesAsync(CandidateGameRoots(), 3);
     }
 

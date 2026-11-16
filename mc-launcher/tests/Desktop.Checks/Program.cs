@@ -29,6 +29,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if(HorizonFixture.IsFixture)return HorizonFixture.Run(args);
         // 无头检查不参与单实例互斥：用户开着启动器时，检查进程不能被单实例逻辑直接退掉。
         Environment.SetEnvironmentVariable("FANGYU_ALLOW_MULTI_INSTANCE","1");
         if(args.Contains("--path-probe"))
@@ -109,6 +110,8 @@ internal static class Program
         }
         try
         {
+            if(args.Contains("--horizon")){HorizonUiChecks.Run(model,window,root,Pump,Check,Capture);Check("Rust 页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} Horizon UI checks passed");return 0;}
+            if(args.Contains("--navigation-split")){NavigationSeparationChecks.Run(model,window,Pump,Check,Capture);Check("独立网络与设置无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation separation checks passed");return 0;}
             if(args.Contains("--controls")){var task=ControlStyleChecks.Run(model,window,root,ms=>{Pump(ms);return Task.CompletedTask;},Check);task.GetAwaiter().GetResult();Check("控件样式无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} control style checks passed");return 0;}
             if(args.Contains("--navigation-fixes")){NavigationFixChecks.Run(model,window,Pump,Check,Capture);PageMotionChecks.Run(model,window,Pump,Check,()=>http.Requests);Check("导航修复无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} navigation fix checks passed");return 0;}
             if(args.Contains("--workbench-consistency")){WorkbenchChecks.Consistency(model,window,Pump,Check,Capture);Check("所有A页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} workbench consistency checks passed");return 0;}
@@ -201,8 +204,8 @@ internal static class Program
             Capture("accounts"); model.CloseAccountsCommand.Execute(null); Pump(50);
             Click(Find<Button>("SettingsEntry")); Check("设置入口打开外观选项", model.IsPreferencesOpen && Find<ListBox>("ThemeList").IsEffectivelyVisible);
             var preferences=Find<Border>("PreferencesSurface");
-            Click(Find<Button>("NetworkSettingsTab"));
-            Check("外观与网络在同一设置窗口内切换", model.IsNetworkOpen && !model.IsAppearanceOpen && ReferenceEquals(preferences,Find<Border>("PreferencesSurface")) && !Find<ListBox>("ThemeList").IsEffectivelyVisible);
+            Click(Find<Button>("NetworkNav"));
+            Check("网络使用独立页面", model.IsNetworkOpen && !model.IsAppearanceOpen && !model.IsPreferencesOpen && Find<AnimatedContentHost>("PageHost").Content is Launcher.Desktop.Views.NetworkView);
             model.ProxyModeIndex=1; model.SaveNetworkCommand.Execute(null);
             Check("统一设置保留网络保存功能", Launcher.Application.Settings.ProxySettingsStore.Read(data).Mode==Launcher.Application.Settings.ProxyMode.Direct);
             model.ProxyModeIndex=2; model.ProxyAddress="invalid proxy"; model.SaveNetworkCommand.Execute(null);
@@ -211,8 +214,8 @@ internal static class Program
             model.CloseTopOverlayCommand.Execute(null); Pump(60);
             Check("统一设置可关闭并恢复页面操作", !model.IsPreferencesOpen && !model.HasOverlay);
             model.OpenNetworkCommand.Execute(null); Pump(50);
-            Check("网络诊断快捷入口仍打开统一设置的网络选项", model.IsNetworkOpen && Find<Border>("PreferencesSurface").IsEffectivelyVisible && model.ProxyModeIndex==1);
-            Click(Find<Button>("AppearanceSettingsTab"));
+            Check("网络快捷入口打开独立网络页", model.IsNetworkOpen && model.ShellPage=="network" && model.ProxyModeIndex==1);
+            Click(Find<Button>("SettingsEntry"));
             Check("网络返回外观时仅显示一个设置面板", model.IsAppearanceOpen && !model.IsNetworkOpen && model.IsPreferencesOpen);
             Check("主题列表提供深浅双主题且已写盘", model.ThemeChoices.Select(t => t.Id).SequenceEqual(new[]{"aurora","glacier"})
                 && File.ReadAllText(Path.Combine(data, "appearance.json")).Contains("glacier"));

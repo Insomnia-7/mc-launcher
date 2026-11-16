@@ -86,7 +86,7 @@ public sealed partial class MainViewModel
     partial void OnShowsSettingsSyncChanged(bool value)
     {OnPropertyChanged(nameof(IsNetworkSettings));OnPropertyChanged(nameof(IsAppearanceSettings));if(value)LoadSettingsSyncEditor();}
     partial void OnSyncTargetChanged(SyncInstanceChoice? value) {OnPropertyChanged(nameof(SyncTargetName));if(!_loadingSync)LoadSyncMember();}
-    [RelayCommand] private void OpenSettingsSync(){OpenNetwork();ShowsStorage=false;ShowsLauncherUpdates=false;ShowsSettingsSync=true;}
+    [RelayCommand] private void OpenSettingsSync(){OpenAppearance();ShowsStorage=false;ShowsLauncherUpdates=false;ShowsSettingsSync=true;}
     private void NotifySyncPlan(){OnPropertyChanged(nameof(HasSettingsSyncPlan));OnPropertyChanged(nameof(SettingsSyncSummary));}
     private void LoadSettingsSyncEditor()
     {

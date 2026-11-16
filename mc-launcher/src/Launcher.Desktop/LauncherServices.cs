@@ -124,7 +124,7 @@ internal static class LauncherServices
             sp.GetRequiredService<LoaderInstaller>(), sp.GetRequiredService<IForgeInstaller>(), sp.GetRequiredService<INeoForgeInstaller>(), sp.GetRequiredService<IResourcePresentationClient>());
             model.InitializeExperience(sp.GetRequiredService<IPlayerAppearanceClient>());
             model.InitializeModWorkbench(sp.GetRequiredService<ModChangePlans>());
-            model.InitializeMultiplayer(sp.GetRequiredService<ILanWorldDiscovery>(),sp.GetRequiredService<IGameServerStatusClient>(),sp.GetRequiredService<IRoomNetwork>());return model;});
+            model.InitializeMultiplayer(sp.GetRequiredService<ILanWorldDiscovery>(),sp.GetRequiredService<IGameServerStatusClient>(),sp.GetRequiredService<IRoomNetwork>());model.InitializeHorizon(new Launcher.Infrastructure.Horizon.HorizonClient(sp.GetRequiredService<HttpClient>(),AppPaths.DataDirectory));return model;});
 
         // Modrinth / CurseForge 各用独立的 HttpClient：它们的 BaseAddress 不同，
         // 不能共用一个注册项，否则后注册的会顶掉前面的。

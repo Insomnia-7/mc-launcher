@@ -1,5 +1,17 @@
 # 方隅版本记录
 
+## 1.0.0-preview.19 · Rust 客户端与导航职责拆分
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.19)。
+
+- 主页和实例页增加 Rust 客户端入口，保留 Java 启动链及模组加载器。
+- 支持 Horizon 官方 Nightly 的版本绑定 Ed25519 签名与安装包 SHA-256 验证，亦可导入完整本地构建；查询真实 Launch API 后建立独立 Rust 实例。
+- 登录拥有 Java 版的微软账号后可准备资源并启动，首次转换自动准备对应 Java；会话只经标准输入传递，日志脱敏。取消准备终止工具进程，实例和存档保留。
+- 网络页独立管理连接状态、全局下载源和启动器代理；设置仅保留外观、存储、同步及更新。消除外观从网络跳转的混用，并修复两个新路由的侧栏指示条。
+- 保留 300ms 整页转场及共用输入/弹出控件样式。Horizon 属于上游实验性客户端，Java 模组不能直接运行。完整游戏实测待合法账号；其他设备项继续待测。
+
+验收与发布记录见 docs/runtime-navigation-acceptance.md。
+
 ## 1.0.0-preview.18 · 输入与弹出控件风格统一
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.18)。

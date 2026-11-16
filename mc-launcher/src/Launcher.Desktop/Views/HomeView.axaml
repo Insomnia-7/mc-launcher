@@ -23,7 +23,7 @@
       <Grid x:Name="HomeTopRow" Grid.Row="1" ColumnDefinitions="1.65*,1*" ColumnSpacing="18" MinHeight="204">
         <Border x:Name="HomeQuickLaunchCard" Classes="card home-card">
           <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-            <icons:IconLabel Classes="section-icon" Icon="NavVersions" Text="快速启动 Minecraft" IconSize="26" FontSize="20" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><icons:IconLabel Classes="section-icon" Icon="NavVersions" Text="快速启动 Minecraft" IconSize="26" FontSize="20" FontWeight="SemiBold"/><Button x:Name="HomeHorizonEntry" Grid.Column="1" Classes="link" Command="{Binding OpenHorizonCommand}" Content="Rust 客户端 ›" FontSize="12" MinHeight="24" Padding="0"/></Grid>
             <TextBlock Grid.Row="1" Text="选择实例并一键启动游戏" Classes="muted" FontSize="14"/>
             <Grid Grid.Row="2" VerticalAlignment="Bottom" ColumnDefinitions="2*,1*" ColumnSpacing="16" Margin="0,16,0,0" IsVisible="{Binding HasInstances}">
               <ComboBox x:Name="QuickInstanceSelector" ItemsSource="{Binding HomeEntries}" SelectedItem="{Binding SelectedHomeEntry, Mode=TwoWay}" Height="52" MinWidth="150" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" PlaceholderText="选择游戏实例" AutomationProperties.Name="选择要启动的游戏实例"><ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><Grid ColumnDefinitions="26,*" ColumnSpacing="10"><icons:InstanceTypeIcon Kind="{Binding TypeIcon}" Width="26" Height="26"/><TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/></Grid></DataTemplate></ComboBox.ItemTemplate></ComboBox>
