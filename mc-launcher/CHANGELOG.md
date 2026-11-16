@@ -4,6 +4,8 @@
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.20)。
 
+[源码 3ff3bfc](https://github.com/Insomnia-7/mc-launcher/commit/3ff3bfcbc047e6c53578851d7c508115e8bafc5c)。Windows单文件31723662字节，SHA-256：1069417bc458f4118e3863b0048df2289171154094feb1af12c8147da69165e0。1,507项检查、架构护栏、裁剪程序集、单文件启动及生产更新验签通过。
+
 - 实例与资源搜索框移除提示文字，保留输入、Enter搜索及无障碍名称。
 - 恢复资源列表可见滚动条，将搜索进度移出列表，搜索等待时仍可滚动已有结果。
 - 返回资源页复用现有结果和滚动位置，不重复检索；首次检索推迟至转场完成，手动搜索和筛选仍可刷新。

@@ -776,5 +776,45 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.20",
+    "date": "2026-11-16",
+    "title": "资源滚动、检索响应与卡片淡入淡出",
+    "tag": "desktop-v1.0.0-preview.20",
+    "sourceCommit": "3ff3bfcbc047e6c53578851d7c508115e8bafc5c",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/3ff3bfcbc047e6c53578851d7c508115e8bafc5c",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.20",
+    "changes": "资源列表滚动和搜索进度分离，返回页面不重复检索，搜索框提示清除。采用确认后的卡片300ms淡出/300ms淡入。项目Key构建接入能力已准备；当前凭据403拒绝且未内置，CF搜索待正确Key。",
+    "platform": "Windows x64",
+    "bytes": 31723662,
+    "sha256": "1069417bc458f4118e3863b0048df2289171154094feb1af12c8147da69165e0",
+    "binaryProductVersion": "1.0.0-preview.20+3ff3bfcbc047e6c53578851d7c508115e8bafc5c",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 881,
+      "horizonProtocol": 30,
+      "resource-interaction": 11,
+      "resource-native": 6,
+      "navigation-split": 28,
+      "horizon": 19,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 11,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1507.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]
