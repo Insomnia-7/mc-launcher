@@ -102,7 +102,7 @@ public sealed partial class MainWindow : Window
         // 用 LayoutUpdated 持续落位（与 DiscoverView 的 SelectionHighlight 同一做法），
         // 避免只在属性变化当帧按旧 Bounds 算一次就卡住。
         NavListLayoutUpdated();
-        SizeChanged += (_, _) => { Classes.Set("compact-page", Bounds.Width < 1100); UpdateSidebar(userInitiated: false); };
+        SizeChanged += (_, _) => { Classes.Set("compact-page", Bounds.Width < 1100); PageHost.FinishTransition(); UpdatePage(); UpdateSidebar(userInitiated: false); };
         Activated += (_, _) => Classes.Set("inactive", false);
         Deactivated += (_, _) => Classes.Set("inactive", true);
         Opened += (_,_) =>
@@ -194,7 +194,7 @@ public sealed partial class MainWindow : Window
     private void UpdatePage()
     {
         if (_model is null) return;
-        PageHost.Content = _model.ShellPage switch
+        Control page = _model.ShellPage switch
         {
             "showcase" when _model.IsDevShowcaseEnabled => _showcase ??= new UiShowcaseView {DataContext=new UiShowcaseViewModel(_model)},
             "home" => _home,
@@ -207,6 +207,7 @@ public sealed partial class MainWindow : Window
             "multiplayer" => _multiplayer ??= new MultiplayerView { DataContext = _model },
             _ => _library
         };
+        PageHost.SetPage(page,_model.IsHomePage?default:Bounds.Width<1100?new Thickness(20,20,20,16):new Thickness(32,24,32,20));
     }
 
     private void UpdateOverlay()

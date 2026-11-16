@@ -46,6 +46,7 @@ internal static class Program
         Directory.CreateDirectory(root);
         if(args.Contains("--navigation-native"))return ShellNativeChecks.Start(root,navigation:true);
         if(args.Contains("--resource-native"))return ShellNativeChecks.Start(root,resources:true);
+        if(args.Contains("--page-size-native"))return ShellNativeChecks.Start(root,pageSize:true);
         if(args.Contains("--controls-native"))return ShellNativeChecks.Start(root,controls:true);
         if(args.Contains("--motion-preview-native"))return ShellNativeChecks.Start(root,preview:true);
         if(args.Contains("--workbench-native"))return ShellNativeChecks.Start(root,workbench:true);

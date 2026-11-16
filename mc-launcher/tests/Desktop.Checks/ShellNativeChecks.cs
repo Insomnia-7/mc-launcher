@@ -19,14 +19,14 @@ internal static class ShellNativeChecks
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     private static nint Pack(PixelPoint point) => (nint)((point.X & 0xffff) | ((point.Y & 0xffff) << 16));
 
-    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false, bool navigation = false, bool preview = false, bool controls = false, bool resources = false)
+    public static int Start(string root, bool sidebar = false, bool pageMotion = false, bool home = false, bool components = false, bool showcase = false, bool redesign = false, bool workbench = false, bool navigation = false, bool preview = false, bool controls = false, bool resources = false, bool pageSize = false)
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This check uses Windows native hit testing.");
         Environment.SetEnvironmentVariable("MCLAUNCHER_HOME", Path.Combine(root, "data"));
         Environment.SetEnvironmentVariable("MCLAUNCHER_GAME_ROOT", Path.Combine(root, "game"));
         AppBuilder.Configure<App>().UsePlatformDetect().SetupWithoutStarting();
         AppPaths.EnsureCreated();
-        if (home || redesign || workbench || navigation || preview)
+        if (home || redesign || workbench || navigation || preview || pageSize)
         {
             foreach (var number in Enumerable.Range(1,12))
             {
@@ -36,7 +36,7 @@ internal static class ShellNativeChecks
             }
         }
         var resourceFixture=new ResourceFixture{CatalogCount=160};
-        using var services = LauncherServices.Create(s=>{if(resources){s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture);s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture);s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture);s.AddSingleton<Launcher.Application.Abstractions.IVersionMetaClient>(new VersionInstallFixture());}});
+        using var services = LauncherServices.Create(s=>{if(resources || pageSize){s.AddSingleton<Launcher.Application.Mods.IModrinthClient>(resourceFixture);s.AddSingleton<Launcher.Application.Mods.ICurseForgeClient>(resourceFixture);s.AddSingleton<Launcher.Application.Mods.IResourcePresentationClient>(resourceFixture);s.AddSingleton<Launcher.Application.Abstractions.IVersionMetaClient>(new VersionInstallFixture());}});
         var model = services.GetRequiredService<MainViewModel>();
         using var stop = new CancellationTokenSource();
         var window = new MainWindow { DataContext = model, Width = 1180, Height = 800 };
@@ -55,6 +55,7 @@ internal static class ShellNativeChecks
             try
             {
                 if (resources) {await ResourceInteractionChecks.RunNative(model,window,resourceFixture,root);exit=0;return;}
+                if (pageSize) {await PageSizeChecks.RunNative(model,window,root);exit=0;return;}
                 if (controls) { await ControlStyleChecks.Run(model,window,root,ms=>Task.Delay(ms),Check,native:true); Console.WriteLine($"{passed} native control style checks passed");exit=0;return; }
                 if (navigation) { await NavigationFixChecks.RunNative(model,window,root); exit=0; return; }
                 if (preview) { await VerticalTransitionPreview.Record(model,window,root); exit=0; return; }

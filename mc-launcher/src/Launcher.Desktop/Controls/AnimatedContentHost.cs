@@ -3,22 +3,21 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
-using Avalonia.Data;
 using Avalonia.Media;
-using Avalonia.Styling;
+using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace Launcher.Desktop.Controls;
 
-/// <summary>Cards fade out before the next page fades in; old and new text never overlap.</summary>
+/// <summary>Fixed page layouts fade/scale separately; the old page never reflows into the new margins.</summary>
 public sealed class AnimatedContentHost : Grid
 {
     public static readonly StyledProperty<Control?> ContentProperty = AvaloniaProperty.Register<AnimatedContentHost,Control?>(nameof(Content));
     private readonly ContentPresenter _outgoing=new(){IsVisible=false,IsHitTestVisible=false,ClipToBounds=true};
     private readonly ContentPresenter _incoming=new(){ClipToBounds=true};
     private CancellationTokenSource? _switchCts;
-    private readonly List<IDisposable> _fadeValues=[];
+    private Thickness _contentMargin;
     private int _switchVersion;
     private bool _attached;
     public bool IsTransitioning {get;private set;}
@@ -27,8 +26,16 @@ public sealed class AnimatedContentHost : Grid
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if(change.Property==ContentProperty)SwitchPage(change.GetOldValue<Control?>(),change.GetNewValue<Control?>());
-        else if(change.Property==BoundsProperty&&IsTransitioning)FinishTransition();
+        if(change.Property==ContentProperty)SwitchPage(change.GetNewValue<Control?>());
+    }
+    public void SetPage(Control? page,Thickness margin)
+    {
+        _contentMargin=margin;
+        if(ReferenceEquals(Content,page))
+        {
+            if(_incoming.Margin!=margin){FinishTransition();_incoming.Margin=margin;}
+        }
+        else Content=page;
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e){base.OnAttachedToVisualTree(e);_attached=true;MotionPreferences.Changed+=MotionChanged;}
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e){_attached=false;MotionPreferences.Changed-=MotionChanged;FinishTransition();base.OnDetachedFromVisualTree(e);}
@@ -37,22 +44,31 @@ public sealed class AnimatedContentHost : Grid
     {
         ++_switchVersion;IsTransitioning=false;Clear(_outgoing);
         _switchCts?.Cancel();_switchCts?.Dispose();_switchCts=null;
-        foreach(var value in _fadeValues)value.Dispose();_fadeValues.Clear();
         Normalize(_incoming);_incoming.IsVisible=_incoming.Content is not null;_incoming.IsHitTestVisible=true;
     }
     private static void Normalize(Control presenter){presenter.Transitions=null;presenter.Opacity=1;presenter.RenderTransform=new TranslateTransform();}
-    private static void Clear(ContentPresenter presenter){Normalize(presenter);presenter.Content=null;presenter.UpdateChild();presenter.IsVisible=false;}
-    private void SwitchPage(Control? previous,Control? next)
+    private static void Clear(ContentPresenter presenter){presenter.IsVisible=false;presenter.Content=null;presenter.UpdateChild();Normalize(presenter);presenter.Width=double.NaN;presenter.Height=double.NaN;presenter.Margin=default;}
+    private void SwitchPage(Control? next)
     {
+        var shown=_outgoing.Content is not null&&_outgoing.IsVisible?_outgoing:_incoming;
+        var previous=shown.Content as Control;var bounds=shown.Bounds;var margin=shown.Margin;
+        var opacity=shown.Opacity;var scale=shown.RenderTransform?.Value.M11??1;
         FinishTransition();Clear(_incoming);
         _incoming.Background=_outgoing.Background=Background;
-        var animate=_attached&&MotionPreferences.Enabled&&previous is not null&&next is not null;
-        if(animate){_outgoing.Content=previous;_outgoing.IsVisible=true;_outgoing.UpdateChild();}
+        var animate=_attached&&MotionPreferences.Enabled&&previous is not null&&next is not null&&!ReferenceEquals(previous,next)&&bounds.Width>0&&bounds.Height>0;
+        if(animate)
+        {
+            _outgoing.Margin=margin;_outgoing.Width=bounds.Width;_outgoing.Height=bounds.Height;
+            _outgoing.HorizontalAlignment=Avalonia.Layout.HorizontalAlignment.Left;_outgoing.VerticalAlignment=Avalonia.Layout.VerticalAlignment.Top;
+            _outgoing.Opacity=opacity;_outgoing.RenderTransformOrigin=RelativePoint.Center;_outgoing.RenderTransform=new ScaleTransform(scale,scale);
+            _outgoing.Content=previous;_outgoing.IsVisible=true;_outgoing.UpdateChild();
+        }
+        _incoming.Margin=_contentMargin;
         _incoming.Content=next;_incoming.IsVisible=next is not null;_incoming.UpdateChild();
         if(!animate)return;
         IsTransitioning=true;_incoming.Opacity=0;_incoming.IsHitTestVisible=false;
         _switchCts=new CancellationTokenSource();var token=_switchCts.Token;var version=_switchVersion;
-        Dispatcher.UIThread.Post(()=>{if(version==_switchVersion&&!token.IsCancellationRequested)_=FadePagesAsync(previous!,next!,version,token);},DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(()=>{if(version==_switchVersion&&!token.IsCancellationRequested)_=FadePagesAsync(version,token);},DispatcherPriority.Loaded);
     }
     private static bool IsCard(Control control)=>control.Classes.Contains("card")||control.Classes.Contains("tile")||control is ListBoxItem||control.Name=="HomeHeroBanner";
     internal static Control[] FadeTargets(Control page)
@@ -61,32 +77,26 @@ public sealed class AnimatedContentHost : Grid
             .Where(c=>!c.GetVisualAncestors().OfType<Control>().TakeWhile(p=>p!=page).Any(IsCard)).ToArray();
         return cards.Length>0?cards:[page];
     }
-    private Task FadeCardsAsync(Control page,bool entering,CancellationToken token)
+    private static async Task FadePageAsync(ContentPresenter presenter,bool entering,CancellationToken token)
     {
-        return Task.WhenAll(FadeTargets(page).Select((card,index)=>
-        {
-            var delay=entering?Math.Min(index*10,60):0;
-            var opacity=card.Opacity;
-            var from=entering?0:opacity;var to=entering?opacity:0;
-            // Keep the endpoint on a private animation target, not on the card's local value.
-            // The binding stays alive until detachment and preserves the card's original styles/bindings.
-            var fade=new Border{Opacity=from};
-            _fadeValues.Add(card.Bind(OpacityProperty,fade.GetObservable(OpacityProperty),BindingPriority.Animation));
-            var animation=new Animation{Duration=MotionTokens.PageSwitch-TimeSpan.FromMilliseconds(delay),Delay=TimeSpan.FromMilliseconds(delay),Easing=new SineEaseInOut(),FillMode=FillMode.Both};
-            animation.Children.Add(new KeyFrame{Cue=new Cue(0),Setters={new Setter(OpacityProperty,from)}});
-            animation.Children.Add(new KeyFrame{Cue=new Cue(1),Setters={new Setter(OpacityProperty,to)}});
-            return animation.RunAsync(fade,token);
-        }));
+        var from=entering?0:presenter.Opacity;var to=entering?1:0;
+        var startScale=entering?0.985:presenter.RenderTransform!.Value.M11;var endScale=entering?1:0.985;
+        presenter.Transitions=null;presenter.Opacity=from;presenter.RenderTransformOrigin=RelativePoint.Center;
+        presenter.RenderTransform=TransformOperations.Parse(FormattableString.Invariant($"scale({startScale})"));
+        presenter.Transitions=[new DoubleTransition{Property=OpacityProperty,Duration=MotionTokens.PageSwitch,Easing=new SineEaseInOut()},new TransformOperationsTransition{Property=RenderTransformProperty,Duration=MotionTokens.PageSwitch,Easing=new SineEaseInOut()}];
+        // Private presenters own the endpoints, so removing a transition never restores a visible old page.
+        presenter.Opacity=to;presenter.RenderTransform=TransformOperations.Parse(FormattableString.Invariant($"scale({endScale})"));
+        await Task.Delay(MotionTokens.PageSwitch,token);
     }
-    private async Task FadePagesAsync(Control previous,Control next,int version,CancellationToken token)
+    private async Task FadePagesAsync(int version,CancellationToken token)
     {
         try
         {
-            await FadeCardsAsync(previous,false,token);
+            await FadePageAsync(_outgoing,false,token);
             if(version!=_switchVersion||token.IsCancellationRequested)return;
             Clear(_outgoing);
-            var entrance=FadeCardsAsync(next,true,token);
-            _incoming.Opacity=1;_incoming.IsHitTestVisible=true;
+            var entrance=FadePageAsync(_incoming,true,token);
+            _incoming.IsHitTestVisible=true;
             await entrance;
         }
         catch(OperationCanceledException)when(token.IsCancellationRequested){}

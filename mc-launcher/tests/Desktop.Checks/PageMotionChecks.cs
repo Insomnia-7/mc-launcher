@@ -13,7 +13,7 @@ internal static class PageMotionChecks
 {
     private static ContentPresenter[] Layers(AnimatedContentHost host) => host.Children.OfType<ContentPresenter>().ToArray();
     private static bool Settled(AnimatedContentHost host) => !host.IsTransitioning && Layers(host).Count(x => x.Content is not null) == 1 &&
-        Layers(host).Where(x => x.Content is not null).All(x => x.Opacity == 1 && x.RenderTransform!.Value.M32 == 0);
+        Layers(host).Where(x => x.Content is not null).All(x => x.Opacity == 1 && x.RenderTransform!.Value.M32 == 0 && x.RenderTransform.Value.M11 == 1);
 
     public static void Run(MainViewModel model, MainWindow window, Action<int> pump, Action<string,bool> check, Func<int> requests)
     {
@@ -103,19 +103,19 @@ internal static class PageMotionChecks
         var library=host.Content;
         model.OpenAppearanceCommand.Execute(null);
         var layers=Layers(host);
-        Control[] cards=[];var observed=false;
+        var observed=false;
         for(var i=0;i<20;i++)
         {
             await Task.Delay(12);
-            if(layers[0].Content is Control old){cards=AnimatedContentHost.FadeTargets(old);observed=cards.Any(c=>c.Opacity>0.01&&c.Opacity<0.99);}
+            observed=layers[0].Opacity is >0.01 and <0.99;
             if(observed)break;
         }
-        Check("真实窗口旧卡片存在淡出中间帧",observed);
+        Check("真实窗口旧页存在淡出中间帧",observed);
         Check("淡出期间新页完全隐藏不叠印",layers[1].Opacity==0&&layers[0].IsVisible);
         Check("卡片淡入淡出不发生垂直位移",layers.All(x=>x.RenderTransform!.Value.M32==0));
         Check("宿主实色背景保留且退场不接受点击",host.Background is ISolidColorBrush {Color.A:255}&&!layers[0].IsHitTestVisible&&!layers[1].IsHitTestVisible);
         var entered=false;
-        for(var i=0;i<45;i++){await Task.Delay(12);if(layers[0].Content is null&&layers[1].Content is Control page&&AnimatedContentHost.FadeTargets(page).Any(c=>c.Opacity>0.01&&c.Opacity<0.99)){entered=true;break;}}
+        for(var i=0;i<45;i++){await Task.Delay(12);if(layers[0].Content is null&&layers[1].Opacity is >0.01 and <0.99){entered=true;break;}}
         Check("真实窗口新卡片存在淡入中间帧",entered);
         Check("新卡片淡入前旧页已从渲染树移除",layers[0].Content is null&&library!.GetVisualAncestors().OfType<Window>().Any()==false);
         using(var picture=new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96)))
@@ -139,26 +139,26 @@ internal static class PageMotionChecks
         var home=host.Content!;var outgoing=AnimatedContentHost.FadeTargets(home);
         var bound=outgoing[0];var source=new Border{Opacity=0.65};
         using var opacityBinding=bound.Bind(Visual.OpacityProperty,source.GetObservable(Visual.OpacityProperty));
-        var last=outgoing.ToDictionary(c=>c,c=>c.Opacity);var rebounds=0;var entrancePrepared=false;
+        var last=layers[0].Opacity;var rebounds=0;var entrancePrepared=false;
         void ObserveFade(object? sender,AvaloniaPropertyChangedEventArgs e)
         {
-            if(e.Property!=Visual.OpacityProperty||sender is not Control card||!ReferenceEquals(layers[0].Content,home)||!layers[0].IsVisible)return;
-            if(card.Opacity>last[card]+0.01)rebounds++;
-            last[card]=card.Opacity;
+            if(e.Property!=Visual.OpacityProperty||!ReferenceEquals(layers[0].Content,home)||!layers[0].IsVisible)return;
+            if(layers[0].Opacity>last+0.01)rebounds++;
+            last=layers[0].Opacity;
         }
         void ObserveEntrance(object? sender,AvaloniaPropertyChangedEventArgs e)
         {
-            if(e.Property==Visual.OpacityProperty&&layers[1].Opacity==1&&host.IsTransitioning&&layers[0].Content is null&&layers[1].Content is Control page)
-                entrancePrepared=AnimatedContentHost.FadeTargets(page).All(c=>c.Opacity==0);
+            if(e.Property==Visual.OpacityProperty&&layers[1].Opacity is >0 and <1&&host.IsTransitioning&&layers[0].Content is null)
+                entrancePrepared=layers[1].RenderTransform!.Value.M11 is >=0.985 and <=1;
         }
-        foreach(var card in outgoing)card.PropertyChanged+=ObserveFade;
+        layers[0].PropertyChanged+=ObserveFade;
         layers[1].PropertyChanged+=ObserveEntrance;
         model.ShowInstancesCommand.Execute(null);await Task.Delay(380);await WaitSettled();
-        foreach(var card in outgoing)card.PropertyChanged-=ObserveFade;
+        layers[0].PropertyChanged-=ObserveFade;
         layers[1].PropertyChanged-=ObserveEntrance;
         File.WriteAllText(Path.Combine(root,"fade-continuity.json"),System.Text.Json.JsonSerializer.Serialize(new{outgoingCards=outgoing.Length,opacityRebounds=rebounds,entrancePrepared}));
         Check("旧卡片淡出至移除期间没有恢复亮度的一帧",outgoing.Length>=5&&rebounds==0);
-        Check("新页显示前所有入场卡片已准备透明起点",entrancePrepared);
+        Check("新页从透明与轻缩放起点入场",entrancePrepared);
         source.Opacity=0.45;
         Check("转场完成保留卡片原有透明度绑定",Math.Abs(bound.Opacity-0.45)<0.001);
         opacityBinding.Dispose();

@@ -17,10 +17,6 @@
     <Style Selector="Button.shell-nav.active"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/><Setter Property="Background" Value="Transparent"/></Style>
     <Style Selector="Button.shell-nav.active /template/ Border#Surface"><Setter Property="Background" Value="Transparent"/></Style>
     <Style Selector="ToggleButton.sidebar-toggle"><Setter Property="Width" Value="32"/><Setter Property="Height" Value="32"/><Setter Property="MinHeight" Value="32"/><Setter Property="Padding" Value="8"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
-    <Style Selector="Grid#PageContent"><Setter Property="Margin" Value="32,24,32,20"/></Style>
-    <Style Selector="Grid#PageContent.home"><Setter Property="Margin" Value="0"/></Style>
-    <Style Selector="Window.compact-page Grid#PageContent"><Setter Property="Margin" Value="20,20,20,16"/></Style>
-    <Style Selector="Window.compact-page Grid#PageContent.home"><Setter Property="Margin" Value="0"/></Style>
     <Style Selector="Window.maximized Border#WindowOutline"><Setter Property="IsVisible" Value="False"/></Style>
   </Window.Styles>
   <Window.KeyBindings>
@@ -92,7 +88,7 @@
       </Grid>
     </Border>
     <Border x:Name="SidebarScrim" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{DynamicResource ScrimBrush}" IsVisible="False" ZIndex="8" PointerPressed="OnScrimPressed"/>
-    <Grid x:Name="PageContent" Grid.Row="1" Grid.Column="1" Classes.home="{Binding IsHomePage}"><icons:AnimatedContentHost x:Name="PageHost" Background="{DynamicResource BgBrush}"/></Grid>
+    <Grid x:Name="PageContent" Grid.Row="1" Grid.Column="1"><icons:AnimatedContentHost x:Name="PageHost" Background="{DynamicResource BgBrush}"/></Grid>
     <Button x:Name="SidebarHamburger" Grid.Row="1" Grid.Column="1" Classes="icon" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Top" ZIndex="7" IsVisible="False" Click="OpenOverlaySidebar"><icons:UiIcon Kind="ActionMenu"/></Button>
     <Border x:Name="StatusBar" Grid.Row="2" Grid.Column="1" Padding="24,8" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0">
       <Border.IsVisible><MultiBinding Converter="{x:Static conv:BoolConverters.Or}"><Binding Path="HasSidebarTasks"/><Binding Path="HasStatusText"/></MultiBinding></Border.IsVisible>
