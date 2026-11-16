@@ -133,6 +133,37 @@ internal static class PageMotionChecks
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");model.ShowInstancesCommand.Execute(null);await Task.Delay(20);
         window.WindowState=WindowState.Minimized;await Task.Delay(380);window.WindowState=WindowState.Normal;await Task.Delay(100);
         Check("最小化中断后还原页面仍可见",Settled(host));
+        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");
+        model.ShowHomeCommand.Execute(null);await Task.Delay(300);
+        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");
+        var home=host.Content!;var outgoing=AnimatedContentHost.FadeTargets(home);
+        var bound=outgoing[0];var source=new Border{Opacity=0.65};
+        using var opacityBinding=bound.Bind(Visual.OpacityProperty,source.GetObservable(Visual.OpacityProperty));
+        var last=outgoing.ToDictionary(c=>c,c=>c.Opacity);var rebounds=0;var entrancePrepared=false;
+        void ObserveFade(object? sender,AvaloniaPropertyChangedEventArgs e)
+        {
+            if(e.Property!=Visual.OpacityProperty||sender is not Control card||!ReferenceEquals(layers[0].Content,home)||!layers[0].IsVisible)return;
+            if(card.Opacity>last[card]+0.01)rebounds++;
+            last[card]=card.Opacity;
+        }
+        void ObserveEntrance(object? sender,AvaloniaPropertyChangedEventArgs e)
+        {
+            if(e.Property==Visual.OpacityProperty&&layers[1].Opacity==1&&host.IsTransitioning&&layers[0].Content is null&&layers[1].Content is Control page)
+                entrancePrepared=AnimatedContentHost.FadeTargets(page).All(c=>c.Opacity==0);
+        }
+        foreach(var card in outgoing)card.PropertyChanged+=ObserveFade;
+        layers[1].PropertyChanged+=ObserveEntrance;
+        model.ShowInstancesCommand.Execute(null);await Task.Delay(380);await WaitSettled();
+        foreach(var card in outgoing)card.PropertyChanged-=ObserveFade;
+        layers[1].PropertyChanged-=ObserveEntrance;
+        File.WriteAllText(Path.Combine(root,"fade-continuity.json"),System.Text.Json.JsonSerializer.Serialize(new{outgoingCards=outgoing.Length,opacityRebounds=rebounds,entrancePrepared}));
+        Check("旧卡片淡出至移除期间没有恢复亮度的一帧",outgoing.Length>=5&&rebounds==0);
+        Check("新页显示前所有入场卡片已准备透明起点",entrancePrepared);
+        source.Opacity=0.45;
+        Check("转场完成保留卡片原有透明度绑定",Math.Abs(bound.Opacity-0.45)<0.001);
+        opacityBinding.Dispose();
+        model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");model.ShowHomeCommand.Execute(null);await Task.Delay(100);
+        Check("重新进入主页所有卡片恢复原始透明度",outgoing.All(c=>c.Opacity>0.99));
         Console.WriteLine($"{passed} native page motion checks passed");
     }
 }

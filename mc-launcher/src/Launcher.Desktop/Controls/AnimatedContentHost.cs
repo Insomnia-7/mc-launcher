@@ -3,6 +3,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Data;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -17,6 +18,7 @@ public sealed class AnimatedContentHost : Grid
     private readonly ContentPresenter _outgoing=new(){IsVisible=false,IsHitTestVisible=false,ClipToBounds=true};
     private readonly ContentPresenter _incoming=new(){ClipToBounds=true};
     private CancellationTokenSource? _switchCts;
+    private readonly List<IDisposable> _fadeValues=[];
     private int _switchVersion;
     private bool _attached;
     public bool IsTransitioning {get;private set;}
@@ -33,8 +35,10 @@ public sealed class AnimatedContentHost : Grid
     private void MotionChanged(){if(!MotionPreferences.Enabled)FinishTransition();}
     public void FinishTransition()
     {
-        ++_switchVersion;IsTransitioning=false;_switchCts?.Cancel();_switchCts?.Dispose();_switchCts=null;
-        Clear(_outgoing);Normalize(_incoming);_incoming.IsVisible=_incoming.Content is not null;_incoming.IsHitTestVisible=true;
+        ++_switchVersion;IsTransitioning=false;Clear(_outgoing);
+        _switchCts?.Cancel();_switchCts?.Dispose();_switchCts=null;
+        foreach(var value in _fadeValues)value.Dispose();_fadeValues.Clear();
+        Normalize(_incoming);_incoming.IsVisible=_incoming.Content is not null;_incoming.IsHitTestVisible=true;
     }
     private static void Normalize(Control presenter){presenter.Transitions=null;presenter.Opacity=1;presenter.RenderTransform=new TranslateTransform();}
     private static void Clear(ContentPresenter presenter){Normalize(presenter);presenter.Content=null;presenter.UpdateChild();presenter.IsVisible=false;}
@@ -57,16 +61,21 @@ public sealed class AnimatedContentHost : Grid
             .Where(c=>!c.GetVisualAncestors().OfType<Control>().TakeWhile(p=>p!=page).Any(IsCard)).ToArray();
         return cards.Length>0?cards:[page];
     }
-    private static Task FadeCardsAsync(Control page,bool entering,CancellationToken token)
+    private Task FadeCardsAsync(Control page,bool entering,CancellationToken token)
     {
         return Task.WhenAll(FadeTargets(page).Select((card,index)=>
         {
             var delay=entering?Math.Min(index*10,60):0;
-            var animation=new Animation{Duration=MotionTokens.PageSwitch-TimeSpan.FromMilliseconds(delay),Delay=TimeSpan.FromMilliseconds(delay),Easing=new SineEaseInOut(),FillMode=FillMode.Backward};
-            animation.Children.Add(new KeyFrame{Cue=new Cue(0),Setters={new Setter(OpacityProperty,entering?0:card.Opacity)}});
-            animation.Children.Add(new KeyFrame{Cue=new Cue(1),Setters={new Setter(OpacityProperty,entering?card.Opacity:0)}});
-            // Animation priority leaves bindings, disabled opacity and hover styles intact on completion/cancel.
-            return animation.RunAsync(card,token);
+            var opacity=card.Opacity;
+            var from=entering?0:opacity;var to=entering?opacity:0;
+            // Keep the endpoint on a private animation target, not on the card's local value.
+            // The binding stays alive until detachment and preserves the card's original styles/bindings.
+            var fade=new Border{Opacity=from};
+            _fadeValues.Add(card.Bind(OpacityProperty,fade.GetObservable(OpacityProperty),BindingPriority.Animation));
+            var animation=new Animation{Duration=MotionTokens.PageSwitch-TimeSpan.FromMilliseconds(delay),Delay=TimeSpan.FromMilliseconds(delay),Easing=new SineEaseInOut(),FillMode=FillMode.Both};
+            animation.Children.Add(new KeyFrame{Cue=new Cue(0),Setters={new Setter(OpacityProperty,from)}});
+            animation.Children.Add(new KeyFrame{Cue=new Cue(1),Setters={new Setter(OpacityProperty,to)}});
+            return animation.RunAsync(fade,token);
         }));
     }
     private async Task FadePagesAsync(Control previous,Control next,int version,CancellationToken token)
@@ -75,8 +84,10 @@ public sealed class AnimatedContentHost : Grid
         {
             await FadeCardsAsync(previous,false,token);
             if(version!=_switchVersion||token.IsCancellationRequested)return;
-            Clear(_outgoing);_incoming.Opacity=1;_incoming.IsHitTestVisible=true;
-            await FadeCardsAsync(next,true,token);
+            Clear(_outgoing);
+            var entrance=FadeCardsAsync(next,true,token);
+            _incoming.Opacity=1;_incoming.IsHitTestVisible=true;
+            await entrance;
         }
         catch(OperationCanceledException)when(token.IsCancellationRequested){}
         finally{if(version==_switchVersion)FinishTransition();}
