@@ -50,3 +50,15 @@
 - [.NET 裁剪选项](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options)
 - [.NET SDK Bundle 压缩阈值实现](https://github.com/dotnet/runtime/blob/v10.0.0/src/installer/managed/Microsoft.NET.HostModel/Bundle/Bundler.cs)
 - [Parallel.ForEachAsync 的并行选项](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.parallel.foreachasync?view=net-10.0)
+
+## 已发布构建与远端验收
+
+1.0.0-preview.22 已发布：[GitHub Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.22)。
+
+- 构建源码：eda351aa12f313ece85db939f3e584d12cb43fd5，标签指向该提交；后续文档提交不改变 EXE。
+- Windows 单文件：25735418 字节，SHA-256：53cbd455fc4255a4a6db913deb897396d3065092bfb6349b9906a4c384df21c8。
+- 1,699 项检查通过（Core 974、Horizon 协议 30、UI 695），标准检查宿主使用实际发布的 Launcher 与密码库程序集，另通过架构护栏、完整裁剪框架的真实单文件启动及正常退出。
+- 29 个草稿附件逐一核对 GitHub SHA-256 后公开；生产更新客户端重新从公开标签下载清单和程序，受信签名、版本判断、大小与文件哈希均通过。
+- 发布渠道为 Pre-release；无正式版时 releases/latest 返回 404，不占用正式版入口。其他平台沿用先前受信签名及原始版本链接。
+
+验收范围仍限本机 Windows 11；其他物理环境及真实 Rust 游戏会话不在本批已通过范围内。GitHub 发布工作流未被触发，本批执行的是本机发布检查与实际 GitHub 远端验证。
