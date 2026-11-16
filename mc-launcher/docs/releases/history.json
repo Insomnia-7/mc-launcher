@@ -738,5 +738,43 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.19",
+    "date": "2026-11-16",
+    "title": "Rust 客户端与导航职责拆分",
+    "tag": "desktop-v1.0.0-preview.19",
+    "sourceCommit": "49a0f14765f1835b3765e83c9fb0e7e0421f7478",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/49a0f14765f1835b3765e83c9fb0e7e0421f7478",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.19",
+    "changes": "独立 Horizon Nightly 安装/导入、资源准备与启动；版本绑定验签、账号权益与stdin会话。网络/设置职责及侧栏分离。实际官方接口、协议夹具、Java与页面回归通过，真实Horizon游戏实测待合法账号。",
+    "platform": "Windows x64",
+    "bytes": 31718030,
+    "sha256": "30bbfaa62c2f9add28659f9a22b7704e4264dfaef796e8fd4b76c1343ba14898",
+    "binaryProductVersion": "1.0.0-preview.19+49a0f14765f1835b3765e83c9fb0e7e0421f7478",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 880,
+      "horizonProtocol": 30,
+      "navigation-split": 28,
+      "horizon": 19,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 9,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1487.0,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

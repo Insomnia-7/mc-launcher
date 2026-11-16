@@ -4,6 +4,8 @@
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.19)。
 
+[源码 49a0f14](https://github.com/Insomnia-7/mc-launcher/commit/49a0f14765f1835b3765e83c9fb0e7e0421f7478)。Windows单文件31718030字节，SHA-256：30bbfaa62c2f9add28659f9a22b7704e4264dfaef796e8fd4b76c1343ba14898。1,487项检查、架构护栏、裁剪程序集、单文件启动及生产更新验签通过。
+
 - 主页和实例页增加 Rust 客户端入口，保留 Java 启动链及模组加载器。
 - 支持 Horizon 官方 Nightly 的版本绑定 Ed25519 签名与安装包 SHA-256 验证，亦可导入完整本地构建；查询真实 Launch API 后建立独立 Rust 实例。
 - 登录拥有 Java 版的微软账号后可准备资源并启动，首次转换自动准备对应 Java；会话只经标准输入传递，日志脱敏。取消准备终止工具进程，实例和存档保留。
