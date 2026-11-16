@@ -19,7 +19,8 @@ internal static class NavigationFixChecks
         foreach(var page in pages)
         {
             var previous=host.Content;page();pump(380);
-            for(var attempt=0;attempt<150 && host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)>1;attempt++)pump(10);
+            // Both fade phases and deferred visual detachment must finish before checking ownership.
+            for(var attempt=0;attempt<150 && (host.IsTransitioning || host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)>1 || !ReferenceEquals(previous,host.Content) && previous!.GetVisualAncestors().OfType<Window>().Any());attempt++)pump(10);
             check("转场结束不保留上一个页面的视觉父级",ReferenceEquals(previous,host.Content) || previous!.GetVisualAncestors().OfType<Window>().Any()==false);
             check("转场结束仅当前栏目有内容",host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)==1);
         }
@@ -43,7 +44,7 @@ internal static class NavigationFixChecks
         T Find<T>(string name)where T:Control=>window.GetVisualDescendants().OfType<T>().Single(c=>c.Name==name);
         window.Width=1280;window.Height=800;model.IsSidebarCollapsed=false;model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");await Task.Delay(350);
         var host=Find<AnimatedContentHost>("PageHost");var previous=host.Content;model.ShowInstancesCommand.Execute(null);await Task.Delay(380);
-        for(var i=0;i<150 && (ReferenceEquals(previous,host.Content) || host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)>1);i++)await Task.Delay(10);
+        for(var i=0;i<150 && (ReferenceEquals(previous,host.Content) || host.IsTransitioning || host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)>1 || previous!.GetVisualAncestors().OfType<Window>().Any());i++)await Task.Delay(10);
         Check("原生转场结束旧栏目脱离渲染树",previous!.GetVisualAncestors().OfType<Window>().Any()==false && host.Children.OfType<ContentPresenter>().Count(c=>c.Content is not null)==1);
         model.IsSidebarCollapsed=true;await Task.Delay(450);model.OpenTaskCenterCommand.Execute(null);await Task.Delay(250);
         var indicator=Find<Border>("NavIndicator");var transform=(TranslateTransform)indicator.RenderTransform!;var start=transform.X;
