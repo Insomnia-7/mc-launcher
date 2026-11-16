@@ -902,5 +902,48 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.23",
+    "date": "2026-11-17",
+    "title": "启动就绪与导航高亮修复",
+    "tag": "desktop-v1.0.0-preview.23",
+    "sourceCommit": "3097043ee8ad6fcc5b8e74118ee70c9eadda287c",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/3097043ee8ad6fcc5b8e74118ee70c9eadda287c",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.23",
+    "changes": "将正版头像、壁纸及导航布局准备提前到图标阶段，主窗口就绪后显示；修复入场高亮被裁短；头像请求可取消且八秒超时，保留原有动效及精简配置。",
+    "platform": "Windows x64",
+    "bytes": 25736278,
+    "sha256": "dc1a5d8124af70cfd47e5ff87840aa17966087fbbfc71f4186130c09d8799b11",
+    "binaryProductVersion": "1.0.0-preview.23+3097043ee8ad6fcc5b8e74118ee70c9eadda287c",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 974,
+      "horizonProtocol": 30,
+      "startup-native": 29,
+      "catalog-refinement": 17,
+      "page-size-native": 56,
+      "resource-interaction": 11,
+      "resource-native": 13,
+      "navigation-split": 28,
+      "horizon": 19,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 15,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1713,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

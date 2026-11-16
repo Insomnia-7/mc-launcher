@@ -4,6 +4,8 @@
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.23)。
 
+[源码 3097043](https://github.com/Insomnia-7/mc-launcher/commit/3097043ee8ad6fcc5b8e74118ee70c9eadda287c)。Windows 单文件 25736278 字节，SHA-256：dc1a5d8124af70cfd47e5ff87840aa17966087fbbfc71f4186130c09d8799b11。1713 项检查、架构护栏、实际发布程序集、单文件启动和生产更新验签通过。
+
 - 正版头像、用户壁纸和导航布局提前到启动图标阶段准备，准备完成后再显示主窗口并播放原有分区入场动画；图标最短停留 650ms。
 - 头像请求在后台执行，最长等待 8 秒；超时或服务不可用时使用账号首字母，不阻止进入启动器。关闭启动图标会取消请求。
 - 导航高亮按布局坐标定位，忽略按钮的临时入场位移，修复主页高亮被裁短后突然伸长的现象。
