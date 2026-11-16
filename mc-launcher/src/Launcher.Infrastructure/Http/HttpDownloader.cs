@@ -65,7 +65,7 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
         var errors = new ConcurrentBag<(DownloadEntry Entry, Exception Error)>();
         var stopwatch = Stopwatch.StartNew();
 
-        using var gate = new SemaphoreSlim(_options.MaxConcurrency);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(_options.MaxConcurrency);
 
         var cleanupFailures=new ConcurrentBag<string>();
         try
@@ -75,7 +75,6 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                 new ParallelOptions { MaxDegreeOfParallelism = _options.MaxConcurrency, CancellationToken = ct },
                 async (entry, token) =>
                 {
-                    await gate.WaitAsync(token).ConfigureAwait(false);
                     try
                     {
                         if (Path.IsPathRooted(entry.RelativePath)) throw new InvalidDataException("下载目标必须是相对路径。");
@@ -106,10 +105,6 @@ public sealed class HttpDownloader(HttpClient http, DownloadOptions? options = n
                     catch (Exception ex)
                     {
                         errors.Add((entry, ex));
-                    }
-                    finally
-                    {
-                        gate.Release();
                     }
                 }).ConfigureAwait(false);
         }

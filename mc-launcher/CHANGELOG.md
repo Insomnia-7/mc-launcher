@@ -1,5 +1,16 @@
 # 方隅版本记录
 
+## 1.0.0-preview.22 · 精简单文件体积
+
+2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.22)。
+
+- 发布包排除已无运行时引用的旧背景图，源码素材保留；当前首页横幅、品牌图标和加载器图标不变。
+- Windows 精简配置仅对 BouncyCastle 与 Avalonia 设计器支持库追加按引用裁剪，保留 Ed25519 校验及全部业务模型、JSON/DI 成员。
+- 下载器沿用 Parallel.ForEachAsync 的并发上限，移除重复的信号量等待与释放；保持正整数参数约束、取消、断点续传、校验与重试行为。
+- 启动和切页动画、中文与字体支持、渲染库及无需另装 .NET 的单文件使用方式保持不变。
+
+体积组成、测量方法与验证范围见 docs/desktop-size-audit.md。
+
 ## 1.0.0-preview.21 · 透明启动标识与分区入场
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.21)。
