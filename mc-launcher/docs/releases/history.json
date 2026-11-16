@@ -816,5 +816,48 @@
       "singleFileStartup": true,
       "trimmedLauncherAssemblies": true
     }
+  },
+  {
+    "version": "1.0.0-preview.21",
+    "date": "2026-11-16",
+    "title": "无黑边透明启动标识、分区入场与资源目录修复",
+    "tag": "desktop-v1.0.0-preview.21",
+    "sourceCommit": "74149f21a8cb921cb00265bc9702583f9c8a9977",
+    "sourceUrl": "https://github.com/Insomnia-7/mc-launcher/commit/74149f21a8cb921cb00265bc9702583f9c8a9977",
+    "releaseUrl": "https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.21",
+    "changes": "启动文字灰度抗锯齿消除黑边和彩边；图标周围透明，主界面实色；已确认的 B 动效及左侧导航依次入场。包含页面闪屏、尺寸跳变、资源分类汉化、版本搜索、愚人节简介、分组条对齐、缓存页进度与元数据回归修复。",
+    "platform": "Windows x64",
+    "bytes": 31739103,
+    "sha256": "74155b242686a532383cf892313de7dd991bd0e6c533a98ec9c84f2e067fc704",
+    "binaryProductVersion": "1.0.0-preview.21+74149f21a8cb921cb00265bc9702583f9c8a9977",
+    "buildMetadataMatchesSource": true,
+    "checks": {
+      "core": 974,
+      "horizonProtocol": 30,
+      "startup-native": 15,
+      "catalog-refinement": 17,
+      "page-size-native": 56,
+      "resource-interaction": 11,
+      "resource-native": 13,
+      "navigation-split": 28,
+      "horizon": 19,
+      "controls": 52,
+      "controls-native": 47,
+      "navigation-fixes": 38,
+      "page-motion-native": 15,
+      "navigation-native": 5,
+      "workbench-shell": 14,
+      "home": 53,
+      "workbench-manage": 71,
+      "workbench-catalog": 105,
+      "multiplayer": 31,
+      "workbench-account": 49,
+      "workbench-consistency": 36,
+      "workbench-native": 20,
+      "total": 1699,
+      "architecture": true,
+      "singleFileStartup": true,
+      "trimmedLauncherAssemblies": true
+    }
   }
 ]

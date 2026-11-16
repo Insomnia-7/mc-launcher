@@ -4,6 +4,8 @@
 
 2026-11-16。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.21)。
 
+[源码 74149f2](https://github.com/Insomnia-7/mc-launcher/commit/74149f21a8cb921cb00265bc9702583f9c8a9977)。Windows单文件31739103字节，SHA-256：74155b242686a532383cf892313de7dd991bd0e6c533a98ec9c84f2e067fc704。1699项检查、架构护栏、裁剪程序集、单文件启动及生产更新验签通过。
+
 - 修复透明启动标识的文字黑边与彩边，采用纯白灰度抗锯齿，不添加描边或阴影。
 - 接入确认后的启动动效：仅图标周围透明；主界面保持实色。左侧七个导航和主页区块以单项800ms、错开80ms依次舒展。
 - 页面切换保留各自布局，修复旧页闪现与尺寸跳变；支持快速改选、缩放、最小化和关闭动画后的归位。
