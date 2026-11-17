@@ -27,6 +27,13 @@ internal static class InstanceStorageChecks
             Check("自动内存每次加载重新计算且保存模式",automatic.AutomaticMemory&&automatic.MemoryMb==InstanceSettings.AdaptiveMemoryMb());
             Check("新实例默认自动内存",InstanceSettings.Load(game,"new").AutomaticMemory);
             Check("自动内存启动归一化重新计算",(automatic with{MemoryMb=512}).Normalized().MemoryMb==InstanceSettings.AdaptiveMemoryMb());
+            Directory.CreateDirectory(Path.Combine(game,"instances","base",".minecraft"));
+            var presets=new SettingsPresets(data);var autoPreset=presets.Capture(game,"base","自动");
+            settings.Save(game,"base");var manualPreset=presets.Capture(game,"base","自定义");
+            await presets.ApplyAsync(autoPreset,game,"base");
+            Check("设置预设恢复自动内存模式",InstanceSettings.Load(game,"base").AutomaticMemory);
+            await presets.ApplyAsync(manualPreset,game,"base");
+            Check("设置预设恢复自定义内存及分配值",InstanceSettings.Load(game,"base") is {AutomaticMemory:false,MemoryMb:6144});
             var tasks=new PersistentTasks(data);
             var success=tasks.Add(new("fixture","长路径导入",game,null,new()));
             var id="1.20.1-"+new string('v',90);

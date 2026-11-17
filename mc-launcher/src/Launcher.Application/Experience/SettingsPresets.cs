@@ -39,7 +39,7 @@ public sealed class SettingsPresets(string dataRoot)
         if(applyConfigs&&preset.Configs.Count>0&&(preset.GameVersion is null||metadata?.MinecraftVersion!=preset.GameVersion||metadata.Loader!=preset.Loader)) throw new InvalidOperationException("模组配置只能用于相同游戏版本和加载器的实例；可取消「包含模组配置」后只应用通用设置。");
         await new InstanceSnapshots(dataRoot,gameRoot,instanceId).CaptureAsync("应用预设前："+preset.Name,ct:ct);
         var current=InstanceSettings.Load(gameRoot,instanceId);var desired=preset.Settings.Normalized();
-        (current with{MemoryMb=desired.MemoryMb,WindowWidth=desired.WindowWidth,WindowHeight=desired.WindowHeight,FullScreen=desired.FullScreen,JvmPreset=desired.JvmPreset}).Save(gameRoot,instanceId);
+        (current with{MemoryMb=desired.MemoryMb,AutomaticMemory=desired.AutomaticMemory,WindowWidth=desired.WindowWidth,WindowHeight=desired.WindowHeight,FullScreen=desired.FullScreen,JvmPreset=desired.JvmPreset}).Save(gameRoot,instanceId);
         var path=Path.Combine(game,"options.txt");var values=ReadOptions(path);var applied=0;
         foreach(var pair in preset.Options.Where(p=>Allowed(p.Key)))
         {

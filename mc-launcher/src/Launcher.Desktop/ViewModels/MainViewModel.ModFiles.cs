@@ -33,7 +33,7 @@ public sealed partial class MainViewModel
     internal static ProcessStartInfo ModFileLocation(string path)
     {
         if(!OperatingSystem.IsWindows())return new(Path.GetDirectoryName(path)!){UseShellExecute=true};
-        var start=new ProcessStartInfo("explorer.exe"){UseShellExecute=true};start.ArgumentList.Add("/select,"+path);return start;
+        var start=new ProcessStartInfo("explorer.exe"){UseShellExecute=true};start.ArgumentList.Add("/select,");start.ArgumentList.Add(path);return start;
     }
     [RelayCommand] private void RevealManagedModFile(ManagedModRow? row)
     {

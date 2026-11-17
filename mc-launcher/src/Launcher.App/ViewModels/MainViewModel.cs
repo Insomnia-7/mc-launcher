@@ -439,6 +439,7 @@ public sealed partial class MainViewModel : ObservableObject
     private int _memoryMb = 4096;
     [ObservableProperty] private bool _automaticMemory = true;
     partial void OnAutomaticMemoryChanged(bool value) { if(value)MemoryMb=InstanceSettings.AdaptiveMemoryMb(); }
+    partial void OnMemoryMbChanged(int value) { if(AutomaticMemory&&value!=InstanceSettings.AdaptiveMemoryMb())AutomaticMemory=false; }
 
     /// <summary>JVM 档位下拉的选中下标：0 默认 / 1 快速 / 2 兼容（对应 <see cref="JvmPreset"/>）。</summary>
     [ObservableProperty]

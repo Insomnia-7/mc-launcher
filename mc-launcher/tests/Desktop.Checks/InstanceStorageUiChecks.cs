@@ -29,6 +29,9 @@ internal static class InstanceStorageUiChecks
         model.SelectMemoryModeCommand.Execute("auto");model.SaveSettingsCommand.Execute(null);
         check("可切回自动分配且模式持久化",InstanceSettings.Load(model.GameRoot,id).AutomaticMemory&&model.MemoryMb==InstanceSettings.AdaptiveMemoryMb());
         capture("memory-automatic",true);
+        var explicitMemory=InstanceSettings.AdaptiveMemoryMb()==6144?5632:6144;
+        model.MemoryMb=explicitMemory;model.SaveSettingsCommand.Execute(null);
+        check("旧界面或预设明确修改数值时保留为自定义",!model.AutomaticMemory&&InstanceSettings.Load(model.GameRoot,id).MemoryMb==explicitMemory);
         model.ShowInstancesCommand.Execute(null);pump(100);
         check("实例页提供直接管理模组入口",Find<Button>("ManageSelectedModsButton").Command==model.OpenSelectedModsCommand);
         model.OpenSelectedModsCommand.Execute(null);Wait(model.RefreshModsCommand.ExecuteAsync(null));
@@ -41,7 +44,9 @@ internal static class InstanceStorageUiChecks
         Wait(model.ShowManagedModDetailsCommand.ExecuteAsync(alpha));
         check("单模组详情包含路径大小时间与哈希",model.HasManagedModDetails&&model.ManagedModDetails.Contains(alpha.FileName)&&model.ManagedModDetails.Contains("SHA-1")&&model.ManagedModDetails.Contains("修改：")&&model.ManagedModDetails.Contains("字节"));
         var location=MainViewModel.ModFileLocation(model.ManagedModPath(alpha));
-        check("打开文件位置定位到选中文件",OperatingSystem.IsWindows()?location.FileName=="explorer.exe"&&location.ArgumentList.Single().StartsWith("/select,"):location.FileName==Path.GetDirectoryName(alpha.Mod.FullPath));
+        check("打开文件位置定位到选中文件",OperatingSystem.IsWindows()?location.FileName=="explorer.exe"&&location.ArgumentList.Count==2&&location.ArgumentList[0]=="/select,"&&location.ArgumentList[1]==alpha.Mod.FullPath:location.FileName==Path.GetDirectoryName(alpha.Mod.FullPath));
+        var spaced=Path.Combine(model.GameRoot,"with spaces","中文 mod.jar");var spacedLocation=MainViewModel.ModFileLocation(spaced);
+        check("文件定位保留空格和中文路径为独立参数",!OperatingSystem.IsWindows()||spacedLocation.ArgumentList[1]==spaced);
         capture("mod-file-details",true);
         var snapshots=new InstanceSnapshots(Launcher.App.AppPaths.DataDirectory,model.GameRoot,id);var before=snapshots.List().Count;
         Wait(model.ToggleManagedModCommand.ExecuteAsync(alpha));
