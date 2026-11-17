@@ -93,6 +93,13 @@ public sealed class InstanceRegistry
     /// <summary>索引文件路径。</summary>
     public static string PathFor(string gameRoot) => Path.Combine(gameRoot, "instances", FileName);
 
+    public static void RegisterStandaloneVersion(string gameRoot,string versionId)
+    {
+        var metadata=InstanceMetadata.TryRead(gameRoot,versionId)??new InstanceMetadata(versionId,null,null,null,versionId,DateTimeOffset.UtcNow.ToString("o"),versionId,IsModpack:false);
+        metadata.Write(gameRoot,versionId);
+        LoadOrMigrate(gameRoot).Register(versionId,versionId,metadata);
+    }
+
     /// <summary>
     /// 版本墓碑：用户删过、但 files 因被其它加载器版本继承而保留的 versionId。
     /// 只用于过滤 LoadCore 第 ② 阶段的「虚拟 versions/ 条目」，绝不能用来过滤真实实例。
@@ -364,9 +371,19 @@ public sealed class InstanceRegistry
         // 会被这里补成一条虚拟实例，看起来像没删掉（大纲 13.1）。
         var knownVersions = new HashSet<string>(
             entries.Select(e => e.VersionId), StringComparer.OrdinalIgnoreCase);
+        var dependencies=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach(var versionId in versionIds)
+            try
+            {
+                using var json=JsonDocument.Parse(File.ReadAllText(Path.Combine(gameRoot,"versions",versionId,versionId+".json")));
+                foreach(var property in json.RootElement.EnumerateObject())
+                    if(property.Name.Equals("inheritsFrom",StringComparison.OrdinalIgnoreCase)&&property.Value.ValueKind==JsonValueKind.String&&property.Value.GetString() is {Length:>0} parent)
+                        dependencies.Add(parent);
+            }
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException){}
         foreach (var versionId in versionIds.OrderBy(v => v, StringComparer.OrdinalIgnoreCase))
         {
-            if (knownVersions.Contains(versionId) || hiddenVersions.Contains(versionId)) continue;
+            if (knownVersions.Contains(versionId) || hiddenVersions.Contains(versionId) || dependencies.Contains(versionId)) continue;
             entries.Add(new InstanceRegistration(versionId, versionId, null, null, null, null, null, null));
         }
 

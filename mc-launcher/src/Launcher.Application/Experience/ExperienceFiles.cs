@@ -7,7 +7,7 @@ public static class ExperienceFiles
     public static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
     public static string Child(string root, string relative)
     {
-        var basePath = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var basePath = Launcher.Application.Install.LongPath.Canonical(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         if (string.IsNullOrWhiteSpace(relative) || Path.IsPathRooted(relative)) throw new InvalidDataException("需要有效的相对路径。");
         var path = Path.GetFullPath(Path.Combine(basePath, relative));
         if (!path.StartsWith(basePath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
@@ -16,7 +16,7 @@ public static class ExperienceFiles
     }
     public static void RejectLinks(string path)
     {
-        for (string? p = Path.GetFullPath(path); p is not null; p = Path.GetDirectoryName(p))
+        for (string? p = Launcher.Application.Install.LongPath.Canonical(path); p is not null; p = Path.GetDirectoryName(p))
             if ((Directory.Exists(p) || File.Exists(p)) && (File.GetAttributes(p) & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("请先移除目录或文件链接：" + p);
     }
@@ -42,9 +42,9 @@ public static class ExperienceFiles
     }
     public static void DeleteTree(string path, string ownerRoot)
     {
-        var relative = Path.GetRelativePath(Path.GetFullPath(ownerRoot), Path.GetFullPath(path));
+        var relative = Path.GetRelativePath(Launcher.Application.Install.LongPath.Canonical(ownerRoot), Launcher.Application.Install.LongPath.Canonical(path));
         var safe = Child(ownerRoot, relative);
         RejectLinks(safe);
-        if (Directory.Exists(safe)) Directory.Delete(safe, true);
+        Launcher.Application.Install.LongPath.DeleteDirectory(safe);
     }
 }

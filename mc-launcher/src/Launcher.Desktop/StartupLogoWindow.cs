@@ -11,7 +11,6 @@ namespace Launcher.Desktop;
 
 internal sealed class StartupLogoWindow : Window
 {
-    internal TextBlock BrandText {get;}
     internal StackPanel Mark {get;}
     private readonly Bitmap _icon;
     public StartupLogoWindow()
@@ -21,11 +20,8 @@ internal sealed class StartupLogoWindow : Window
         TransparencyLevelHint=[WindowTransparencyLevel.Transparent];
         Background=Brushes.Transparent;TransparencyBackgroundFallback=Brushes.Transparent;
         _icon=new Bitmap(AssetLoader.Open(new Uri("avares://MCLauncher.Desktop/Assets/Brand/fangyu.png")));
-        BrandText=new TextBlock{Name="StartupBrandText",Text="方隅",FontSize=25,Foreground=Brushes.White,HorizontalAlignment=HorizontalAlignment.Center};
-        // LCD subpixel text assumes an opaque background and produces dark/color fringes on alpha.
-        TextOptions.SetTextRenderingMode(BrandText,TextRenderingMode.Antialias);
         Mark=new StackPanel{Spacing=14,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};
-        Mark.Children.Add(new Image{Source=_icon,Width=76,Height=76});Mark.Children.Add(BrandText);Content=Mark;
+        Mark.Children.Add(new Image{Source=_icon,Width=76,Height=76});Content=Mark;
         Closed+=(_,_)=>_icon.Dispose();
     }
 

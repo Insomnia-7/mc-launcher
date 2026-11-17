@@ -1858,6 +1858,7 @@ Console.WriteLine("== 30. 被安全软件拦截：异常识别与处置步骤 ==
 
 Console.WriteLine();
 await FirstRunChecks.RunAsync(Check);
+await InstanceStorageChecks.RunAsync(Check,BuildModpackInstaller(new FakeDownloader((_,_)=>null),new ThrowingForgeInstaller(),new ThrowingNeoForgeInstaller()));
 await OptimizationChecks.RunAsync(Check);
 await FollowupChecks.RunAsync(Check);
 await ResourceBrowserChecks.RunAsync(Check);

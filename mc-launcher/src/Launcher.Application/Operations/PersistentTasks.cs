@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Launcher.Application.Diagnostics;
 using Launcher.Application.Experience;
+using Launcher.Application.Install;
 
 namespace Launcher.Application.Operations;
 
@@ -9,12 +10,13 @@ public sealed record DurableTaskRequest(string Kind,string Title,string GameRoot
 public sealed record DurableTaskRecord(string Id,DurableTaskRequest Request,DurableTaskState State,double Percent,string Detail,DateTimeOffset CreatedAt,IReadOnlyList<string> Partials)
 {
     public long QueueOrder {get;init;}
+    public bool NeedsRecovery {get;init;}
     public string Title=>Request.Title;
-    public string StateText=>State switch {DurableTaskState.Ready=>"待开始",DurableTaskState.Running=>"进行中",DurableTaskState.Paused=>"已暂停，可恢复",DurableTaskState.Completed=>"已完成",DurableTaskState.Failed=>"失败，可重试",_=>"已取消"};
-    public bool CanResume=>State is DurableTaskState.Ready or DurableTaskState.Paused or DurableTaskState.Failed;
+    public string StateText=>NeedsRecovery?"恢复文件已保留":State switch {DurableTaskState.Ready=>"待开始",DurableTaskState.Running=>"进行中",DurableTaskState.Paused=>"已暂停，可恢复",DurableTaskState.Completed=>"已完成",DurableTaskState.Failed=>"失败，可重试",_=>"已取消"};
+    public bool CanResume=>!NeedsRecovery&&State is DurableTaskState.Ready or DurableTaskState.Paused or DurableTaskState.Failed;
     public bool CanPause=>State==DurableTaskState.Running;
-    public bool CanCancel=>State != DurableTaskState.Completed && (State != DurableTaskState.Canceled || Partials.Count > 0);
-    public bool IsHistory => State == DurableTaskState.Completed || State == DurableTaskState.Canceled && Partials.Count == 0;
+    public bool CanCancel=>!NeedsRecovery&&State != DurableTaskState.Completed && (State != DurableTaskState.Canceled || Partials.Count > 0);
+    public bool IsHistory => !NeedsRecovery&&(State == DurableTaskState.Completed || State == DurableTaskState.Canceled && Partials.Count == 0);
 }
 public sealed record TaskProgress(double Percent,string Detail);
 
@@ -26,6 +28,8 @@ public sealed class DurableExecution
     public string Directory {get;}
     public bool Pausing {get;internal set;}
     public bool Committed {get;private set;}
+    public bool RecoveryRequired {get;private set;}
+    public void PreserveRecovery() => RecoveryRequired=true;
     public void MarkCommitted() => Committed=true;
     public ConcurrentDictionary<string,byte> Partials {get;}=new(StringComparer.OrdinalIgnoreCase);
     internal DurableExecution(string directory)=>Directory=directory;
@@ -35,6 +39,9 @@ public sealed class DurableExecution
 public sealed class PersistentTasks
 {
     private readonly string _root;
+    public static string WorkspacePath(DurableTaskRecord task) => ExperienceFiles.Child(Path.Combine(task.Request.GameRoot,".cache","tasks"),task.Id);
+    private string LegacyWorkspace(string id) => ExperienceFiles.Child(_root,id);
+    private string WorkspaceOwner(DurableTaskRecord task) => Path.Combine(task.Request.GameRoot,".cache","tasks");
     private readonly object _sync=new();
     private readonly List<DurableTaskRecord> _tasks=[];
     private CancellationTokenSource? _running;
@@ -133,7 +140,8 @@ public sealed class PersistentTasks
             item=_tasks.Single(x=>x.Id==id);if(!item.CanResume)throw new InvalidOperationException("该任务无需恢复。");
             _active=id;_running=cancellation=CancellationTokenSource.CreateLinkedTokenSource(ct);
             _completion=new(TaskCreationOptions.RunContinuationsAsynchronously);
-            _execution=execution=new(ExperienceFiles.Child(_root,id));
+            // Continue existing archives in their old location; new bulk tasks live on the game disk.
+            _execution=execution=new(System.IO.Directory.Exists(LegacyWorkspace(id))?LegacyWorkspace(id):WorkspacePath(item));
             foreach(var path in item.Partials)execution.Partials.TryAdd(path,0);
         }
         var previous=DurableExecution.Current;DurableExecution.Current=execution;
@@ -149,16 +157,16 @@ public sealed class PersistentTasks
                 last=now;Update(id,t=>t.State==DurableTaskState.Running?t with{Percent=Math.Clamp(p.Percent,0,100),Detail=p.Detail,Partials=execution.Partials.Keys.ToArray()}:t);
             }),cancellation.Token).ConfigureAwait(false);
             if(!execution.Committed)cancellation.Token.ThrowIfCancellationRequested();
-            Update(id,t=>t with{State=DurableTaskState.Completed,Percent=100,Detail=item.Request.Kind switch { "world-backup" => "世界备份已完成", "world-restore" or "pack-restore" => "恢复已完成", "repair" => "文件修复已完成", "clone" => "游戏副本已创建", "update" or "pack-update" or "mod-batch" => "更新已完成", _ => "安装完成" },Partials=[]});
-            ExperienceFiles.DeleteTree(execution.Directory,_root);
+            var leftover=CleanWorkspaces(item);
+            Update(id,t=>t with{State=DurableTaskState.Completed,Percent=100,Detail=(item.Request.Kind switch { "world-backup" => "世界备份已完成", "world-restore" or "pack-restore" => "恢复已完成", "repair" => "文件修复已完成", "clone" => "游戏副本已创建", "update" or "pack-update" or "mod-batch" => "更新已完成", _ => "安装完成" })+(leftover.Count>0?"；部分临时文件被占用，可在存储管理重试清理。":""),Partials=leftover});
         }
         catch(OperationCanceledException)
         {
-            Update(id,t=>t with{State=execution.Pausing?DurableTaskState.Paused:DurableTaskState.Canceled,Detail=execution.Pausing?"断点与安装清单已保存；可恢复。":"任务已取消，正在清理未完成文件。",Partials=execution.Partials.Keys.ToArray()});
+            Update(id,t=>t with{State=execution.Pausing?DurableTaskState.Paused:DurableTaskState.Canceled,Detail=execution.Pausing?"断点与安装清单已保存；可恢复。":"任务已取消，正在清理未完成文件。",Partials=execution.Partials.Keys.ToArray(),NeedsRecovery=execution.RecoveryRequired});
             if(!execution.Pausing)Cleanup(id);
         }
         catch(Exception ex)
-        {Update(id,t=>t with{State=DurableTaskState.Failed,Detail=ErrorText.Describe(ex),Partials=execution.Partials.Keys.ToArray()});}
+        {Update(id,t=>t with{State=DurableTaskState.Failed,Detail=ErrorText.Describe(ex)+(execution.RecoveryRequired?"；原文件恢复未完成，恢复资料已保留，请先检查下载暂存目录。":""),Partials=execution.Partials.Keys.ToArray(),NeedsRecovery=execution.RecoveryRequired});}
         finally
         {
             DurableExecution.Current=previous;
@@ -172,29 +180,39 @@ public sealed class PersistentTasks
     }
     public void Cancel(string id)
     {
+        if(List().Single(t=>t.Id==id).NeedsRecovery)return;
         lock(_sync)if(_active==id){if(_execution?.Committed==true)return;if(_execution is not null)_execution.Pausing=false;_running?.Cancel();return;}
         Update(id,t=>t with{State=DurableTaskState.Canceled});Cleanup(id);
     }
     private void Cleanup(string id)
     {
         var record=List().Single(t=>t.Id==id);var failures=new List<string>();
+        if(record.NeedsRecovery){Update(id,t=>t with{Detail="原文件恢复未完成，已保留下载暂存中的恢复资料，请先检查。"});return;}
         try { CleanupRequest?.Invoke(record.Request); }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or InvalidDataException) { failures.Add(ex.Message); }
-        var allowedRoots=new[]{record.Request.GameRoot,ExperienceFiles.Child(_root,id),Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_root))!,"java",".cache")};
+        var allowedRoots=new[]{record.Request.GameRoot,LegacyWorkspace(id),Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_root))!,"java",".cache")};
         foreach(var path in record.Partials)
         {
             try
             {
-                var full=Path.GetFullPath(path);
+                var full=LongPath.Canonical(path);
                 var owner=allowedRoots.FirstOrDefault(root=>full.StartsWith(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar,OperatingSystem.IsWindows()?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal));
-                if(!path.EndsWith(".part",StringComparison.OrdinalIgnoreCase)||owner is null)continue;
+                if(!full.EndsWith(".part",StringComparison.OrdinalIgnoreCase)||owner is null||!LongPath.FileExists(full))continue;
                 ExperienceFiles.Child(owner,Path.GetRelativePath(owner,full));
-                ExperienceFiles.RejectLinks(path);File.Delete(path);
+                ExperienceFiles.RejectLinks(full);LongPath.DeleteFile(full);
             }
             catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or InvalidDataException){failures.Add(path);}
         }
-        try{ExperienceFiles.DeleteTree(ExperienceFiles.Child(_root,id),_root);}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){failures.Add(id);}
+        failures.AddRange(CleanWorkspaces(record));
         Update(id,t=>t with{Detail=failures.Count==0?"已取消，未完成文件已清理；完整共享资源保留。":"部分文件无法清理，请检查："+string.Join("；",failures),Partials=failures});
+    }
+    private List<string> CleanWorkspaces(DurableTaskRecord task)
+    {
+        var failures=new List<string>();
+        foreach(var (path,owner) in new[]{(WorkspacePath(task),WorkspaceOwner(task)),(LegacyWorkspace(task.Id),_root)})
+            try{ExperienceFiles.DeleteTree(path,owner);}
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){failures.Add(path);}
+        return failures;
     }
     public void PauseActiveForShutdown() {lock(_sync)_queueEpoch++;if(ActiveId is {} id)Pause(id);}
     public async Task PauseAndWaitAsync()

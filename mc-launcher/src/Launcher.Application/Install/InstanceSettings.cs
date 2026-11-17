@@ -24,7 +24,8 @@ public sealed record InstanceSettings(
     // 存数字的话改档位得先查 0/1/2 的对应关系。老文件没有这个字段时按 Default 读。
     // 转换器挂在下面的 SerializerOptions 上（CamelCase），属性本身不加特性——
     // 特性写法没法传命名策略，那样落盘会是首字母大写的 "Fast"，和命令行的 fast 不一致。
-    JvmPreset JvmPreset = JvmPreset.Default)
+    JvmPreset JvmPreset = JvmPreset.Default,
+    bool AutomaticMemory = false)
 {
     public const string FileName = "settings.json";
 
@@ -81,7 +82,7 @@ public sealed record InstanceSettings(
     /// <summary>
     /// 「这个实例没有明确配置」时的设置对象。用自适应内存，其余字段就是记录默认值。
     /// </summary>
-    public static InstanceSettings CreateDefault() => new() { MemoryMb = AdaptiveMemoryMb() };
+    public static InstanceSettings CreateDefault() => new() { MemoryMb = AdaptiveMemoryMb(), AutomaticMemory = true };
 
     public static InstanceSettings Load(string gameRoot, string instanceId)
     {
@@ -95,7 +96,7 @@ public sealed record InstanceSettings(
 
             // 「字段缺失」和「用户写了 4096」必须区分开：老 settings.json 里根本没有 MemoryMb，
             // 那种情况才该按本机内存推默认值；显式写过的一律尊重用户。
-            return DeclaresMemoryMb(json) ? settings : settings with { MemoryMb = AdaptiveMemoryMb() };
+            return settings.AutomaticMemory || !DeclaresMemoryMb(json) ? settings with { MemoryMb = AdaptiveMemoryMb(), AutomaticMemory = true } : settings;
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -143,7 +144,7 @@ public sealed record InstanceSettings(
 
     public InstanceSettings Normalized() => this with
     {
-        MemoryMb = Math.Clamp(MemoryMb, MinMemoryMb, MaxMemoryMb),
+        MemoryMb = AutomaticMemory ? AdaptiveMemoryMb() : Math.Clamp(MemoryMb, MinMemoryMb, MaxMemoryMb),
         WindowWidth = WindowWidth <= 0 ? 1280 : WindowWidth,
         WindowHeight = WindowHeight <= 0 ? 720 : WindowHeight,
         JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath.Trim(),

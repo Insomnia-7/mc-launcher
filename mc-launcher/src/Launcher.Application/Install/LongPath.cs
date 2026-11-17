@@ -12,6 +12,26 @@ namespace Launcher.Application.Install;
 /// </summary>
 public static class LongPath
 {
+    public static string Canonical(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            if (path.StartsWith(ExtendedUncPrefix, StringComparison.OrdinalIgnoreCase)) path = @"\\" + path[8..];
+            else if (path.StartsWith(ExtendedPrefix, StringComparison.Ordinal)) path = path[4..];
+        }
+        return Path.GetFullPath(path);
+    }
+    public static void MoveDirectory(string source,string target)
+    {
+        static string Native(string path)
+        {
+            var full=Canonical(path);
+            if(!OperatingSystem.IsWindows())return full;
+            return full.StartsWith(@"\\",StringComparison.Ordinal)?ExtendedUncPrefix+full[2..]:ExtendedPrefix+full;
+        }
+        // Both paths need the same prefix form even if only one exceeds MAX_PATH.
+        Directory.Move(Native(source),Native(target));
+    }
     /// <summary>传统 MAX_PATH：260 个字符。超过它的路径在没加前缀时会被 Win32 拒绝。</summary>
     public const int LegacyMaxPath = 260;
 

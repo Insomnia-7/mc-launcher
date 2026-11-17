@@ -1,39 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" xmlns:mods="using:Launcher.Application.Mods" xmlns:icons="using:Launcher.Desktop.Controls" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.InstanceModsView">
   <Grid>
-    <ScrollViewer x:Name="ManagedModsScroll" IsVisible="{Binding !IsModPreviewOpen}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
-      <StackPanel Spacing="16">
-        <Border Background="Transparent" Padding="0">
-          <StackPanel Spacing="12">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <TextBlock Text="已安装内容" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
-              <Button Grid.Column="1" Classes="primary" Command="{Binding ShowDownloadsCommand}">
-                <icons:IconLabel Icon="ActionPlus" Text="添加资源" Foreground="{Binding $parent[Button].Foreground}"/>
-              </Button>
-            </Grid>
-            <WrapPanel>
-              <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="mods" Content="模组目录" Margin="0,0,8,8"/>
-              <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks" Content="资源包目录" Margin="0,0,8,8"/>
-              <Button Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="shaderpacks" Content="光影目录" Margin="0,0,0,8"/>
-            </WrapPanel>
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="{Binding ModSummary}" Classes="muted" TextWrapping="Wrap"/>
-              <Button Grid.Column="1" Classes="quiet" Command="{Binding RefreshModsCommand}" IsEnabled="{Binding CanUseModWorkbench}">
-                <icons:IconLabel Icon="ActionRefresh" Text="刷新"/>
-              </Button>
-            </Grid>
-            <Button Classes="link" Command="{Binding SelectAllManagedModsCommand}" Content="选择全部模组" HorizontalAlignment="Left"/>
-            <TextBlock Text="{Binding ModWarnings}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasModWarnings}" TextWrapping="Wrap"/>
-            <WrapPanel IsVisible="{Binding HasManagedModSelection}" IsEnabled="{Binding CanUseModWorkbench}">
-              <Button Command="{Binding SelectAllManagedModsCommand}" Content="全选" Margin="0,0,6,8"/>
-              <Button Command="{Binding SelectAllManagedModsCommand}" CommandParameter="none" Content="取消全选" Margin="0,0,6,8"/>
-              <Button x:Name="BatchEnableModsButton" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Enable" Content="启用" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,8"/>
-              <Button x:Name="BatchDisableModsButton" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Disable" Content="停用" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,8"/>
-              <Button x:Name="BatchReinstallModsButton" Command="{Binding PreviewReinstallModsCommand}" Content="重新安装…" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,8"/>
-              <Button x:Name="BatchDeleteModsButton" Classes="quiet danger" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Delete" Content="删除…" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,0,8"/>
-            </WrapPanel>
-            <TextBlock Text="{Binding ManagedSelectionText}" Classes="muted" FontSize="12"/>
-            <ItemsControl x:Name="ManagedModsList" ItemsSource="{Binding ManagedMods}" IsEnabled="{Binding CanUseModWorkbench}">
-              <ItemsControl.ItemTemplate>
+    <Grid IsVisible="{Binding !IsModPreviewOpen}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"><StackPanel Spacing="4"><TextBlock Text="模组管理" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="{Binding ModSummary}" Classes="muted" FontSize="12"/></StackPanel><Button Grid.Column="1" Classes="quiet" Command="{Binding RefreshModsCommand}" IsEnabled="{Binding CanUseModWorkbench}" Content="刷新"/><Button Grid.Column="2" Classes="primary" Command="{Binding ShowDownloadsCommand}" Content="添加资源"/></Grid>
+        <TextBox x:Name="ManagedModSearch" Text="{Binding ManagedModQuery}" AutomationProperties.Name="搜索本实例模组"/>
+        <WrapPanel IsEnabled="{Binding CanUseModWorkbench}">
+          <Button Command="{Binding SelectAllManagedModsCommand}" Content="全选" Margin="0,0,6,6"/>
+          <Button Command="{Binding SelectAllManagedModsCommand}" CommandParameter="none" Content="取消全选" Margin="0,0,6,6"/>
+          <Button x:Name="BatchEnableModsButton" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Enable" Content="启用" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,6"/>
+          <Button x:Name="BatchDisableModsButton" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Disable" Content="停用" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,6"/>
+          <Button x:Name="BatchReinstallModsButton" Command="{Binding PreviewReinstallModsCommand}" Content="重装…" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,6"/>
+          <Button x:Name="BatchDeleteModsButton" Classes="quiet danger" Command="{Binding PrepareLocalModChangeCommand}" CommandParameter="Delete" Content="删除…" IsEnabled="{Binding HasManagedModSelection}" Margin="0,0,6,6"/>
+          <Button Content="打开目录" Margin="0,0,0,6"><Button.Flyout><MenuFlyout><MenuItem Header="模组" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="mods"/><MenuItem Header="资源包" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="resourcepacks"/><MenuItem Header="光影" Command="{Binding OpenGameResourceFolderCommand}" CommandParameter="shaderpacks"/></MenuFlyout></Button.Flyout></Button>
+        </WrapPanel>
+        <TextBlock Text="{Binding ManagedSelectionText}" Classes="muted" FontSize="12"/>
+        <TextBlock Text="{Binding ModWarnings}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasModWarnings}" TextWrapping="Wrap"/>
+        <Border Classes="card" IsVisible="{Binding HasManagedModDetails}"><StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="模组文件详情" FontWeight="SemiBold"/><Button Grid.Column="1" Classes="quiet" Command="{Binding CloseManagedModDetailsCommand}" Content="收起"/></Grid><ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><SelectableTextBlock Text="{Binding ManagedModDetails}" TextWrapping="Wrap" FontSize="12"/></ScrollViewer></StackPanel></Border>
+      </StackPanel>
+      <ListBox x:Name="ManagedModsList" ItemsSource="{Binding VisibleManagedMods}" IsEnabled="{Binding CanUseModWorkbench}" Grid.Row="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+              <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:ManagedModRow">
                   <Border Padding="4,10" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource LineBrush}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
@@ -43,15 +28,13 @@
                         <TextBlock Text="{Binding Meta}" Classes="muted" TextWrapping="Wrap"/>
                         <TextBlock Text="{Binding FileName}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis"/>
                       </StackPanel>
-                      <TextBlock Grid.Column="2" Text="{Binding State}" Classes="muted" VerticalAlignment="Center"/>
+                      <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center"><TextBlock Text="{Binding State}" Classes="muted" HorizontalAlignment="Right"/><WrapPanel><Button Classes="quiet" Command="{Binding DetailsCommand}" CommandParameter="{Binding}" Content="详情" ToolTip.Tip="查看文件详情"/><Button Classes="quiet" Command="{Binding RevealCommand}" CommandParameter="{Binding}" Content="位置" ToolTip.Tip="打开文件位置"/><Button Classes="quiet" Command="{Binding ToggleCommand}" CommandParameter="{Binding}" Content="{Binding ToggleText}"/><Button Classes="quiet danger" Command="{Binding DeleteCommand}" CommandParameter="{Binding}" Content="删除"/></WrapPanel></StackPanel>
                     </Grid>
                   </Border>
                 </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </Border>
-        <Border Classes="card">
+              </ListBox.ItemTemplate>
+            </ListBox>
+      <Expander Grid.Row="2" Header="兼容更新与版本锁定" HorizontalAlignment="Stretch"><ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><Border Classes="card">
           <StackPanel Spacing="12">
             <TextBlock Text="兼容更新" FontSize="18" FontWeight="SemiBold"/>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding CanUseModWorkbench}">
@@ -99,9 +82,8 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </StackPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+        </Border></ScrollViewer></Expander>
+    </Grid>
     <Grid IsVisible="{Binding IsModPreviewOpen}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="5">

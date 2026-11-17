@@ -1,8 +1,10 @@
 # 方隅 · 源码
 
-当前 Windows 版本：`1.0.0-preview.20`。
+当前 Windows 版本：`1.0.0-preview.24`。
 
-Minecraft Java 版启动器，支持可选的 Horizon Rust 客户端。C# / .NET 10 / Avalonia 12，Windows 出单文件，Linux 和 macOS 出原生包。
+Minecraft Java 版启动器，支持可选的 Horizon Rust 客户端。C# / .NET 10 / Avalonia 12，当前优先开发和验收 Windows 单文件版本。
+
+按用户于 2026-11-17 的安排，暂停 Linux、macOS 的开发跟进及自动预览构建。保留平台无关核心、既有原生包脚本和手动工作流入口，以便未来恢复；本批不宣称其他系统已适配或实测。
 
 界面在 `src/Launcher.Desktop`。旧的 WPF 入口 `src/Launcher.App` 还留着，能编译能跑，但只在 Windows 用，也不再出新功能。
 

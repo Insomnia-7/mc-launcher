@@ -3,7 +3,7 @@ using Launcher.Application.Java;
 
 namespace Launcher.Application.Install;
 
-public sealed record FirstRunRequest(string VersionId, int MemoryMb);
+public sealed record FirstRunRequest(string VersionId, int MemoryMb, bool AutomaticMemory = false);
 /// <summary>
 /// 安装向导的进度。
 /// <para>
@@ -61,8 +61,9 @@ public sealed class FirstRunInstaller(
         ct.ThrowIfCancellationRequested();
 
         // 重试保留用户已配置的 Java、窗口、JVM 参数，只更新本次明确选择的内存。
-        var settings = InstanceSettings.Load(gameRoot, request.VersionId) with { MemoryMb = request.MemoryMb };
+        var settings = InstanceSettings.Load(gameRoot, request.VersionId) with { MemoryMb = request.MemoryMb, AutomaticMemory = request.AutomaticMemory };
         settings.Save(gameRoot, request.VersionId);
+        Launcher.Application.Instances.InstanceRegistry.RegisterStandaloneVersion(gameRoot,request.VersionId);
         progress?.Report(new("安装完成", 100));
     }
 

@@ -31,6 +31,7 @@ public sealed partial class MainViewModel
 
     private void InitializeDesktopShell()
     {
+        InitializeMemoryControl();
         InitializeNotices();
         InitializeWorkspace();
         InitializeHome();

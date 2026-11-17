@@ -27,7 +27,7 @@ public sealed record ModChangePlan(string Id,string GameRoot,string InstanceId,M
 {
     public long DownloadBytes=>Files.Where(f=>f.CopyFrom is null).Sum(f=>f.File.Entry.Size);
     public string DownloadSize=>DownloadBytes>=1048576?$"{DownloadBytes/1048576d:0.##} MB":DownloadBytes>=1024?$"{DownloadBytes/1024d:0.#} KB":$"{DownloadBytes} B";
-    public string Summary=>$"{Changes.Count} 项变更 · 下载 {DownloadSize} · 执行前自动备份";
+    public string Summary=>$"{Changes.Count} 项变更 · 下载 {DownloadSize} · "+(Action is ModBatchAction.Enable or ModBatchAction.Disable?"可随时切换启停":"执行前自动备份");
 }
 
 /// <summary>Prepare an exact file set before approval. All files are staged and verified before a single transaction.</summary>
@@ -232,7 +232,7 @@ public sealed class ModChangePlans(ModInstallService modrinth,CurseForgeInstallS
             await UpdateFileTransaction.ApplyAsync(replacements,stage,directory,backup,ct:ct,removeFiles:plan.Removals).ConfigureAwait(false);
             progress?.Report(ModInstallProgress.Of("完成",100,$"已完成 {plan.Changes.Count} 项变更"));
         }
-        catch(AggregateException){preserveRecovery=true;throw;}
+        catch(AggregateException){preserveRecovery=true;DurableExecution.Current?.PreserveRecovery();throw;}
         finally
         {
             if(!preserveRecovery&&DurableExecution.Current is null&&Directory.Exists(owned))ExperienceFiles.DeleteTree(owned,Path.Combine(plan.GameRoot,".mod-changes"));

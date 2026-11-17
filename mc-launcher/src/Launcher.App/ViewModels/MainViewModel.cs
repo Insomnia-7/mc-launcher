@@ -437,6 +437,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private int _memoryMb = 4096;
+    [ObservableProperty] private bool _automaticMemory = true;
+    partial void OnAutomaticMemoryChanged(bool value) { if(value)MemoryMb=InstanceSettings.AdaptiveMemoryMb(); }
 
     /// <summary>JVM 档位下拉的选中下标：0 默认 / 1 快速 / 2 兼容（对应 <see cref="JvmPreset"/>）。</summary>
     [ObservableProperty]
@@ -595,6 +597,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         var settings = InstanceSettings.Load(GameRoot, instanceId);
         MemoryMb = settings.MemoryMb;
+        AutomaticMemory = settings.AutomaticMemory;
         JvmPresetIndex = (int)settings.JvmPreset;
         ExtraJvmArgs = settings.ExtraJvmArgs ?? string.Empty;
         ExtraGameArgs = settings.ExtraGameArgs ?? string.Empty;
@@ -882,6 +885,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         var settings = new InstanceSettings(
             MemoryMb: MemoryMb,
+            AutomaticMemory: AutomaticMemory,
             JavaPath: SelectedJava?.ExecutablePath,
             JvmPreset: (JvmPreset)JvmPresetIndex,
             ExtraJvmArgs: ExtraJvmArgs,

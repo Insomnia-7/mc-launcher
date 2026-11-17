@@ -68,6 +68,7 @@ public sealed partial class DownloadViewModel
             await _gameInstaller.InstallAsync(game,task.GameRoot,true,dp,ct);
             var loader=Enum.Parse<LoaderKind>(Arg("loader"));
             if(loader!=LoaderKind.Vanilla)await InstallSelectedLoaderAsync(game,task.GameRoot,loader,Arg("loaderVersion"),dp,ct);
+            else Launcher.Application.Instances.InstanceRegistry.RegisterStandaloneVersion(task.GameRoot,game);
         }
         else
         {

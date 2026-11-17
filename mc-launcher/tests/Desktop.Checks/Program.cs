@@ -115,6 +115,7 @@ internal static class Program
         {
             if(args.Contains("--live-scroll")){LiveCatalogScrollChecks.Run(model,window,Pump,Check,Capture);Check("真实检索与滚动无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} live catalog scroll checks passed");return 0;}
             if(args.Contains("--card-fade-preview")){CardFadePreview.Record(model,window,root,Pump);return 0;}
+            if(args.Contains("--instance-storage")){InstanceStorageUiChecks.Run(model,window,workbenchFixture,Pump,Check,Capture);Check("实例与内存页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} instance storage checks passed");return 0;}
             if(args.Contains("--catalog-refinement")){CatalogRefinementChecks.Run(model,window,resourceFixture,installFixture,Pump,Check,Capture);Check("资源分类与版本检索无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} catalog refinement checks passed");return 0;}
             if(args.Contains("--resource-interaction")){ResourceInteractionChecks.Run(model,window,resourceFixture,root,Pump,Check,Capture);Check("资源交互无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} resource interaction checks passed");return 0;}
             if(args.Contains("--horizon")){HorizonUiChecks.Run(model,window,root,Pump,Check,Capture);Check("Rust 页面无绑定错误",log.Errors.Count==0);Console.WriteLine($"{passed} Horizon UI checks passed");return 0;}

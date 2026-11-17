@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:versions="using:Launcher.Domain.Versions" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:icons="using:Launcher.Desktop.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.DialogLayers" xmlns:vm="using:Launcher.App.ViewModels" xmlns:conv="using:Avalonia.Data.Converters" xmlns:views="using:Launcher.Desktop.Views" xmlns:versions="using:Launcher.Domain.Versions" xmlns:accounts="using:Launcher.Application.Accounts" xmlns:experience="using:Launcher.Application.Experience">
   <Grid>
     <icons:AnimatedDialog x:Name="SetupDialog" Classes="modal" IsOpen="{Binding IsSetupOpen}">
       <Border Classes="modal-surface" Width="560" MaxHeight="620">
@@ -21,10 +21,7 @@
               </Button>
             </StackPanel>
             <Grid ColumnDefinitions="*,14,*" IsEnabled="{Binding CanEditSetup}">
-              <StackPanel Spacing="7">
-                <TextBlock Text="内存（MB）" />
-                <TextBox Text="{Binding SetupMemoryText}" />
-              </StackPanel>
+              <views:MemoryAllocationView/>
               <StackPanel Grid.Column="2" Spacing="7">
                 <TextBlock Text="离线用户名" />
                 <TextBox Text="{Binding SetupOfflineName}" IsReadOnly="{Binding HasAccount}" />

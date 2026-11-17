@@ -20,6 +20,7 @@ public sealed partial class MainViewModel
         if(!_noticeTaskStates.TryGetValue(task.Id,out var previous))previous=DurableTaskState.Ready;
         _noticeTaskStates[task.Id]=task.State;
         if(previous==task.State)return;
+        if(task.State==DurableTaskState.Completed&&task.Request.Arguments.TryGetValue("quiet",out var quiet)&&quiet=="true")return;
         if(task.State==DurableTaskState.Completed)ShowNotice(task.Title+" · 已完成",()=>OpenTaskCenter(),ToastLevel.Success);
         else if(task.State==DurableTaskState.Failed)ShowNotice(task.Title+" · 未完成，点击查看原因",()=>OpenTaskCenter(),ToastLevel.Error);
     }

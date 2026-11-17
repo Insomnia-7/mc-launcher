@@ -726,6 +726,7 @@ public sealed partial class DownloadViewModel : ObservableObject
                 Status = $"正在安装 {loader} {loaderVersion}…";
                 installedId = await InstallSelectedLoaderAsync(version.Id, root, loader, loaderVersion!, progress, cts.Token);
             }
+            else Launcher.Application.Instances.InstanceRegistry.RegisterStandaloneVersion(root,version.Id);
             Status = $"{installedId} 安装完成 · 本体下载 {summary.DownloadedFiles} / 跳过 {summary.SkippedFiles}";
             InstancesChanged?.Invoke();
         }

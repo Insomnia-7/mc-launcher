@@ -16,7 +16,7 @@ internal static class LibraryStorageUiChecks
     {
         void Wait(Task task) { while(!task.IsCompleted) pump(10); task.GetAwaiter().GetResult(); pump(100); }
         model.ShowInstancesCommand.Execute(null); pump(100); capture("library-light",true);
-        var info=window.GetVisualDescendants().OfType<TextBlock>().First(t=>t.Text=="游戏库");
+        var info=window.GetVisualDescendants().OfType<TextBlock>().First(t=>t.Classes.Contains("page-title")&&t.IsEffectivelyVisible);
         FontManager.Current.TryGetGlyphTypeface(new Typeface(info.FontFamily),out var glyph);
         File.WriteAllText(Path.Combine(root,"font-info.txt"),$"Family={info.FontFamily}; resolved={glyph?.FamilyName}; size={info.FontSize}; scaling={window.RenderScaling}");
         check("侧栏实例计数不再称为世界",model.InstanceCountText.Contains("游戏实例"));

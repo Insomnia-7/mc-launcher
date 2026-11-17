@@ -110,6 +110,10 @@ public sealed partial class MainViewModel
         InitializeMaintenance();
         InitializeLauncherUpdates();
         _appearanceClient=appearance;_tasks=new(AppPaths.DataDirectory);_tasks.Execute=ExecuteDurableTaskAsync;
+        // Old releases did not write instance metadata for an explicitly chosen vanilla install.
+        foreach(var task in _tasks.List().Where(t=>t.State==DurableTaskState.Completed&&t.Request.Kind=="version"&&t.Request.GameRoot==GameRoot))
+            if(task.Request.Arguments.TryGetValue("loader",out var loader)&&loader=="Vanilla"&&task.Request.Arguments.TryGetValue("game",out var version)&&File.Exists(Path.Combine(GameRoot,"versions",version,version+".json"))&&InstanceMetadata.TryRead(GameRoot,version) is null)
+                Launcher.Application.Instances.InstanceRegistry.RegisterStandaloneVersion(GameRoot,version);
         AutoContinueDownloads = ExperienceFiles.Read<QueuePreferences>(Path.Combine(AppPaths.DataDirectory,"download-queue.json"))?.AutoContinue ?? true;
         _tasks.AutoContinue = AutoContinueDownloads;
         InitializePackWorkbench();
@@ -150,7 +154,7 @@ public sealed partial class MainViewModel
             SetupError="";IsSetupBusy=true;
             try
             {
-                await QueueExperienceTaskAsync(new("setup",game+" 首次安装",GameRoot,null,new(){{"game",game},{"memory",memory.ToString()}}));
+                await QueueExperienceTaskAsync(new("setup",game+" 首次安装",GameRoot,null,new(){{"game",game},{"memory",memory.ToString()},{"automaticMemory",AutomaticMemory.ToString()}}));
                 if(_tasks.List().FirstOrDefault()?.State==DurableTaskState.Completed){RefreshInstances();SelectedInstance=Instances.FirstOrDefault(i=>i.VersionId==game);IsSetupOpen=false;IsInstanceSection=true;if(launch)await LaunchAsync();}
                 else SetupError="任务尚未完成，可在任务中心恢复或查看原因。";
             }
@@ -510,7 +514,7 @@ public sealed partial class MainViewModel
             }
             else if(request.Kind=="setup")
             {
-                await _setupInstaller.InstallAsync(new(request.Arguments["game"],int.Parse(request.Arguments["memory"])),request.GameRoot,AppPaths.DataDirectory,new Progress<FirstRunProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
+                await _setupInstaller.InstallAsync(new(request.Arguments["game"],int.Parse(request.Arguments["memory"]),request.Arguments.TryGetValue("automaticMemory",out var auto)&&bool.TryParse(auto,out var enabled)&&enabled),request.GameRoot,AppPaths.DataDirectory,new Progress<FirstRunProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
             }
             else if(request.Kind=="import")
             {
@@ -518,6 +522,7 @@ public sealed partial class MainViewModel
                 await _modpackInstaller.ImportAsync(source,request.GameRoot,new Progress<ModpackImportProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
             }
             else await Download.ExecutePersistentInstallAsync(request,uiProgress,ct);
+            DurableExecution.Current?.MarkCommitted();
             await PlatformUi.RunOnUiAsync(()=>
             {
                 StatusText=Download.Status="任务已完成："+request.Title;

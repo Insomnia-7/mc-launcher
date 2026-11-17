@@ -196,12 +196,12 @@ public sealed partial class MainViewModel
     [RelayCommand] private void CleanStorage(StorageArea? area)
     {
         if (!CanManageStorage || area?.CanClean != true) return;
-        AskConfirm("清理缓存", "只删除该分类中超过 7 天的完整缓存；再次需要时自动下载。", area.Name + " · " + area.Summary, "清理缓存", () => _ = CleanStorageCoreAsync(area.Key, GameRoot));
+        AskConfirm("清理缓存", area.Key is "game-tasks" or "legacy-tasks"?"清理已结束任务和超过 7 天的无记录暂存，保留暂停、失败任务的断点及恢复资料。":"只删除该分类中超过 7 天的完整缓存；再次需要时自动下载。", area.Name + " · " + area.Summary, "清理缓存", () => _ = CleanStorageCoreAsync(area.Key, GameRoot));
     }
     private async Task CleanStorageCoreAsync(string key, string root)
     {
         if (!CanManageStorage || root != GameRoot) return;
-        if (_tasks.ConflictsWithCleanup(new StorageCatalog(AppPaths.DataDirectory, root).AreaPath(key))) { StorageHint = "此缓存正被未完成任务使用，请先完成或取消相关任务。"; return; }
+        if (key is not ("game-tasks" or "legacy-tasks")&&_tasks.ConflictsWithCleanup(new StorageCatalog(AppPaths.DataDirectory, root).AreaPath(key))) { StorageHint = "此缓存正被未完成任务使用，请先完成或取消相关任务。"; return; }
         using var operation = GameOperationCoordinator.Shared.TryEnter(root, "清理缓存");
         if (operation is null) { StorageHint = GameOperationCoordinator.Shared.BusyMessage(root); return; }
         StorageBusy = true; IsBusy = true;

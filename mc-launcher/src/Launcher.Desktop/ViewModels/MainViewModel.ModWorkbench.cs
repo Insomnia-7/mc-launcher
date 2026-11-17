@@ -20,6 +20,11 @@ public sealed partial class ManagedModRow(MainViewModel.ModRow row):ObservableOb
     public string Meta=>Mod.Meta;
     public string FileName=>Mod.FileName;
     public string State=>Mod.StateText;
+    public string ToggleText=>Mod.Enabled?"停用":"启用";
+    public System.Windows.Input.ICommand? DetailsCommand {get;init;}
+    public System.Windows.Input.ICommand? RevealCommand {get;init;}
+    public System.Windows.Input.ICommand? ToggleCommand {get;init;}
+    public System.Windows.Input.ICommand? DeleteCommand {get;init;}
     [ObservableProperty] private bool _selected;
 }
 public sealed partial class ModUpdateChoice(MainViewModel.ModUpdateRow row):ObservableObject
@@ -60,6 +65,17 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _cloneScreenshots;
     [ObservableProperty] private bool _cloneServers=true;
     public ObservableCollection<ManagedModRow> ManagedMods {get;}=[];
+    public ObservableCollection<ManagedModRow> VisibleManagedMods {get;}=[];
+    [ObservableProperty] private string _managedModQuery="";
+    [ObservableProperty] private string _managedModDetails="";
+    public bool HasManagedModDetails=>ManagedModDetails.Length>0;
+    partial void OnManagedModDetailsChanged(string value)=>OnPropertyChanged(nameof(HasManagedModDetails));
+    partial void OnManagedModQueryChanged(string value)=>FilterManagedMods();
+    private void FilterManagedMods()
+    {
+        var query=ManagedModQuery.Trim();VisibleManagedMods.Clear();
+        foreach(var row in ManagedMods.Where(row=>query.Length==0||$"{row.Name} {row.Meta} {row.FileName}".Contains(query,StringComparison.OrdinalIgnoreCase)))VisibleManagedMods.Add(row);
+    }
     public ObservableCollection<ModUpdateChoice> UpdateChoices {get;}=[];
     public ObservableCollection<ModPlannedChange> PlannedModChanges {get;}=[];
     public bool CanUseModWorkbench=>SelectedInstance is not null&&!IsBusy&&!Download.IsBusy&&!IsModBusy&&!ExperienceBusy&&!IsModPreviewBusy;
@@ -77,7 +93,7 @@ public sealed partial class MainViewModel
         PropertyChanged+=(_,e)=>
         {
             if(e.PropertyName is nameof(SelectedInstance) or nameof(GameRoot)||e.PropertyName==nameof(ShellPage)&&ShellPage!="detail")
-            {CloseModPreview();IsCloneEditorOpen=false;CloneName=SelectedGameName+" · 试装";}
+            {CloseModPreview();IsCloneEditorOpen=false;ManagedModDetails="";CloneName=SelectedGameName+" · 试装";}
             if(e.PropertyName is nameof(IsBusy) or nameof(IsModBusy) or nameof(ExperienceBusy) or nameof(IsModPreviewBusy) or nameof(SelectedInstance))NotifyWorkbench();
         };
         Download.PropertyChanged+=(_,e)=>{if(e.PropertyName==nameof(Download.IsBusy))NotifyWorkbench();};
@@ -96,7 +112,8 @@ public sealed partial class MainViewModel
     {
         _syncingWorkbench=true;
         foreach(var item in ManagedMods)item.PropertyChanged-=WorkbenchRowChanged;
-        ManagedMods.Clear();foreach(var mod in InstalledMods){var row=new ManagedModRow(mod);row.PropertyChanged+=WorkbenchRowChanged;ManagedMods.Add(row);}
+        ManagedMods.Clear();foreach(var mod in InstalledMods){var row=new ManagedModRow(mod){DetailsCommand=ShowManagedModDetailsCommand,RevealCommand=RevealManagedModFileCommand,ToggleCommand=ToggleManagedModCommand,DeleteCommand=DeleteManagedModCommand};row.PropertyChanged+=WorkbenchRowChanged;ManagedMods.Add(row);}
+        FilterManagedMods();
         if(!IsModPreviewOpen)
         {
             foreach(var item in UpdateChoices)item.PropertyChanged-=WorkbenchRowChanged;
@@ -117,7 +134,7 @@ public sealed partial class MainViewModel
         if(IsModPreviewOpen)ModPlanHint="选择好目标版本后，重新生成变更预览。";
         NotifyWorkbench();
     }
-    [RelayCommand] private void SelectAllManagedMods(string? value){foreach(var row in ManagedMods)row.Selected=value!="none";NotifyWorkbench();}
+    [RelayCommand] private void SelectAllManagedMods(string? value){foreach(var row in VisibleManagedMods)row.Selected=value!="none";NotifyWorkbench();}
     [RelayCommand] private void SelectAllModUpdates(string? value){foreach(var row in UpdateChoices)row.Selected=value!="none";NotifyWorkbench();}
     private async Task<IReadOnlyList<ModFileSelection>> SelectedModFilesAsync()
     {
@@ -143,9 +160,9 @@ public sealed partial class MainViewModel
         catch(Exception ex){ExperienceHint=Launcher.Application.Diagnostics.ErrorText.Describe(ex);}
         finally{IsModPreviewBusy=false;NotifyWorkbench();}
     }
-    private async Task QueueLocalPlanConfirmedAsync(ModChangePlan plan)
+    private async Task QueueLocalPlanConfirmedAsync(ModChangePlan plan,bool backup=true)
     {
-        try{await QueueModPlanAsync(plan,false);}catch(Exception ex){ExperienceHint=Launcher.Application.Diagnostics.ErrorText.Describe(ex);}
+        try{await QueueModPlanAsync(plan,false,backup);}catch(Exception ex){ExperienceHint=Launcher.Application.Diagnostics.ErrorText.Describe(ex);}
     }
     [RelayCommand] private async Task PreviewSelectedModUpdatesAsync()
     {
@@ -239,14 +256,18 @@ public sealed partial class MainViewModel
         var plan=ExperienceFiles.Read<ModChangePlan>(ExperienceFiles.Child(Path.Combine(AppPaths.DataDirectory,"mod-plans"),id+".json"))??throw new InvalidDataException("变更计划丢失，请重新生成预览。");
         if(plan.GameRoot!=request.GameRoot||plan.InstanceId!=request.InstanceId)throw new InvalidDataException("变更计划与目标实例不匹配。");return plan;
     }
-    private async Task QueueModPlanAsync(ModChangePlan plan,bool trial)
+    private async Task QueueModPlanAsync(ModChangePlan plan,bool trial,bool backup=true)
     {
         if(_modPlans is null)return;
         EnsureInstanceStopped(plan.InstanceId);await _modPlans.ValidateAsync(plan);
         var args=new Dictionary<string,string>{{"plan",StoreModPlan(plan)}};
+        var singleLocal=!trial&&plan.Changes.Count==1&&plan.Action is ModBatchAction.Enable or ModBatchAction.Disable or ModBatchAction.Delete;
+        if(singleLocal)args["quiet"]="true";
+        if(!backup)args["backup"]="false";
         if(trial)args["clone"]=JsonSerializer.Serialize(CreateCloneRequest(plan.InstanceId,true));
-        var task=await QueueExperienceTaskAsync(new(trial?"trial-update":"mod-batch",trial?"创建试装副本并应用变更":$"模组批量操作 · {plan.Changes.Count} 项",plan.GameRoot,plan.InstanceId,args));
-        if(task?.State==DurableTaskState.Completed){CloseModPreview();await RefreshModsAsync();ExperienceHint=trial?"变更已应用到试装副本，原实例保持不变。":"模组变更已完成；需要恢复时可使用操作前快照。";}
+        var title=trial?"创建试装副本并应用变更":singleLocal?$"{plan.Changes[0].Kind}模组 · {plan.Changes[0].Name}":$"模组批量操作 · {plan.Changes.Count} 项";
+        var task=await QueueExperienceTaskAsync(new(trial?"trial-update":"mod-batch",title,plan.GameRoot,plan.InstanceId,args));
+        if(task?.State==DurableTaskState.Completed){CloseModPreview();ManagedModDetails="";await RefreshModsAsync();ExperienceHint=trial?"变更已应用到试装副本，原实例保持不变。":"模组变更已完成。";}
         else ModPlanHint=task?.Detail??ExperienceHint;
     }
     private InstanceCloneRequest CreateCloneRequest(string source,bool trial)
@@ -291,8 +312,9 @@ public sealed partial class MainViewModel
         }
         await _modPlans!.ValidateAsync(plan,ct);
         progress.Report(new(0,"正在保存操作前快照…"));
-        await new InstanceSnapshots(AppPaths.DataDirectory,request.GameRoot,plan.InstanceId).CaptureAsync("批量操作前 · "+plan.Changes.Count+" 项",ct:ct);
-        progress.Report(new(1,"快照已保存，正在准备变更文件…"));
+        if(plan.Action is not (ModBatchAction.Enable or ModBatchAction.Disable)&&(!request.Arguments.TryGetValue("backup",out var backup)||backup!="false"))
+            await new InstanceSnapshots(AppPaths.DataDirectory,request.GameRoot,plan.InstanceId).CaptureAsync("批量操作前 · "+plan.Changes.Count+" 项",ct:ct);
+        progress.Report(new(1,"正在准备变更文件…"));
         await _modPlans.ApplyAsync(plan,new WorkbenchProgress(progress),ct);
     }
     private sealed class WorkbenchProgress(IProgress<TaskProgress> target):IProgress<ModInstallProgress>

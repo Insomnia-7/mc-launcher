@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -31,23 +30,7 @@ internal static class StartupChecks
                 await Task.Delay(200);
                 Check("启动标识使用原生透明窗口",splash.ActualTransparencyLevel==WindowTransparencyLevel.Transparent&&splash.Background==Brushes.Transparent&&splash.TransparencyBackgroundFallback==Brushes.Transparent);
                 Check("透明启动标识没有边框与任务栏项目",splash.WindowDecorations==WindowDecorations.None&&!splash.ShowInTaskbar);
-                Check("启动文字明确使用灰度抗锯齿且没有描边效果",TextOptions.GetTextRenderingMode(splash.BrandText)==TextRenderingMode.Antialias&&splash.BrandText.Effect is null);
-                using(var image=new RenderTargetBitmap(new PixelSize(160,48),new Vector(96,96)))
-                {
-                    image.Render(splash.BrandText);image.Save(Path.Combine(root,"startup-text-alpha.png"),PngBitmapEncoderOptions.Default);
-                    var bytes=new byte[160*48*4];var memory=Marshal.AllocHGlobal(bytes.Length);
-                    try{image.CopyPixels(new PixelRect(0,0,160,48),memory,bytes.Length,160*4);Marshal.Copy(memory,bytes,0,bytes.Length);}finally{Marshal.FreeHGlobal(memory);}
-                    var visible=0;var edges=0;var bad=0;
-                    for(var i=0;i<bytes.Length;i+=4)
-                    {
-                        var alpha=bytes[i+3];if(alpha==0)continue;visible++;if(alpha<255)edges++;
-                        // RenderTargetBitmap uses premultiplied BGRA: plain white has RGB == alpha.
-                        if(Math.Abs(bytes[i]-alpha)>2||Math.Abs(bytes[i+1]-alpha)>2||Math.Abs(bytes[i+2]-alpha)>2)bad++;
-                    }
-                    Check("启动文字存在平滑半透明边缘",visible>100&&edges>20);
-                    Check("启动文字所有可见像素均为纯白且无黑色彩色边",bad==0);
-                    File.WriteAllText(Path.Combine(root,"startup-text-audit.json"),JsonSerializer.Serialize(new{visible,edges,bad},new JsonSerializerOptions{WriteIndented=true}));
-                }
+                Check("启动标识仅显示图标，不包含方隅文字",splash.Mark.Children.Count==1&&splash.Mark.Children[0] is Image);
                 using(var image=new RenderTargetBitmap(new PixelSize(240,180),new Vector(96,96))){image.Render(splash);image.Save(Path.Combine(root,"startup-logo-transparent.png"),PngBitmapEncoderOptions.Default);}
                 main=new MainWindow{DataContext=model,Width=1280,Height=820};main.PrepareStartupEntrance();
                 var navNames=new[]{"HomeNav","LibraryNav","MultiplayerNav","NetworkNav","DiscoverNav","TaskCenterEntry","SettingsEntry"};
@@ -75,7 +58,7 @@ internal static class StartupChecks
                 model.SelectedMotion=model.MotionChoices.Single(x=>x.Id=="off");
                 main=new MainWindow{DataContext=model};main.PrepareStartupEntrance();Check("关闭动画时跳过入场准备",!main.IsStartupEntranceActive);main.Close();
                 await StartupReadinessChecks.Run(root,Check);
-                File.WriteAllText(Path.Combine(root,"startup-native.json"),JsonSerializer.Serialize(new{passed,scope="Current Windows: transparent logo, text alpha, staggered entry, opaque main, interruption, delayed profile and texture, ready first frame, navigation geometry, cancellation and timeout. Synthetic account only."},new JsonSerializerOptions{WriteIndented=true}));
+                File.WriteAllText(Path.Combine(root,"startup-native.json"),JsonSerializer.Serialize(new{passed,scope="Current Windows: transparent icon without wordmark, staggered entry, opaque main, interruption, delayed profile and texture, ready first frame, navigation geometry, cancellation and timeout. Synthetic account only."},new JsonSerializerOptions{WriteIndented=true}));
                 Console.WriteLine($"{passed} native startup checks passed");exit=0;
             }
             catch(Exception e){Console.Error.WriteLine(e);}

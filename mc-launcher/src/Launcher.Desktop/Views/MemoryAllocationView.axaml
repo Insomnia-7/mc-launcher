@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Launcher.App.ViewModels" x:DataType="vm:MainViewModel" x:Class="Launcher.Desktop.Views.MemoryAllocationView">
+  <StackPanel Spacing="14">
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="内存分配" FontWeight="SemiBold"/><Button Grid.Column="1" Classes="link" Command="{Binding RefreshMemoryStatusCommand}" Content="刷新占用"/></Grid>
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="24" RowDefinitions="Auto,Auto" RowSpacing="8">
+      <RadioButton x:Name="AutomaticMemoryButton" IsChecked="{Binding AutomaticMemory, Mode=OneWay}" Command="{Binding SelectMemoryModeCommand}" CommandParameter="auto" Content="自动分配"/>
+      <RadioButton x:Name="ManualMemoryButton" Grid.Row="1" IsChecked="{Binding ManualMemory, Mode=OneWay}" Command="{Binding SelectMemoryModeCommand}" CommandParameter="manual" Content="自定义"/>
+      <Slider x:Name="MemorySlider" Grid.Row="1" Grid.Column="1" Minimum="512" Maximum="{Binding MemorySliderMaximum}" TickFrequency="512" IsSnapToTickEnabled="True" Value="{Binding MemoryMb, Mode=TwoWay}" IsEnabled="{Binding ManualMemory}" AutomationProperties.Name="游戏分配内存，单位 MB"/>
+      <TextBlock Grid.Column="1" HorizontalAlignment="Right" Text="{Binding AllocatedMemoryText}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+    </Grid>
+    <TextBlock Text="{Binding MemoryModeText}" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+    <Border CornerRadius="4" ClipToBounds="True"><Grid x:Name="MemoryBar" Height="8" ColumnDefinitions="*,*,*"><Border Background="{DynamicResource MutedBrush}"/><Border Grid.Column="1" Background="{DynamicResource AccentBrush}"/><Border Grid.Column="2" Background="{DynamicResource SelectedBrush}"/></Grid></Border>
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="16"><StackPanel Spacing="4"><TextBlock Text="系统已用 / 总内存" Classes="muted" FontSize="12"/><TextBlock Text="{Binding SystemMemoryText}"/></StackPanel><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="游戏分配" Classes="muted" FontSize="12"/><TextBlock Text="{Binding AllocatedMemoryText}"/><TextBlock Text="{Binding RemainingMemoryText}" Classes="muted" FontSize="12"/></StackPanel></Grid>
+    <TextBlock Text="{Binding MemoryPressureText}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"/>
+  </StackPanel>
+</UserControl>

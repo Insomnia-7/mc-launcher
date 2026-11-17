@@ -1,14 +1,7 @@
 name: Platform Preview
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'mc-launcher/src/**'
-      - 'mc-launcher/tests/Platform.Checks/**'
-      - 'mc-launcher/packaging/publish-unix.ps1'
-      - 'mc-launcher/packaging/check-unix-startup.ps1'
-      - '.github/workflows/platform-preview.yml'
+# Windows is the active development target. Keep Unix packaging available for a future manual run.
 permissions:
   contents: read
 concurrency:

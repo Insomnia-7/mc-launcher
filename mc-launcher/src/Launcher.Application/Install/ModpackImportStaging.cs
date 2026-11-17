@@ -22,7 +22,9 @@ internal sealed class ModpackImportStaging : IDisposable
         _target=LongPath.Combine(Path.Combine(root,"instances"),instanceId);
         if(!Path.GetFullPath(_target).StartsWith(Path.Combine(root,"instances")+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("实例导入路径越界");
-        Root=Launcher.Application.Operations.DurableExecution.Current is {} operation ? Path.Combine(operation.Directory,"import") : Path.Combine(root,".cache","imports",Guid.NewGuid().ToString("N"));
+        Root=Launcher.Application.Operations.DurableExecution.Current is {} operation
+            ? Path.Combine(root,".cache","tasks",Path.GetFileName(operation.Directory),"import")
+            : Path.Combine(root,".cache","imports",Guid.NewGuid().ToString("N"));
         InstanceRoot=Path.Combine(Root,"instances",instanceId);
         LongPath.EnsureDirectory(GameDirectory);
     }
@@ -59,14 +61,14 @@ internal sealed class ModpackImportStaging : IDisposable
         if(!Directory.Exists(LongPath.Normalize(_target)))
         {
             LongPath.EnsureDirectory(Path.GetDirectoryName(_target)!);
-            Directory.Move(LongPath.Normalize(InstanceRoot),LongPath.Normalize(_target));
+            LongPath.MoveDirectory(InstanceRoot,_target);
             _movedNewInstance=true;
             return;
         }
         foreach(var staged in Directory.EnumerateFiles(LongPath.Normalize(InstanceRoot),"*",SearchOption.AllDirectories))
         {
             ct.ThrowIfCancellationRequested();
-            var relative=Path.GetRelativePath(LongPath.Normalize(InstanceRoot),staged);
+            var relative=Path.GetRelativePath(InstanceRoot,LongPath.Canonical(staged));
             var target=LongPath.Normalize(LongPath.Combine(_target,relative));
             RejectLinks(target);
             EnsureTargetDirectory(Path.GetDirectoryName(target)!);
@@ -78,7 +80,7 @@ internal sealed class ModpackImportStaging : IDisposable
                 File.Move(target,backup);
             }
             _changes.Add((target,backup));
-            File.Move(staged,target);
+            File.Move(LongPath.Normalize(staged),LongPath.Normalize(target));
         }
         ct.ThrowIfCancellationRequested();
     }
@@ -124,7 +126,7 @@ internal sealed class ModpackImportStaging : IDisposable
     public void Cleanup()
     {
         // Preserve the backup if a locked original could not be restored.
-        if(_changes.Count>0) {CleanupFailures.Add(Root);return;}
+        if(_changes.Count>0) {CleanupFailures.Add(Root);Launcher.Application.Operations.DurableExecution.Current?.PreserveRecovery();return;}
         try {LongPath.DeleteDirectory(Root);}
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException) {CleanupFailures.Add(Root);}
     }
