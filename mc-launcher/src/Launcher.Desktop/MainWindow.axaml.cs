@@ -228,7 +228,7 @@ public sealed partial class MainWindow : Window
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
-        if (_model is null || _model.IsSetupOpen) return;
+        if (_model is null) return;
         var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToArray() ?? [];
         foreach (var path in paths)
         {

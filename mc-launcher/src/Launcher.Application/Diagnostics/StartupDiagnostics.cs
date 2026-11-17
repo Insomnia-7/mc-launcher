@@ -140,7 +140,7 @@ public static partial class StartupDiagnostics
             if (!m.Success) return null;
             return new StartupDiagnosis(
                 $"文件缺失：{Shorten(m.Groups["path"].Value)}",
-                "版本文件不全。用「下载中心」重装这个版本，或者重新导入整合包",
+                "版本文件不全。用「发现资源」重装这个版本，或者重新导入整合包",
                 m.Value);
         }, 70));
 

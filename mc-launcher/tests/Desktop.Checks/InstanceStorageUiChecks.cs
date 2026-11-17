@@ -37,6 +37,10 @@ internal static class InstanceStorageUiChecks
         model.MemoryMb=explicitMemory;model.SaveSettingsCommand.Execute(null);
         check("旧界面或预设明确修改数值时保留为自定义",!model.AutomaticMemory&&InstanceSettings.Load(model.GameRoot,id).MemoryMb==explicitMemory);
         model.ShowInstancesCommand.Execute(null);pump(100);
+        check("实例页面直接提供删除按钮",Find<Button>("DeleteSelectedInstanceButton").Command==model.DeleteInstanceCommand);
+        check("实例列表每行提供直接删除入口",Find<ListBox>("LibraryList").GetVisualDescendants().OfType<Button>().Any(b=>Avalonia.Automation.AutomationProperties.GetName(b)=="删除此实例"));
+        model.DeleteHomeEntryCommand.Execute(model.LibraryEntries.Single(e=>e.Instance.InstanceId==id));pump(40);
+        check("列表删除先确认且可取消",model.IsConfirmOpen&&model.ConfirmTitle.Contains(model.SelectedInstance!.DisplayName));model.ConfirmCancelCommand.Execute(null);
         check("实例页提供直接管理模组入口",Find<Button>("ManageSelectedModsButton").Command==model.OpenSelectedModsCommand);
         model.OpenSelectedModsCommand.Execute(null);Wait(model.RefreshModsCommand.ExecuteAsync(null));
         check("模组管理显示每个文件的独立操作",model.ManagedMods.Count==2&&model.ManagedMods.All(x=>x.DetailsCommand is not null&&x.RevealCommand is not null&&x.ToggleCommand is not null&&x.DeleteCommand is not null));
@@ -111,5 +115,17 @@ internal static class InstanceStorageUiChecks
         pump(150);check("两位下载数量完整显示",number.Text=="12"&&badge.Bounds.Width>=number.Bounds.Width+7);BadgeChecks("收起两位数");
         model.IsSidebarCollapsed=false;pump(500);BadgeChecks("重新展开两位数");
         foreach(var task in created)tasks.Cancel(task);pump(100);check("没有下载任务时隐藏气泡",!badge.IsVisible);
+        var monitor=typeof(MainViewModel).GetMethod("WatchStartupCoreAsync",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!;
+        var exitLog=Path.Combine(AppPaths.DataDirectory,"fixture-exit.log");File.WriteAllText(exitLog,"Failed to fetch user properties: 401\nStopping!\n");
+        Wait((Task)monitor.Invoke(model,[new ExitedGame(0),exitLog])!);
+        check("正常退出显示实际退出码，不因普通登录警告误报崩溃",model.StatusText.Contains("退出码 0")&&!model.StatusText.Contains("失败"));
+        Wait((Task)monitor.Invoke(model,[new ExitedGame(42),exitLog])!);
+        check("无可见窗口时保留真实退出码及诊断入口",model.StatusText.Contains("退出码 42")&&model.DiagnosisText.Contains("尚未确认可见游戏窗口"));
+    }
+    private sealed class ExitedGame(int code):Launcher.Application.Abstractions.IGameProcess
+    {
+        public int Id=>1;public bool HasExited=>true;
+        public Task<int> WaitForExitAsync(CancellationToken ct=default)=>Task.FromResult(code);
+        public void Kill(){}public void Dispose(){}
     }
 }

@@ -68,7 +68,7 @@ internal static class ShowcaseChecks
         check("预览弹窗把焦点移入输入框",Find<TextBox>(view,"ShowcaseDialogInput").IsFocused);
         vm.DialogText="只用于预览";model.SetThemeMode(ThemeMode.Light);capture("showcase-dialog",true);
         vm.ConfirmDialogCommand.Execute(null);pump(30);
-        check("确认预览只关闭示例弹窗并发出示例通知",!vm.IsDialogOpen&&vm.Toasts.Items.Count==1&&vm.Toasts.Items[0].IsSuccess&&!model.IsSetupOpen);
+        check("确认预览只关闭示例弹窗并发出示例通知",!vm.IsDialogOpen&&vm.Toasts.Items.Count==1&&vm.Toasts.Items[0].IsSuccess&&!model.HasOverlay);
         vm.Toasts.Clear();Wait(view.ReplayEntranceAsync());
         check("减少动画下七段重播立即归位",view.Stages.Count==7&&view.Stages.All(c=>c.Opacity==1&&(c.RenderTransform?.Value.M32??0)==0));
         model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="smooth");var one=view.ReplayEntranceAsync();pump(10);var two=view.ReplayEntranceAsync();pump(10);var three=view.ReplayEntranceAsync();model.SelectedMotion=model.MotionChoices.Single(m=>m.Id=="off");Wait(Task.WhenAll(one,two,three));

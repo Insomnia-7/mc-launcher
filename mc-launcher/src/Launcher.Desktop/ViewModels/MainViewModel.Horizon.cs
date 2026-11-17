@@ -94,8 +94,10 @@ public sealed partial class MainViewModel
         if((await _horizon.CheckAsync(instance.Build,ct)).ExitCode==0){HorizonHint="游戏资源已完整，可以启动。";return;}
         var build=instance.Build;var minecraft=Path.Combine(_horizon.Root,"minecraft",build.Minecraft);
         HorizonHint=$"正在为已验证的游戏账号准备 Minecraft {build.Minecraft} 文件…";
-        await _installer.InstallAsync(build.Minecraft,minecraft,true,new Progress<Launcher.Application.Abstractions.DownloadProgress>(p=>HorizonHint=$"下载游戏资源 · {p.Percent:F0}%"),ct);
-        var version=JsonSerializer.Deserialize<VersionJson>(await File.ReadAllTextAsync(Path.Combine(minecraft,"versions",build.Minecraft,build.Minecraft+".json"),ct))??throw new InvalidDataException("游戏版本信息读取失败。");
+        var original=await _horizon.OriginalVersionManifestAsync(build,minecraft,ct);
+        var version=JsonSerializer.Deserialize<VersionJson>(original)??throw new InvalidDataException("游戏版本信息读取失败。");
+        await _installer.InstallVersionAsync(version,minecraft,true,new Progress<Launcher.Application.Abstractions.DownloadProgress>(p=>HorizonHint=$"下载游戏资源 · {p.Percent:F0}%"),ct);
+        await File.WriteAllBytesAsync(Path.Combine(minecraft,"versions",build.Minecraft,build.Minecraft+".json"),original,ct);
         var server=version.Downloads?.Server??throw new InvalidDataException("此版本缺少服务端资源地址。");
         HorizonHint="正在准备资源转换需要的服务端文件…";
         using(var http=HttpClientFactory.Create("Fangyu-Horizon/1.0",TimeSpan.FromMinutes(10)))

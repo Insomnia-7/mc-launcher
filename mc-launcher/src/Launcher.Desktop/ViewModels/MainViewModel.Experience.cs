@@ -147,19 +147,6 @@ public sealed partial class MainViewModel
         Download.QueueTask=QueueExperienceTaskAsync;
         CancelPersistentTask=()=>{if(_tasks.ActiveId is not {} id)return false;_tasks.Cancel(id);return true;};
         Download.CancelPersistentTask=CancelPersistentTask;
-        PersistentSetup=async(game,memory,launch)=>
-        {
-            if(string.IsNullOrWhiteSpace(game)||memory is < 512 or > 65536){SetupError="请选择版本并填写 512–65536 MiB 内存。";return;}
-            if(!HasAccount){if(!OfflineIdentityFactory.IsValidName(SetupOfflineName)){SetupError="离线用户名需为 3–16 位字母、数字或下划线。";return;}OfflineName=SetupOfflineName;}
-            SetupError="";IsSetupBusy=true;
-            try
-            {
-                await QueueExperienceTaskAsync(new("setup",game+" 首次安装",GameRoot,null,new(){{"game",game},{"memory",memory.ToString()},{"automaticMemory",AutomaticMemory.ToString()}}));
-                if(_tasks.List().FirstOrDefault()?.State==DurableTaskState.Completed){RefreshInstances();SelectedInstance=Instances.FirstOrDefault(i=>i.VersionId==game);IsSetupOpen=false;IsInstanceSection=true;if(launch)await LaunchAsync();}
-                else SetupError="任务尚未完成，可在任务中心恢复或查看原因。";
-            }
-            finally{IsSetupBusy=false;}
-        };
         PersistentImport=path=>QueueExperienceTaskAsync(new("import","导入 "+Path.GetFileName(path),GameRoot,null,new(){{"path",Path.GetFullPath(path)}}));
         PersistentModUpdate=(id,candidate)=>QueueExperienceTaskAsync(new("update","更新 "+candidate.ModId,GameRoot,id,new()
         {
@@ -210,11 +197,11 @@ public sealed partial class MainViewModel
     }
     [RelayCommand] private async Task OpenWardrobeAsync()
     {
-        IsSetupOpen=false;IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;
+        IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;
         ExperienceTab=0;IsExperienceOpen=true;await RefreshWardrobeAsync();
     }
     [RelayCommand] private void OpenInstanceHistory(){OpenGame(null);DetailTab=2;ReloadExperienceLists();}
-    [RelayCommand] private void OpenTaskCenter(){IsSetupOpen=false;IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;ExperienceTab=2;IsExperienceOpen=true;RefreshTaskRows();}
+    [RelayCommand] private void OpenTaskCenter(){IsAccountsOpen=false;IsAppearanceOpen=false;IsNetworkOpen=false;ExperienceTab=2;IsExperienceOpen=true;RefreshTaskRows();}
     [RelayCommand] private void CloseExperience(){ShowInstances();}
     [RelayCommand] private void SelectExperienceTab(string? value)
     {
@@ -514,7 +501,7 @@ public sealed partial class MainViewModel
             }
             else if(request.Kind=="setup")
             {
-                await _setupInstaller.InstallAsync(new(request.Arguments["game"],int.Parse(request.Arguments["memory"]),request.Arguments.TryGetValue("automaticMemory",out var auto)&&bool.TryParse(auto,out var enabled)&&enabled),request.GameRoot,AppPaths.DataDirectory,new Progress<FirstRunProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
+                await new FirstRunInstaller(_installer,_versionMeta,_javaProvisioner).InstallAsync(new(request.Arguments["game"],int.Parse(request.Arguments["memory"]),request.Arguments.TryGetValue("automaticMemory",out var auto)&&bool.TryParse(auto,out var enabled)&&enabled),request.GameRoot,AppPaths.DataDirectory,new Progress<FirstRunProgress>(p=>uiProgress.Report(new(p.Percent,p.Stage+" · "+p.Detail))),ct);
             }
             else if(request.Kind=="import")
             {

@@ -20,7 +20,7 @@ public sealed record HorizonInstance(string Id, string Name, HorizonBuild Build)
 public sealed record HorizonCommandResult(int ExitCode, string Output, string Error);
 
 /// <summary>Horizon Launch API 0.1: verified builds, isolated resources, and sessions over stdin.</summary>
-public sealed class HorizonClient(HttpClient http, string dataRoot)
+public sealed partial class HorizonClient(HttpClient http, string dataRoot)
 {
     public string Root { get; } = Path.GetFullPath(Path.Combine(dataRoot, "horizon"));
     public static string ClientName => OperatingSystem.IsWindows() ? "horizon-client.exe" : "horizon-client";

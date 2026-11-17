@@ -78,10 +78,10 @@
               <Button x:Name="LibraryNav" Classes="nav shell-nav" ToolTip.Tip="实例" Classes.active="{Binding IsLibraryPage}" Command="{Binding ShowInstancesCommand}" AutomationProperties.Name="游戏实例"><icons:IconLabel Icon="NavVersions" Text="游戏实例" IconSize="18"/></Button>
               <Button x:Name="MultiplayerNav" Classes="nav shell-nav" ToolTip.Tip="联机" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机大厅"><icons:IconLabel Icon="NavPeople" Text="联机大厅" IconSize="18"/></Button>
               <Button x:Name="NetworkNav" Classes="nav shell-nav" ToolTip.Tip="网络与连接" Classes.active="{Binding IsNetworkSettingsPage}" Command="{Binding OpenNetworkCommand}" AutomationProperties.Name="网络与连接"><icons:IconLabel Icon="NetworkWifi" Text="网络与连接" IconSize="18"/></Button>
-              <Button x:Name="DiscoverNav" Classes="nav shell-nav" ToolTip.Tip="资源" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="资源管理"><icons:IconLabel Icon="ActionFolder" Text="资源管理" IconSize="18"/></Button>
-              <Button x:Name="TaskCenterEntry" Classes="nav shell-nav" HorizontalContentAlignment="Stretch" ToolTip.Tip="下载" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载中心">
+              <Button x:Name="DiscoverNav" Classes="nav shell-nav" ToolTip.Tip="资源" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="发现资源"><icons:IconLabel Icon="ActionFolder" Text="发现资源" IconSize="18"/></Button>
+              <Button x:Name="TaskCenterEntry" Classes="nav shell-nav" HorizontalContentAlignment="Stretch" ToolTip.Tip="下载" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载进度">
                 <Grid x:Name="TaskNavContent">
-                  <icons:IconLabel x:Name="TaskNavLabel" Icon="NavDownload" Text="下载中心" IconSize="18" HorizontalAlignment="Left"/>
+                  <icons:IconLabel x:Name="TaskNavLabel" Icon="NavDownload" Text="下载进度" IconSize="18" HorizontalAlignment="Left"/>
                   <Border x:Name="SidebarTaskBadge" IsVisible="{Binding HasSidebarTasks}" Background="{DynamicResource AccentFillBrush}" CornerRadius="8" MinWidth="16" Height="16" Padding="4,0" HorizontalAlignment="Right" VerticalAlignment="Center" IsHitTestVisible="False">
                     <TextBlock x:Name="SidebarTaskCountText" Text="{Binding SidebarTaskCount}" Foreground="White" FontSize="10" LineHeight="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"/>
                   </Border>

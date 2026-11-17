@@ -34,7 +34,7 @@ internal static partial class UiCheck
         vm.OfflineName="Offline_02";
         Check("编辑离线名称不改变正版身份", vm.Account?.Uuid==alpha.Uuid && SavedAccounts().OfflineIdentity.Name=="Offline_02");
         vm.SelectedAccountChoice=vm.AccountChoices.Single(c=>c.Uuid is null); vm.UseAccountCommand.Execute(null);
-        Check("主动切换离线身份并同步向导", vm.Account is null && SavedAccounts().Selected is null && vm.AccountText.Contains("Offline_02") && vm.SetupOfflineName=="Offline_02");
+        Check("主动切换离线身份", vm.Account is null && SavedAccounts().Selected is null && vm.AccountText.Contains("Offline_02"));
         State.FailAccountSave=true;
         vm.SelectedAccountChoice=vm.AccountChoices.Single(c=>c.Uuid==beta.Uuid); vm.UseAccountCommand.Execute(null);
         Check("切换保存失败保留内存与磁盘原身份", vm.Account is null && SavedAccounts().Selected is null && vm.AccountHint.Contains("保持不变"));
@@ -85,8 +85,8 @@ internal static partial class UiCheck
         Check("异常续期身份不覆盖当前账号", mismatch && SavedAccounts().Selected?.Uuid==beta.Uuid);
         vm.IsBusy=true;vm.SelectedAccountChoice=vm.AccountChoices[0];vm.UseAccountCommand.Execute(null);
         Check("启动或安装期间账号操作被阻止", !vm.CanManageAccounts && !vm.LoginCommand.CanExecute(null) && vm.Account?.Uuid==beta.Uuid);
-        vm.IsBusy=false;vm.IsSetupBusy=true;
-        Check("安装向导执行中禁止账号切换", !vm.OpenAccountsCommand.CanExecute(null)); vm.IsSetupBusy=false;
+        vm.IsBusy=false;vm.IsBusy=true;
+        Check("安装时禁止账号切换", !vm.OpenAccountsCommand.CanExecute(null)); vm.IsBusy=false;
         vm.IsUpdating=true;Check("更新期间禁止账号切换", !vm.UseAccountCommand.CanExecute(null));vm.IsUpdating=false;
         library=SavedAccounts();
         for(var i=0;i<20;i++) library.AddOrUpdate(new MicrosoftAccount(i.ToString("x32"),"Fixture_"+i,"fixture-access","fixture-refresh",DateTimeOffset.UtcNow.AddDays(1)));

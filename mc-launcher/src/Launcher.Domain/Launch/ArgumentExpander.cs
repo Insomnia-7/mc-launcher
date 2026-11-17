@@ -52,12 +52,11 @@ public static class ArgumentExpander
         foreach (var value in values)
         {
             if (!RuleEvaluator.IsAllowed(value.Rules, ctx)) continue;
-            if (value.Value is null) continue;
-
-            var expanded = Expand(value.Value, vars);
-            if (expanded.Length == 0 || expanded == " ") continue;
-
-            result.Add(expanded);
+            foreach(var raw in value.Values??(value.Value is {} single?[single]:[]))
+            {
+                var expanded=Expand(raw,vars);
+                if(expanded.Length>0&&expanded!=" ")result.Add(expanded);
+            }
         }
 
         return result;

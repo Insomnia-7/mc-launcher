@@ -200,6 +200,7 @@ public sealed class WinProcessLauncher(IJavaLocator? javaLocator = null) : IProc
 
         public int Id => _process.Id;
         public bool HasExited => _process.HasExited;
+        public bool TryShowWindow()=>GameWindow.TryShow(_process);
 
         private void Write(string? line)
         {
@@ -210,6 +211,8 @@ public sealed class WinProcessLauncher(IJavaLocator? javaLocator = null) : IProc
         public async Task<int> WaitForExitAsync(CancellationToken ct = default)
         {
             await _process.WaitForExitAsync(ct).ConfigureAwait(false);
+            _process.WaitForExit(); // Drain redirected output before diagnosing the final log.
+            Write($"[Fangyu] Game process exited with code {_process.ExitCode}.");
             return _process.ExitCode;
         }
 

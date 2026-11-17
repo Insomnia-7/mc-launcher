@@ -34,10 +34,10 @@ internal static class PageSizeChecks
         }
         var detail=host.Content!;var detailSize=detail.Bounds.Size;
         foreach(var tab in new[]{1,2,3,4,0}){model.DetailTab=tab;await Task.Delay(100);Check("详情子页"+tab+"保持详情窗口尺寸",detail.Bounds.Size==detailSize&&window.ClientSize==ownerSize);}
-        foreach(var dialog in new[]{"SetupDialog","AccountsDialog","ConfirmDialog","RestartDialog"})
+        foreach(var dialog in new[]{"AccountsDialog","ConfirmDialog","RestartDialog"})
         {
             model.SelectedMotion=model.MotionChoices.Single(x=>x.Id=="off");
-            void Open(bool value){switch(dialog){case "SetupDialog":model.IsSetupOpen=value;break;case "AccountsDialog":model.IsAccountsOpen=value;break;case "ConfirmDialog":model.IsConfirmOpen=value;break;default:model.DataRestartRequired=value;break;}}
+            void Open(bool value){switch(dialog){case "AccountsDialog":model.IsAccountsOpen=value;break;case "ConfirmDialog":model.IsConfirmOpen=value;break;default:model.DataRestartRequired=value;break;}}
             Open(true);await Task.Delay(100);
             var surface=window.GetVisualDescendants().OfType<AnimatedDialog>().Single(x=>x.Name==dialog).Surface!;var size=surface.Bounds.Size;
             Open(false);await Task.Delay(50);model.SelectedMotion=model.MotionChoices.Single(x=>x.Id=="smooth");Open(true);await Task.Delay(70);

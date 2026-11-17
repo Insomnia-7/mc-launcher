@@ -87,43 +87,26 @@ public sealed class ArgumentValueConverter : JsonConverter<ArgumentValue>
         if (reader.TokenType != JsonTokenType.StartObject)
             throw new JsonException($"arguments 元素应为字符串或对象，实际是 {reader.TokenType}");
 
-        string? value = null;
-        List<Rule>? rules = null;
-
-        while (reader.Read())
+        using var document=JsonDocument.ParseValue(ref reader);
+        var root=document.RootElement;
+        root.TryGetProperty("value",out var value);
+        return new ArgumentValue
         {
-            if (reader.TokenType == JsonTokenType.EndObject) break;
-            if (reader.TokenType != JsonTokenType.PropertyName) continue;
-
-            var prop = reader.GetString();
-            reader.Read();
-
-            switch (prop)
-            {
-                case "value" when reader.TokenType == JsonTokenType.String:
-                    value = reader.GetString();
-                    break;
-                case "value" when reader.TokenType == JsonTokenType.StartArray:
-                    // 少数版本把 value 写成数组：整段跳过，不值得为它冒解析风险
-                    reader.Skip();
-                    value = null;
-                    break;
-                case "rules":
-                    rules = JsonSerializer.Deserialize<List<Rule>>(ref reader, options);
-                    break;
-                default:
-                    reader.Skip();
-                    break;
-            }
-        }
-
-        return new ArgumentValue { Value = value, Rules = rules };
+            Value=value.ValueKind==JsonValueKind.String?value.GetString():null,
+            Values=value.ValueKind==JsonValueKind.Array?value.EnumerateArray().Select(v=>v.GetString()??throw new JsonException("参数数组只能包含字符串")).ToList():null,
+            Rules=root.TryGetProperty("rules",out var rules)?rules.Deserialize<List<Rule>>(options):null,
+        };
     }
 
     public override void Write(Utf8JsonWriter writer, ArgumentValue value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         if (value.Value is not null) writer.WriteString("value", value.Value);
+        else if(value.Values is not null)
+        {
+            writer.WritePropertyName("value");
+            JsonSerializer.Serialize(writer,value.Values,options);
+        }
         if (value.Rules is not null)
         {
             writer.WritePropertyName("rules");

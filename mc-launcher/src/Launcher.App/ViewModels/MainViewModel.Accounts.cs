@@ -23,7 +23,7 @@ public sealed partial class MainViewModel
     [ObservableProperty] private AccountChoice? _selectedAccountChoice;
     [ObservableProperty] private bool _isAccountsOpen;
     [ObservableProperty] private string _accountHint = "选择已保存的身份后点击「使用此身份」。";
-    public bool CanManageAccounts => !IsBusy && !IsSetupBusy && !IsLoggingIn && !IsUpdating;
+    public bool CanManageAccounts => !IsBusy && !IsLoggingIn && !IsUpdating;
 
     private void RefreshAccountChoices(bool selectCurrent = false)
     {

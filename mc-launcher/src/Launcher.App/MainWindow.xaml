@@ -89,7 +89,7 @@
                     </Button>
                 </Grid>
 
-                <Button DockPanel.Dock="Bottom" Content="安装向导…" Command="{Binding OpenSetupCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" />
+                <Button DockPanel.Dock="Bottom" Content="新建实例…" Command="{Binding CreateInstanceCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" />
 
                 <Button DockPanel.Dock="Bottom" Content="网络设置…" Command="{Binding OpenNetworkCommand}" Margin="10,0,10,4" Height="36" Style="{StaticResource QuietButton}" />
 
@@ -955,8 +955,7 @@
                 <views:NetworkSettingsView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="96"
                                    Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsNetworkOpen}" />
 
-        <views:FirstRunView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="90"
-                            Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsSetupOpen}" />
+
 
         <views:AccountManagerView anim:PageVisibility.Dialog="True" Grid.RowSpan="2" Grid.ColumnSpan="2" Panel.ZIndex="95"
                                   Visibility="Collapsed" anim:PageVisibility.IsActive="{Binding IsAccountsOpen}" />

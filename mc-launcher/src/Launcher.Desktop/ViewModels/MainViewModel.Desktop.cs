@@ -16,11 +16,11 @@ public sealed partial class MainViewModel
     public string JavaText => SelectedJava is { ExecutablePath: not null } java ? java.Title : "自动选择";
     public string LaunchTitle => IsBusy ? "正在准备…" : "启动游戏";
     public string WorldCaption => HasInstances ? "你的世界，随时出发。" : "从一个新世界开始。";
-    public bool HasOverlay => IsSetupOpen || IsAccountsOpen || IsConfirmOpen || DataRestartRequired;
+    public bool HasOverlay => IsAccountsOpen || IsConfirmOpen || DataRestartRequired;
     public bool IsPreferencesOpen => IsAppearanceOpen;
     partial void OnIsNetworkOpenChanged(bool value)
     {
-        if (value) { IsAppearanceOpen=false; IsExperienceOpen=false; IsAccountsOpen=false; IsSetupOpen=false; }
+        if (value) { IsAppearanceOpen=false; IsExperienceOpen=false; IsAccountsOpen=false; }
         OnPropertyChanged(nameof(IsPreferencesOpen));
     }
     partial void OnSkinHeadChanging(object? value) { if (SkinHead is IDisposable old) old.Dispose(); }
@@ -38,7 +38,7 @@ public sealed partial class MainViewModel
         InitializeShowcase();
         PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(IsSetupOpen) or nameof(IsAccountsOpen) or nameof(IsAppearanceOpen) or nameof(IsNetworkOpen) or nameof(IsConfirmOpen)) OnPropertyChanged(nameof(HasOverlay));
+            if (e.PropertyName is nameof(IsAccountsOpen) or nameof(IsAppearanceOpen) or nameof(IsNetworkOpen) or nameof(IsConfirmOpen)) OnPropertyChanged(nameof(HasOverlay));
             if (e.PropertyName == nameof(SelectedInstance))
             {
                 OnPropertyChanged(nameof(WorldVersion)); OnPropertyChanged(nameof(WorldKind)); OnPropertyChanged(nameof(WorldDisplayName)); OnPropertyChanged(nameof(IsModpackSelection));

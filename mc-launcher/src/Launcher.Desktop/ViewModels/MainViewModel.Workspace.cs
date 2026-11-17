@@ -84,7 +84,7 @@ public sealed partial class MainViewModel
     public bool IsSettingsPage=>ShellPage=="settings";
     public bool IsNetworkSettingsPage => ShellPage=="network";
     public bool IsGeneralSettingsPage => IsSettingsPage;
-    public string ExperiencePageTitle=>IsWardrobeTab?"角色":"下载任务";
+    public string ExperiencePageTitle=>IsWardrobeTab?"角色":"下载进度";
     public string ExperiencePageCaption=>IsWardrobeTab?"换上喜欢的皮肤，准备下一次出发。":"查看下载进度，暂停、恢复或清理未完成的任务。";
     public bool IsOverviewTab=>DetailTab==0;
     public bool IsModsDetailTab=>DetailTab==1;

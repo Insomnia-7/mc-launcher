@@ -34,51 +34,22 @@ internal static partial class UiCheck
         var vm = (MainViewModel)Resolve(typeof(MainViewModel))!;
         var window = new MainWindow(vm);
         Check("首帧构造不进行资源检索", State.Searches == 0);
-        Check("首次启动不自动弹出安装引导", !vm.IsSetupOpen);
-        Pump(vm.OpenSetupCommand.ExecuteAsync(null));
-        Check("只显示正式版并选择元数据最新版本", vm.SetupVersions.Count == 2 && vm.SetupVersion?.Id == "setup-test");
-        using (var held = Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(vm.GameRoot, "跨页面验证"))
+        vm.CreateInstanceCommand.Execute(null);
+        Check("新建实例直接进入发现资源",!vm.IsInstanceSection&&vm.Download.IsVersionMode);
+        using (var held=Launcher.Application.Operations.GameOperationCoordinator.Shared.TryEnter(vm.GameRoot,"跨页面验证"))
         {
-            vm.Download.SelectedVersion = new VersionItem("setup-test", "release", DateTimeOffset.UtcNow);
+            vm.Download.SelectedVersion=new VersionItem("setup-test","release",DateTimeOffset.UtcNow);
             Pump(vm.Download.InstallVersionCommand.ExecuteAsync(null));
-            Check("下载页受共享写任务互斥保护", vm.Download.Status.Contains("跨页面验证") && State.Downloads == 0);
-            Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-            Check("安装向导显示共享任务冲突", vm.SetupError.Contains("跨页面验证") && State.Downloads == 0);
+            Check("下载页受共享写任务互斥保护",vm.Download.Status.Contains("跨页面验证")&&State.Downloads==0);
         }
-        vm.SetupMemoryText = "bad";
-        Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-        Check("无效内存留在引导中且不安装", vm.IsSetupOpen && vm.SetupError.Contains("内存") && State.Downloads == 0);
-        vm.SetupMemoryText = "2048";
-        vm.SetupOfflineName = "无效";
-        Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-        Check("无效用户名不安装", vm.SetupError.Contains("用户名") && State.Downloads == 0);
-        vm.SetupOfflineName = "Tester_01";
-        Render(window, 1000, 640, "setup-1000.png");
-        Render(window, 820, 560, "setup-820.png");
-        State.FailJava = true;
-        Check("安装前不显示重试入口", !vm.CanRetrySetup);
-        Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-        Check("失败后可编辑并重试", vm.IsSetupOpen && !vm.IsSetupBusy && vm.SetupError.Contains("安装失败") && vm.InstallSetupCommand.CanExecute(null));
-        Check("失败后给出重试入口", vm.CanRetrySetup && vm.SetupStatus.Contains("重试安装"));
-        State.FailJava = false;
-        State.CancelJava = () => vm.CancelCommand.Execute(null);
-        Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-        Check("取消后保留引导并恢复按钮", vm.IsSetupOpen && !vm.IsSetupBusy && vm.SetupStatus.Contains("取消") && vm.InstallSetupCommand.CanExecute(null));
-        State.CancelJava = null;
-        vm.SetupLaunchAfterInstall = false;
-        Pump(vm.InstallSetupCommand.ExecuteAsync(null));
-        Check("成功后关闭引导并选中正确实例", !vm.IsSetupOpen && vm.SelectedInstance?.InstanceId == "setup-test");
-        Check("内存与离线身份已保存", InstanceSettings.Load(vm.GameRoot, "setup-test").MemoryMb == 2048 && vm.OfflineName == "Tester_01");
-        var existing = (MainViewModel)Resolve(typeof(MainViewModel))!;
-        Check("已有版本不自动显示引导", !existing.IsSetupOpen);
-        Pump(existing.OpenSetupCommand.ExecuteAsync(null));
-        Check("已有版本可手动重新打开引导", existing.IsSetupOpen);
-        existing.CloseSetupCommand.Execute(null);
-        Check("可跳过引导", !existing.IsSetupOpen);
-        Pump(existing.OpenSetupCommand.ExecuteAsync(null));
-        existing.SetupLaunchAfterInstall = true;
-        Pump(existing.InstallSetupCommand.ExecuteAsync(null));
-        Check("向导完成后释放写权限再准备启动", !existing.IsSetupOpen && !existing.StatusText.Contains("正在安装游戏") && !string.IsNullOrEmpty(existing.DiagnosisText));
+        vm.OfflineName="Tester_01";
+        Pump(vm.Download.InstallVersionCommand.ExecuteAsync(null));
+        Check("资源页面安装后显示独立实例",vm.Instances.Any(i=>i.InstanceId=="setup-test"));
+        vm.SelectedInstance=vm.Instances.Single(i=>i.InstanceId=="setup-test");vm.MemoryMb=2048;vm.AutomaticMemory=false;vm.SaveSettingsCommand.Execute(null);
+        Check("内存和身份保留在实例及账号设置",InstanceSettings.Load(vm.GameRoot,"setup-test").MemoryMb==2048&&vm.OfflineName=="Tester_01");
+        var existing=(MainViewModel)Resolve(typeof(MainViewModel))!;
+        existing.CreateInstanceCommand.Execute(null);
+        Check("已有实例也通过统一资源入口安装",!existing.IsInstanceSection&&existing.Download.IsVersionMode);
         var metadata = new Launcher.Application.Install.InstanceMetadata("second", null, null, null, "setup-test", null, "setup-test");
         metadata.Write(existing.GameRoot, "setup-test-2");
         Launcher.Application.Instances.InstanceRegistry.LoadOrMigrate(existing.GameRoot).Register("setup-test-2", "setup-test", metadata);
@@ -148,7 +119,7 @@ internal static partial class UiCheck
     }
     private static void Browser(MainViewModel vm)
     {
-        vm.CloseSetupCommand.Execute(null); vm.IsInstanceSection = false;
+        vm.IsInstanceSection=true; vm.IsInstanceSection = false;
         var browser = vm.Download;
         Pump(browser.EnsureLoadedAsync());
         Check("首次进入资源页加载热门且不过滤当前实例", browser.Results.Count == 20 && State.LastRequest is { Query.Length:0, GameVersion:null, Sort:ResourceSort.Popularity });
@@ -256,7 +227,6 @@ public class SetupProxy : DispatchProxy
     public string? RefreshedUuid;
     public TaskCompletionSource<Launcher.Application.Auth.DeviceCodeSession>? LoginStart;
 
-    public bool FailJava;
     public int Searches;
     public ResourceSearchRequest? LastRequest;
     public bool FailSearch, DelaySearch, IgnoreCancellation, CfConfigured, DenyCfSearch;
@@ -266,7 +236,6 @@ public class SetupProxy : DispatchProxy
         Enumerable.Range(request.Offset, Math.Min(20, 45-request.Offset)).Select(i =>
             new ModrinthProject("project"+i,"slug"+i,"资源 "+i,"功能说明：支持指定的游戏版本和资源类型。","作者",null,1000+i,100,["optimization","fabric"],["1.21.4"]) { ProjectType = request.Category.ModrinthProjectType(), AllProjectTypes=[request.Category.ModrinthProjectType()!], DateModified=DateTimeOffset.UtcNow }).ToArray(),45,request.Offset,20);
 
-    public Action? CancelJava;
     protected override object? Invoke(MethodInfo? method, object?[]? args)
     {
         var state = Shared ?? this;
@@ -292,7 +261,7 @@ public class SetupProxy : DispatchProxy
             case "GetManifestAsync": return Task.FromResult(new VersionManifest { Latest = new LatestVersions { Release = "setup-test" }, Versions = [new() { Id="older", Type="release" }, new() { Id="snapshot", Type="snapshot" }, new() { Id="setup-test", Type="release" }, new() { Id="24w14potato",Type="snapshot" }, new() { Id="b1.7.3",Type="old_beta" }, new() { Id="a1.2.6",Type="old_alpha" }] });
             case "GetVersionAsync": return Task.FromResult(new VersionJson { Id = "setup-test", MainClass = "test.Main", JavaVersion = new JavaVersionRef { MajorVersion = 21 } });
             case "DownloadAsync": state.Downloads++; return Task.FromResult(new DownloadSummary(0,0,0,0,TimeSpan.Zero));
-            case "EnsureAsync": if (state.FailJava) throw new IOException("模拟网络错误"); state.CancelJava?.Invoke(); return Task.FromResult(new JavaInstall("java.exe",21,"21","test","x64"));
+            case "EnsureAsync": return Task.FromResult(new JavaInstall("java.exe",21,"21","test","x64"));
             case "DiscoverAsync": return Task.FromResult<IReadOnlyList<JavaInstall>>([new("java.exe", 21, "21", "test", "x64")]);
             case "get_IsConfigured": return state.CfConfigured;
             case "GetCategoriesAsync": return Task.FromResult<IReadOnlyList<ResourceTag>>([new("optimization", "性能优化"), new("adventure", "冒险")]);

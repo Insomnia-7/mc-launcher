@@ -14,7 +14,7 @@ internal static partial class UiCheck
     private static void Appearance()
     {
         var vm=(MainViewModel)Resolve(typeof(MainViewModel))!;
-        vm.CloseSetupCommand.Execute(null); vm.IsInstanceSection=false;
+        vm.IsInstanceSection=true; vm.IsInstanceSection=false;
         vm.Download.SelectedCategory=vm.Download.Categories.Single(c=>!c.IsSeparator && c.Category==Launcher.Domain.Content.DownloadCategory.Mod);
         Pump(vm.Download.SearchCommand.ExecuteAsync(null));
         vm.StatusText="就绪 · 界面演示，使用隔离测试数据";

@@ -5,7 +5,7 @@
     <AssemblyName>MCLauncher.Desktop</AssemblyName>
     <RootNamespace>Launcher.Desktop</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>1.0.0-preview.25</Version>
+    <Version>1.0.0-preview.26</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyTitle>方隅</AssemblyTitle>
     <Product>方隅</Product>
@@ -13,7 +13,7 @@
     <ApplicationIcon>Assets/Brand/fangyu.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <AvaloniaResource Include="Assets/Brand/**" Exclude="Assets/Brand/world-meadow-v2.png" />
+    <AvaloniaResource Include="Assets/Brand/**" />
     <AvaloniaResource Include="Assets/Scenery/**" />
     <AvaloniaResource Include="Assets/Loaders/**" />
     <PackageReference Include="Avalonia" Version="12.1.4" />

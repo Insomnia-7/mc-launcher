@@ -180,6 +180,5 @@ public sealed partial class MainViewModel
         else if(IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
         else if(IsNetworkOpen) CloseNetworkCommand.Execute(null);
         else if(IsAccountsOpen) CloseAccountsCommand.Execute(null);
-        else if(IsSetupOpen) CloseSetupCommand.Execute(null);
     }
 }

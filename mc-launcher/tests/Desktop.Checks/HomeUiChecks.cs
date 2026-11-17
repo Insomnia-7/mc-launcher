@@ -84,7 +84,7 @@ internal static class HomeUiChecks
         model.ShowHomeCommand.Execute(null);pump(180);click(Find<Button>("HomeDiagnostics"));check("日志与诊断打开所选实例诊断页",model.IsDetailOpen && model.IsDiagnosticsDetailTab);
         model.ShowHomeCommand.Execute(null);pump(150);
         check("资源包、目录和导入快捷入口连接现有命令",Find<Button>("HomeManageResources").Command==model.OpenGameResourceFolderCommand && Find<Button>("HomeManageResources").CommandParameter as string=="resourcepacks" && Find<Button>("HomeOpenGameDirectory").Command==model.OpenGameDirectoryCommand && Find<Button>("HomeImportModpack").Command==model.ImportModpackCommand);
-        click(Find<Button>("HomeNewInstance"));check("新建实例打开已有安装向导",model.IsSetupOpen);model.CloseSetupCommand.Execute(null);pump(60);
+        click(Find<Button>("HomeNewInstance"));check("新建实例直达发现资源",model.IsDiscoverPage&&model.Download.IsVersionMode&&!model.HasOverlay);model.ShowHomeCommand.Execute(null);pump(60);
         click(Find<Button>("HomeNetworkEntry"));check("网络状态直达独立网络页",model.IsNetworkOpen && !model.IsPreferencesOpen && model.ShellPage=="network");model.ShowHomeCommand.Execute(null);pump(120);
         var runtimeSummary=model.HomeNetworkSummary;model.ProxyModeIndex=2;model.ProxyAddress="http://127.0.0.1:45678";model.SaveNetworkCommand.Execute(null);
         check("保存待重启代理不冒充运行中的网络模式",model.HomeNetworkSummary==runtimeSummary);
@@ -103,7 +103,7 @@ internal static class HomeUiChecks
         check("空库显示真实引导和新建主操作",Find<StackPanel>("HomeEmptyLibrary").IsVisible && Find<Button>("HomeCreateFirstButton").IsVisible && !Find<Button>("HomeLaunchButton").IsVisible);
         check("空库禁用资源目录操作而保留新建和导入",!Find<Button>("HomeManageResources").IsEffectivelyEnabled && !Find<Button>("HomeOpenGameDirectory").IsEffectivelyEnabled && Find<Button>("HomeNewInstance").IsEffectivelyEnabled && Find<Button>("HomeImportModpack").IsEffectivelyEnabled);
         check("空库仍然显示固定风景横条和四块卡片",Find<Border>("HomeHeroBanner").IsEffectivelyVisible && Find<Border>("HomeQuickLaunchCard").IsEffectivelyVisible && Find<Border>("HomeNetworkStatusCard").IsEffectivelyVisible && Find<Border>("HomeInstancesCard").IsEffectivelyVisible && Find<Border>("HomeShortcutsCard").IsEffectivelyVisible);
-        capture("reference-home-empty",true);click(Find<Button>("HomeManageMods"));check("空库管理模组进入下载中心模组分类",model.IsDiscoverPage && model.Download.SelectedCategory?.Category==Launcher.Domain.Content.DownloadCategory.Mod);
+        capture("reference-home-empty",true);click(Find<Button>("HomeManageMods"));check("空库管理模组进入下载进度模组分类",model.IsDiscoverPage && model.Download.SelectedCategory?.Category==Launcher.Domain.Content.DownloadCategory.Mod);
         foreach(var instance in saved)model.Instances.Add(instance);model.SelectedInstance=saved[0];model.ShowHomeCommand.Execute(null);pump(180);
         check("恢复实例后首页下拉、列表和总数一起更新",model.HomeEntries.Count==12 && Find<ComboBox>("QuickInstanceSelector").ItemCount==12 && model.AllInstancesLinkText=="全部实例 (12) ›");
     }

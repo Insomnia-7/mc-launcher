@@ -121,17 +121,22 @@ public sealed partial class MainViewModel : ObservableObject
             loaderMeta, loaderInstaller, forgeInstaller, neoForgeInstaller, javaProvisioner, presentation);
 
         Download.InstancesChanged += RefreshInstances;
+        Download.LaunchInstalledResource=async id=>
+        {
+            RefreshInstances();
+            if(Instances.FirstOrDefault(i=>i.InstanceId==id) is not {} installed){Download.RefreshInstalledResource();Download.Status="实例已移除，请重新安装。";return;}
+            SelectedInstance=installed;
+            if(LaunchCommand.CanExecute(null))await LaunchCommand.ExecuteAsync(null);
+        };
         Download.PropertyChanged+=(_,e)=> {if(e.PropertyName==nameof(DownloadViewModel.IsBusy)) DeleteInstanceCommand.NotifyCanExecuteChanged();};
 
         StatusText = HasGameRootProblem ? GameRootProblem
             : HasGameRootNotice ? GameRootNotice.Split('\n')[0]
             : "就绪";
         InitializeAppearance();
-        InitializeSetup(meta);
+        _versionMeta=meta;
         RefreshAccountChoices(selectCurrent: true);
         RefreshInstances();
-        // 首次启动不再自动弹出安装向导：直接进主页面，由「添加游戏」按钮按需打开。
-        IsSetupOpen = false;
         _logger.LogInformation("主视图初始化完成：{Count} 个版本，游戏目录 {GameRoot}", Instances.Count, GameRoot);
     }
 
@@ -142,7 +147,6 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public void StartBackgroundWork(bool checkUpdates = true, bool refreshSkin = true)
     {
-        if (IsSetupOpen) _ = LoadSetupVersionsAsync();
         _ = LoadJavaOptionsAsync();
         if (checkUpdates) _ = DelayedUpdateCheckAsync();
         if (refreshSkin) _ = RefreshSkinAsync();
@@ -175,7 +179,6 @@ public sealed partial class MainViewModel : ObservableObject
 
         GameRootProblem = string.Empty;
         GameRootNotice = string.Empty;
-        SetupError = string.Empty;
         OnPropertyChanged(nameof(GameRoot));
         RefreshInstances();
         Download.RefreshTarget();
@@ -1049,8 +1052,6 @@ public sealed partial class MainViewModel : ObservableObject
         if (CommitAccounts(library => library.SetOfflineName(value), "离线用户名已保存"))
         {
             OnPropertyChanged(nameof(AccountText));
-            OnPropertyChanged(nameof(SetupIdentityText));
-            SetupOfflineName = value;
         }
     }
 
@@ -1059,15 +1060,12 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AccountText));
         OnPropertyChanged(nameof(AccountDetail));
         OnPropertyChanged(nameof(HasAccount));
-        OnPropertyChanged(nameof(SetupIdentityText));
         OnPropertyChanged(nameof(AccountInitial));
         _ = RefreshSkinAsync();
     }
 
     partial void OnIsLoggingInChanged(bool value)
     {
-        InstallSetupCommand.NotifyCanExecuteChanged();
-        CloseSetupCommand.NotifyCanExecuteChanged();
         LaunchCommand.NotifyCanExecuteChanged();
         NotifyAccountActions();
     }
@@ -1190,7 +1188,6 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnIsBusyChanged(bool value)
     {
-        InstallSetupCommand.NotifyCanExecuteChanged();
         InstallCommand.NotifyCanExecuteChanged();
         ImportModpackCommand.NotifyCanExecuteChanged();
         DeleteInstanceCommand.NotifyCanExecuteChanged();
@@ -1425,7 +1422,7 @@ public sealed partial class MainViewModel : ObservableObject
                 ["TMPDIR"] = tempRoot,
             });
 
-            StatusText = $"已启动（pid {process.Id}）· Java {java.MajorVersion} · 日志 {logPath}";
+            StatusText = $"正在启动游戏（pid {process.Id}）· Java {java.MajorVersion} · 日志 {logPath}";
             _logger.LogInformation("启动 {Version}，pid={Pid}，java={Java}", version.Id, process.Id, java.ExecutablePath);
 
             lock (_running) _running[version.Id] = process.Id;
@@ -1476,8 +1473,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 盯启动结果。参数错 / Java 不对会在两三秒内退出，模组冲突往往十几秒后才炸，
-    /// 所以不能只看一眼：每 2 秒轮询一次，跑满 2 分钟就当它起来了。
+    /// 等待真实游戏窗口，并记录最终退出码；后台进程存在不等于可见窗口已打开。
     /// </summary>
     private async Task WatchStartupAsync(IGameProcess process, string logPath, string versionId, string gameRoot, string instanceId)
     {
@@ -1495,34 +1491,45 @@ public sealed partial class MainViewModel : ObservableObject
             }
             RunningGamesChanged?.Invoke();
             try { if(process.HasExited)GameExited?.Invoke(gameRoot,instanceId); } catch(Exception ex) { _logger.LogWarning(ex,"退出后刷新游戏设置未完成"); }
+            process.Dispose();
         }
     }
 
     private async Task WatchStartupCoreAsync(IGameProcess process, string logPath)
     {
+        var windowShown=false;
+        int exitCode;
         try
         {
-            var startedAt = DateTime.UtcNow;
-            while (true)
+            while (!process.HasExited&&!windowShown)
             {
+                if(!windowShown&&process.TryShowWindow())
+                {
+                    windowShown=true;
+                    await PlatformUi.RunOnUiAsync(()=>StatusText="游戏窗口已打开 · 日志："+logPath);
+                    break;
+                }
                 await Task.Delay(TimeSpan.FromSeconds(2));
-                if (process.HasExited) break;
-                if ((DateTime.UtcNow - startedAt).TotalSeconds > 120) {while(!process.HasExited)await Task.Delay(TimeSpan.FromSeconds(5));return;}
             }
+            exitCode=await process.WaitForExitAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex,"读取游戏进程退出结果失败");
             return;
         }
 
         // 崩溃结论都在日志尾部，认出来比让用户自己翻两千行 stack trace 有用
-        var diagnosis = StartupDiagnostics.Analyze(logPath);
+        var diagnosis = exitCode==0?null:StartupDiagnostics.Analyze(logPath);
 
         await PlatformUi.RunOnUiAsync(() =>
         {
             if (diagnosis is null)
             {
-                StatusText = $"启动后立即退出 · 看日志：{logPath}";
+                StatusText=exitCode==0
+                    ?$"游戏已退出（退出码 0） · 日志：{logPath}"
+                    :$"游戏退出（退出码 {exitCode}） · 看日志：{logPath}";
+                DiagnosisText=windowShown?string.Empty:$"游戏进程已退出，尚未确认可见游戏窗口。退出码：{exitCode}。\n日志：{logPath}";
                 return;
             }
 

@@ -19,6 +19,13 @@ internal static class HorizonFixture
         if(args.Contains("--check"))return File.Exists(Path.Combine(Value("--output"),"ready"))?0:1;
         if(args.Contains("--prepare"))
         {
+            using var research=JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"research-lock.json")));
+            if(research.RootElement.GetProperty("minecraft").TryGetProperty("manifest_sha1",out var sha1))
+            {
+                var manifest=Path.Combine(Value("--minecraft-dir"),"versions","26.3","26.3.json");
+                if(!File.Exists(manifest)||Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(File.ReadAllBytes(manifest)))!=sha1.GetString())
+                {Console.Error.WriteLine("version JSON is not a version file Horizon knows");return 1;}
+            }
             if(mode=="hang"){File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"child.pid"),Environment.ProcessId.ToString());Thread.Sleep(30000);return 1;}
             var output=Value("--output");Directory.CreateDirectory(output);
             Console.WriteLine("{\"fraction\":0.5}");Console.WriteLine("{\"message\":\"fixture prepared\"}");

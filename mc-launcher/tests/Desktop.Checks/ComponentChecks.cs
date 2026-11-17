@@ -88,12 +88,12 @@ internal static class ComponentChecks
         check("安装成功反馈来自已确认业务结果",model.Multiplayer.InstallEngineSucceeded&&Part<Button>(main,"InstallRoomEngineButton").Classes.Contains("is-success"));
         model.Multiplayer.InviteToJoin="invalid";Wait(model.Multiplayer.JoinRoomCommand.ExecuteAsync(null));
         check("业务失败即使命令完成仍显示警示态",model.Multiplayer.JoinRoomFailed&&Part<Button>(main,"JoinRoomButton").Classes.Contains("is-error")&&!model.Multiplayer.JoinRoomSucceeded&&!model.Multiplayer.InstallEngineSucceeded);
-        model.OpenSetupCommand.Execute(null);pump(30);
-        var actual=Part<AnimatedDialog>(main,"SetupDialog");
-        check("安装向导已接入统一弹窗组件",actual.IsOpen&&actual.IsVisible&&actual.Surface is not null);
-        var setupFocus=main.FocusManager?.GetFocusedElement();model.OpenAccountsCommand.Execute(null);pump(30);model.CloseAccountsCommand.Execute(null);pump(30);
-        check("子弹窗关闭后恢复到仍打开的父弹窗",actual.IsOpen&&model.HasOverlay&&setupFocus is not null&&ReferenceEquals(setupFocus,main.FocusManager?.GetFocusedElement()));
-        model.CloseSetupCommand.Execute(null);pump(30);
+        model.OpenAccountsCommand.Execute(null);pump(30);
+        var actual=Part<AnimatedDialog>(main,"AccountsDialog");
+        check("账号已接入统一弹窗组件",actual.IsOpen&&actual.IsVisible&&actual.Surface is not null);
+        var accountFocus=main.FocusManager?.GetFocusedElement();model.DeleteInstanceCommand.Execute(null);pump(30);model.ConfirmCancelCommand.Execute(null);pump(30);
+        check("子弹窗关闭后恢复到仍打开的父弹窗",actual.IsOpen&&model.HasOverlay&&accountFocus is not null&&ReferenceEquals(accountFocus,main.FocusManager?.GetFocusedElement()));
+        model.CloseAccountsCommand.Execute(null);pump(30);
         check("实际弹窗关闭后宿主不再拦截输入",!Part<ContentControl>(main,"OverlayHost").IsHitTestVisible&&!actual.IsVisible);
         model.ShowHomeCommand.Execute(null);pump(150);
         foreach(var level in Enum.GetValues<ToastLevel>())model.Toasts.Show(level switch{ToastLevel.Success=>"共享设置已保存。",ToastLevel.Warning=>"世界暂时不可连接，请稍后重试。",ToastLevel.Error=>"测试下载未完成，可在任务中心重试。",_=>"组件展示使用隔离的测试数据。"},level);

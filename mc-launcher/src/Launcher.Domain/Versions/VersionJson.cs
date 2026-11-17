@@ -113,6 +113,7 @@ public sealed class Arguments
 public sealed class ArgumentValue
 {
     public string? Value { get; init; }
+    public List<string>? Values { get; init; }
     public List<Rule>? Rules { get; init; }
 
     public static implicit operator ArgumentValue(string value) => new() { Value = value };

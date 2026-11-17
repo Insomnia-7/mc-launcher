@@ -15,4 +15,5 @@ public interface IGameProcess : IDisposable
     bool HasExited { get; }
     Task<int> WaitForExitAsync(CancellationToken ct = default);
     void Kill();
+    bool TryShowWindow() => false;
 }

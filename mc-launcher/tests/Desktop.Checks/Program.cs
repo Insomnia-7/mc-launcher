@@ -158,19 +158,17 @@ internal static class Program
             }
             if(args.Contains("--empty"))
             {
-                Check("首次启动直接进入主页面、不自动弹安装向导", !model.IsSetupOpen && model.Instances.Count==0 && model.ShellPage=="home");
-                Check("空游戏库也不阻塞首页联网", http.Requests==0);
+                Check("首次启动直接进入主页面",!model.HasOverlay&&model.Instances.Count==0&&model.ShellPage=="home");
+                Check("空游戏库也不阻塞首页联网",http.Requests==0);
                 Capture("empty-library");
-                // 向导改为手动入口：点「添加游戏」才打开，且内部滚动条不显示突兀的竖条
-                model.OpenSetupCommand.Execute(null); Pump(120);
-                Check("添加游戏按钮仍可打开安装向导", model.IsSetupOpen);
-                var setupScroller = window.GetVisualDescendants().OfType<ScrollViewer>()
-                    .FirstOrDefault(s => s.GetVisualAncestors().OfType<Border>().Any(b => b.Classes.Contains("modal-surface")));
-                Check("安装向导隐藏纵向滚动条", setupScroller is { VerticalScrollBarVisibility: ScrollBarVisibility.Hidden });
-                Capture("first-run");
-                model.CloseSetupCommand.Execute(null); Pump(50);
-                Check("可以关掉向导后继续使用", !model.IsSetupOpen && !model.HasInstances);
+                model.CreateInstanceCommand.Execute(null);Pump(120);
+                Check("添加游戏直接打开发现资源",model.IsDiscoverPage&&model.Download.IsVersionMode);
+                Check("移除旧安装向导弹窗",!window.GetVisualDescendants().OfType<AnimatedDialog>().Any(c=>c.Name=="SetupDialog"));
+                Capture("create-instance-discover");
+                model.ShowHomeCommand.Execute(null);Pump(50);
+                Check("可以从资源返回空首页",model.IsHomePage&&!model.HasInstances&&!model.HasOverlay);
                 Check("首次启动页面没有绑定错误", log.Errors.Count==0);
+                Console.WriteLine($"{passed} empty startup checks passed");
                 return 0;
             }
             if(args.Contains("--live-catalog"))

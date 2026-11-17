@@ -371,8 +371,8 @@
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <Button IsVisible="{Binding Download.CanCancel}" Command="{Binding Download.CancelCommand}" Content="取消" />
-            <Button Classes="primary" Command="{Binding Download.InstallCommand}" x:Name="InstallResourceRelease" IsVisible="{Binding Download.IsResourceDetail}" AutomationProperties.Name="{Binding Download.ResourceInstallButtonText}">
-              <icons:IconLabel Icon="ActionCloudDownload" Text="{Binding Download.ResourceInstallButtonText}" Foreground="{Binding $parent[Button].Foreground}" />
+            <Button Classes="primary" Command="{Binding Download.ResourcePrimaryCommand}" x:Name="InstallResourceRelease" IsVisible="{Binding Download.IsResourceDetail}" AutomationProperties.Name="{Binding Download.ResourceInstallButtonText}">
+              <icons:IconLabel Icon="{Binding Download.ResourceInstallButtonIcon}" Text="{Binding Download.ResourceInstallButtonText}" Foreground="{Binding $parent[Button].Foreground}" />
             </Button>
             <Button Classes="primary" Command="{Binding Download.InstallVersionCommand}" x:Name="InstallGameVersion" IsVisible="{Binding Download.IsVersionConfiguration}" AutomationProperties.Name="开始安装">
               <icons:IconLabel Icon="ActionCloudDownload" Text="开始安装" Foreground="{Binding $parent[Button].Foreground}" />

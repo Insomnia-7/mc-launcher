@@ -325,7 +325,7 @@ public sealed partial class MainViewModel
 
     partial void OnIsAppearanceOpenChanged(bool value)
     {
-        if (value) { IsNetworkOpen = false; IsExperienceOpen = false; IsAccountsOpen = false; IsSetupOpen = false; }
+        if (value) { IsNetworkOpen = false; IsExperienceOpen = false; IsAccountsOpen = false; }
         OnPropertyChanged(nameof(IsPreferencesOpen));
     }
 
@@ -406,7 +406,6 @@ public sealed partial class MainViewModel
     {
         if (IsConfirmOpen) ConfirmCancelCommand.Execute(null);
         else if (IsAccountsOpen) CloseAccountsCommand.Execute(null);
-        else if (IsSetupOpen) CloseSetupCommand.Execute(null);
         else if (IsAppearanceOpen) CloseAppearanceCommand.Execute(null);
         else if (IsNetworkOpen) CloseNetworkCommand.Execute(null);
         else if (IsExperienceOpen) CloseExperienceCommand.Execute(null);

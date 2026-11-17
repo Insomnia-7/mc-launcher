@@ -15,7 +15,7 @@ internal static class WorkbenchChecks
         check("M1 主导航宽度为216 DIP", Math.Abs(Find<Border>("SidebarPanel").Bounds.Width-216)<1);
         check("M1 标题栏高度52且有独立账号入口", Find<Border>("WindowHeader").Bounds.Height==52 && Find<Button>("HeaderAccountButton").IsEffectivelyVisible);
         check("M1 角色入口从普通侧栏移出", !Find<Button>("WardrobeEntry").IsVisible);
-        check("M1 下载和设置紧随资源管理", Find<Button>("TaskCenterEntry").TranslatePoint(default,window)!.Value.Y > Find<Button>("DiscoverNav").TranslatePoint(default,window)!.Value.Y);
+        check("M1 下载和设置紧随发现资源", Find<Button>("TaskCenterEntry").TranslatePoint(default,window)!.Value.Y > Find<Button>("DiscoverNav").TranslatePoint(default,window)!.Value.Y);
         click(Find<Button>("LibraryNav")); check("M1 实例导航连接真实页面",model.IsLibraryPage);
         click(Find<Button>("MultiplayerNav")); check("M1 联机导航连接真实页面",model.IsMultiplayerPage);
         click(Find<Button>("TaskCenterEntry")); check("M1 下载导航连接任务页",model.IsTaskPage);
@@ -62,7 +62,7 @@ internal static class WorkbenchChecks
         check("M2 列表选择只改变当前实例",model.SelectedInstance?.InstanceId==entry.Instance.InstanceId && launcher.Starts==starts && !model.IsDetailOpen);
         model.LibraryQuery="1.21.12";pump(60);check("M2 搜索匹配Minecraft版本",model.LibraryEntries.Count==1);model.LibraryQuery="nothing";pump(60);check("M2 无结果状态清楚区分于无实例",model.LibraryHasNoResults && model.HasInstances);model.LibraryQuery="";pump(100);capture("m2-library",true);
         model.OpenGameCommand.Execute(entry);pump(200);check("M2 管理动作打开当前实例详情",model.IsDetailOpen && model.SelectedInstance?.InstanceId==entry.Instance.InstanceId);
-        model.ShowHomeCommand.Execute(null);pump(180);click(Find<Button>("HomeNewInstance"));check("M2 安装入口打开现有安装向导",model.IsSetupOpen);model.CloseSetupCommand.Execute(null);
+        model.ShowHomeCommand.Execute(null);pump(180);click(Find<Button>("HomeNewInstance"));check("M2 安装入口直达发现资源",model.IsDiscoverPage&&model.Download.IsVersionMode&&!model.HasOverlay);model.ShowHomeCommand.Execute(null);
         model.ShowHomeCommand.Execute(null);var instances=model.Instances.ToArray();model.Instances.Clear();pump(200);
         check("M2 无实例出现首次安装和导入引导",Find<Button>("HomeCreateFirstButton").IsEffectivelyVisible && Find<Button>("HomeImportFirstButton").IsEffectivelyVisible);
         capture("m2-first-use",true);foreach(var instance in instances)model.Instances.Add(instance);pump(200);

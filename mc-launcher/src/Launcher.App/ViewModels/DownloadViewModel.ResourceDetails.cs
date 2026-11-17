@@ -37,7 +37,7 @@ public sealed partial class DownloadViewModel
     public string FooterStatus => IsVersionMode ? (IsBusy ? Status : "选择游戏版本，再配置加载器与安装位置。") : Status;
     public bool ShowsResourceLoaderFilter=>OpenedResource?.Category.UsesLoader()==true;
     public bool ShowsResourceDependencies=>IsResourceDetail && OpenedResource?.Category==DownloadCategory.Mod;
-    public string ResourceInstallButtonText=>SelectedResourceRelease is {ReleaseChannel:not "未标注类型"} release?"安装"+release.ReleaseChannel:"安装所选版本";
+    public string ResourceInstallButtonText=>ResourceIsInstalled?"启动游戏":SelectedResourceRelease is {ReleaseChannel:not "未标注类型"} release?"安装"+release.ReleaseChannel:"安装所选版本";
     public string ResourceReleaseSummary=>SelectedResourceRelease is { } release ? "已选："+string.Join(" · ",new[]{release.Name,release.ReleaseChannel,release.LoaderText}.Where(s=>s.Length>0)) : "请选择发布版本";
 
     private DownloadItem ModrinthItem(ModrinthProject hit,DownloadCategory category)=>new(ModrinthSource,category,hit.ProjectId,hit.Title,hit.Author??"未知作者","",hit.Description)
@@ -104,6 +104,7 @@ public sealed partial class DownloadViewModel
     }
     private void NotifyResourceView()
     {
+        RefreshInstalledResource();
         NotifyPackPresentation();
         NotifyResourceHeader();
         OnPropertyChanged(nameof(IsResourceDetail));OnPropertyChanged(nameof(IsResourceList));
@@ -223,6 +224,7 @@ public sealed partial class DownloadViewModel
     }
     private void RefreshResourceCompatibility()
     {
+        RefreshInstalledResource();
         foreach(var release in _resourceReleases)
         {
             var category=OpenedResource?.Category;var problem="";
@@ -244,6 +246,7 @@ public sealed partial class DownloadViewModel
     private void SelectResourceRelease(ResourceReleaseItem? release) { if(!IsBusy && release is not null && _resourceReleases.Contains(release)) SelectedResourceRelease=release; }
     partial void OnSelectedResourceReleaseChanged(ResourceReleaseItem? value)
     {
+        RefreshInstalledResource();
         foreach(var release in _resourceReleases) release.IsSelected=ReferenceEquals(release,value);
         OnPropertyChanged(nameof(ResourceReleaseSummary));OnPropertyChanged(nameof(ResourceInstallButtonText));InstallCommand.NotifyCanExecuteChanged();
         _=LoadResourceDependenciesAsync(value);

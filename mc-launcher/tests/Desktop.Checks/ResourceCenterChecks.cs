@@ -75,7 +75,7 @@ internal sealed class ResourceFixture : IModrinthClient, ICurseForgeClient, IRes
     }
     public Task<ModrinthVersion?> GetVersionAsync(string id,CancellationToken ct=default)=>Task.FromResult<ModrinthVersion?>(Version("dep-file","1.0","1.21.4","fabric","dependency.jar") with{ProjectId="dep"});
     public Task<IReadOnlyList<ResourceTranslation>> GetTranslationsAsync(string source,IReadOnlyList<string> ids,CancellationToken ct=default)
-    { Translations++;if(FailTranslations) throw new HttpRequestException();return Task.FromResult<IReadOnlyList<ResourceTranslation>>(ids.Select(id=>new ResourceTranslation(id,"fixture original description","用于检查下载中心显示的中文简介。")).ToArray()); }
+    { Translations++;if(FailTranslations) throw new HttpRequestException();return Task.FromResult<IReadOnlyList<ResourceTranslation>>(ids.Select(id=>new ResourceTranslation(id,"fixture original description","用于检查下载进度显示的中文简介。")).ToArray()); }
     public Task<byte[]?> GetIconAsync(string url,CancellationToken ct=default) {Icons++;return Task.FromResult<byte[]?>(Icon);}
     public Task<DownloadSummary> DownloadAsync(IReadOnlyList<DownloadEntry> entries,string root,IProgress<DownloadProgress>? progress=null,CancellationToken ct=default)
     {
@@ -136,6 +136,7 @@ internal static class ResourceCenterChecks
         check("发布版本不显示英文文件名行",!window.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.IsEffectivelyVisible&&t.Text==vm.SelectedResourceRelease!.FileName));
         fixture.Downloaded.Clear();Wait(vm.InstallResourceReleaseCommand.ExecuteAsync(vm.SelectedResourceRelease));
         check("模组安装精确使用所选旧版并下载指定前置",vm.Status.Contains("已装到")&&fixture.Downloaded.Contains("old.jar")&&fixture.Downloaded.Contains("dependency.jar")&&!fixture.Downloaded.Contains("new.jar"));
+        check("模组安装后右下角切换为启动游戏",vm.ResourceIsInstalled&&vm.ResourceInstallButtonText=="启动游戏"&&vm.ResourceInstallButtonIcon=="ActionPlay");
         vm.ResourceLoader="全部";pump(50);vm.ResourceGameVersion="全部";pump(50);
         check("版本筛选可显示不同游戏版本和加载器",vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).Select(r=>r.Id).Distinct().Count()==3);
         var incompatible=vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="new");var before=fixture.Downloaded.Count;
@@ -168,6 +169,20 @@ internal static class ResourceCenterChecks
         old=vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="pack-old");fixture.Downloaded.Clear();
         Wait(vm.InstallResourceReleaseCommand.ExecuteAsync(old));
         check("整合包精确下载所选历史版本并建立独立实例",fixture.Downloaded.Contains("pack-old.mrpack")&&!fixture.Downloaded.Contains("pack-new.mrpack")&&model.Instances.Any(i=>i.DisplayName.Contains("Fixture Pack")&&i.DisplayName.Contains("old")));
+        check("整合包完成后右下角变为启动而非再次下载",vm.ResourceIsInstalled&&vm.ResourceInstallButtonText=="启动游戏"&&window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="InstallResourceRelease").Command==vm.ResourcePrimaryCommand);
+        var installedPack=model.Instances.Single(i=>i.DisplayName.Contains("Fixture Pack")&&i.DisplayName.Contains("old"));
+        var previousLaunch=vm.LaunchInstalledResource;string? launched=null;var downloads=fixture.Downloaded.Count;
+        try{vm.LaunchInstalledResource=id=>{launched=id;return Task.CompletedTask;};Wait(vm.ResourcePrimaryCommand.ExecuteAsync(null));}
+        finally{vm.LaunchInstalledResource=previousLaunch;}
+        check("启动按钮指向整合包实例且不会重复下载",launched==installedPack.InstanceId&&fixture.Downloaded.Count==downloads);
+        vm.BackToResourcesCommand.Execute(null);Wait(vm.OpenResourceCommand.ExecuteAsync(item));
+        vm.ShowPackVersionsCommand.Execute(null);vm.SelectResourceReleaseCommand.Execute(vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="pack-old"));pump(50);
+        check("重新进入项目从磁盘识别已安装整合包",vm.ResourceIsInstalled&&vm.ResourceInstallButtonText=="启动游戏");
+        vm.SelectResourceReleaseCommand.Execute(vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="pack-new"));pump(50);
+        check("未安装的其他包版本仍显示安装",!vm.ResourceIsInstalled&&vm.ResourceInstallButtonText.StartsWith("安装"));
+        vm.SelectResourceReleaseCommand.Execute(vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.Id=="pack-old"));
+        Launcher.Application.Instances.InstanceDeletion.Delete(model.GameRoot,installedPack.InstanceId,installedPack.VersionId);model.TryUseGameRoot(model.GameRoot,out _);vm.RefreshInstalledResource();
+        check("整合包删除后不保留无效启动按钮",!vm.ResourceIsInstalled&&vm.ResourceInstallButtonText.StartsWith("安装"));
         vm.BackToResourcesCommand.Execute(null);
         foreach(var cat in new[]{DownloadCategory.ResourcePack,DownloadCategory.Datapack,DownloadCategory.Shader})
         {

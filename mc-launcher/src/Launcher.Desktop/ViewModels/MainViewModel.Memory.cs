@@ -33,13 +33,11 @@ public sealed partial class MainViewModel
         RefreshMemoryStatus();
         PropertyChanged+=(_,e)=>
         {
-            if(e.PropertyName is nameof(IsSetupOpen) or nameof(DetailTab) or nameof(SelectedInstance))RefreshMemoryStatus();
+            if(e.PropertyName is nameof(DetailTab) or nameof(SelectedInstance))RefreshMemoryStatus();
             if(e.PropertyName is nameof(MemoryMb) or nameof(AutomaticMemory))
             {
-                if(IsSetupOpen)SetupMemoryText=MemoryMb.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 foreach(var name in new[]{nameof(ManualMemory),nameof(MemorySliderMaximum),nameof(AllocatedMemoryText),nameof(MemoryModeText),nameof(RemainingMemoryText),nameof(MemoryPressureText),nameof(MemorySegments)})OnPropertyChanged(name);
             }
-            if(e.PropertyName==nameof(IsSetupOpen)&&IsSetupOpen)SetupMemoryText=MemoryMb.ToString(System.Globalization.CultureInfo.InvariantCulture);
         };
     }
     [RelayCommand] private void RefreshMemoryStatus()

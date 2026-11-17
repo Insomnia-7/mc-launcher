@@ -14,7 +14,7 @@ internal static partial class UiCheck
         {
             File.WriteAllText(path, "{\"downloadSource\":\"bmclapi\",\"extra\":true}");
             var vm = (MainViewModel)Resolve(typeof(MainViewModel))!;
-            vm.CloseSetupCommand.Execute(null);
+            vm.IsInstanceSection=true;
             vm.OpenNetworkCommand.Execute(null);
             Check("网络设置默认自动且打开不发起网络请求", vm.IsNetworkOpen && vm.ProxyModeIndex == 0 && !vm.IsCustomProxy);
             var active = vm.ActiveNetworkText;

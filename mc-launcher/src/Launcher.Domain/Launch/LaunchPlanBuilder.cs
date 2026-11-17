@@ -158,10 +158,13 @@ public static class LaunchPlanBuilder
                 result.Add(ArgumentExpander.Expand(raw, variables));
         }
 
-        if (ctx.HasCustomResolution)
+        if (ctx.HasCustomResolution&&!result.Contains("--width"))
         {
             result.Add("--width");
             result.Add(launch.WindowWidth.ToString());
+        }
+        if(ctx.HasCustomResolution&&!result.Contains("--height"))
+        {
             result.Add("--height");
             result.Add(launch.WindowHeight.ToString());
         }
@@ -176,7 +179,7 @@ public static class LaunchPlanBuilder
             // Connection arguments are one-time inputs, never persisted in instance settings.
             foreach(var flag in new[]{"--server","--port","--quickPlayMultiplayer","--quickPlaySingleplayer","--quickPlayRealms"})
                 for(var i=result.Count-1;i>=0;i--)if(result[i]==flag){result.RemoveAt(i);if(i<result.Count)result.RemoveAt(i);}
-            if(version.Arguments?.Game.Any(a=>a.Value=="--quickPlayMultiplayer")==true)
+            if(version.Arguments?.Game.Any(a=>a.Value=="--quickPlayMultiplayer"||a.Values?.Contains("--quickPlayMultiplayer")==true)==true)
                 result.AddRange(["--quickPlayMultiplayer",target.Endpoint]);
             else result.AddRange(["--server",target.Host,"--port",target.Port.ToString(System.Globalization.CultureInfo.InvariantCulture)]);
         }

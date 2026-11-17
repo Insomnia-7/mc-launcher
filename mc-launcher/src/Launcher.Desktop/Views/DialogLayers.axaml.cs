@@ -4,7 +4,7 @@ namespace Launcher.Desktop.Views;
 public sealed partial class DialogLayers : UserControl
 {
     public event Action? VisibilityChanged;
-    private AnimatedDialog[] Dialogs => [SetupDialog,AccountsDialog,ConfirmDialog,RestartDialog];
+    private AnimatedDialog[] Dialogs => [AccountsDialog,ConfirmDialog,RestartDialog];
     public bool HasVisibleDialogs => Dialogs.Any(d=>d.IsVisible);
     public DialogLayers()
     {

@@ -73,7 +73,7 @@ public static class ModCompatibility
         var nested = new List<string>();
         if (selected.FullName.EndsWith(".json", StringComparison.Ordinal))
         {
-            using var doc = JsonDocument.Parse(text);
+            using var doc = ParseMetadata(text);
             var root = doc.RootElement;
             if (String(root,"environment") == "server") return;
             var quilt = selected == quiltEntry;
@@ -142,6 +142,27 @@ public static class ModCompatibility
     {
         if (entry.Length > 1048576) throw new InvalidDataException("模组元数据过大。");
         using var input = entry.Open(); using var reader = new StreamReader(input); return reader.ReadToEnd();
+    }
+    private static JsonDocument ParseMetadata(string text)
+    {
+        var options=new JsonDocumentOptions{AllowTrailingCommas=true,CommentHandling=JsonCommentHandling.Skip};
+        try{return JsonDocument.Parse(text,options);}
+        catch(JsonException)
+        {
+            // Fabric's Gson reader accepts literal line breaks in descriptions.
+            // Preserve their value while making the metadata readable by System.Text.Json.
+            var json=new System.Text.StringBuilder(text.Length);var quoted=false;var escaped=false;var changed=false;
+            foreach(var c in text)
+            {
+                if(quoted&&c<0x20){json.Append("\\u").Append(((int)c).ToString("x4"));changed=true;}
+                else json.Append(c);
+                if(escaped){escaped=false;continue;}
+                if(quoted&&c=='\\')escaped=true;
+                else if(c=='"')quoted=!quoted;
+            }
+            if(!changed)throw;
+            return JsonDocument.Parse(json.ToString(),options);
+        }
     }
     private static string? String(JsonElement value, string key) => value.TryGetProperty(key, out var property) && property.ValueKind == JsonValueKind.String ? property.GetString() : null;
     private static string Constraint(JsonElement value) => value.ValueKind switch { JsonValueKind.String => value.GetString() ?? "*", JsonValueKind.Array => string.Join(" || ", value.EnumerateArray().Select(Constraint)), _ => "<复杂版本表达式>" };
