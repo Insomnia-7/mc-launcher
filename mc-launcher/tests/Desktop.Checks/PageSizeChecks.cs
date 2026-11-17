@@ -54,7 +54,7 @@ internal static class PageSizeChecks
         model.OpenNetworkCommand.Execute(null);await Task.Delay(30);
         Check("快速改选继续当前可见页退场且不闪出隐藏页",ReferenceEquals(layers[0].Content,shown)&&layers[0].Opacity<=alpha+0.01);
         await Settle();
-        File.WriteAllText(Path.Combine(root,"page-size-audit.json"),JsonSerializer.Serialize(new{passed,measurements,scope="Native current Windows monitor; all shell pages, detail tabs and four modal surfaces."},new JsonSerializerOptions{WriteIndented=true}));
+        File.WriteAllText(Path.Combine(root,"page-size-audit.json"),JsonSerializer.Serialize(new{passed,measurements,scope="Native current Windows monitor; all shell pages, detail tabs and three modal surfaces."},new JsonSerializerOptions{WriteIndented=true}));
         Console.WriteLine($"{passed} native page size checks passed");
     }
 }

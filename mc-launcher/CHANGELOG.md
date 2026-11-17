@@ -4,6 +4,8 @@
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.26)。
 
+[源码 b88ad62](https://github.com/Insomnia-7/mc-launcher/commit/b88ad6214d7f78a4a3af4627a4b777b6174b25a3)。Windows 单文件 25752247 字节，SHA-256：2a89a57741de3c0aba73d50b9b47db7c94701d3ca2fadf81b175450398502f99。1886 项检查、架构护栏、实际发布程序集、真实原版及整合包窗口、Horizon 转换、单文件启动和生产更新验签通过。
+
 - 修复官方条件参数数组的读取、保存和展开，避免加载器安装失败或丢失参数；宽高参数不重复添加。
 - 兼容 Fabric 元数据描述中的实际换行，修复 EMF 被漏识别后误报缺少前置、阻止整合包启动的问题；真实缺失和版本冲突仍会报告。
 - 资源详情识别当前发布版本的安装记录，右下角切换为启动游戏；选择未安装版本或删除实例后恢复安装按钮，避免重复下载。

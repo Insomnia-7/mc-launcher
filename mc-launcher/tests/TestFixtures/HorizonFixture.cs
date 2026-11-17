@@ -20,7 +20,7 @@ internal static class HorizonFixture
         if(args.Contains("--prepare"))
         {
             using var research=JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"research-lock.json")));
-            if(research.RootElement.GetProperty("minecraft").TryGetProperty("manifest_sha1",out var sha1))
+            if(research.RootElement.TryGetProperty("minecraft",out var minecraft)&&minecraft.TryGetProperty("manifest_sha1",out var sha1))
             {
                 var manifest=Path.Combine(Value("--minecraft-dir"),"versions","26.3","26.3.json");
                 if(!File.Exists(manifest)||Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(File.ReadAllBytes(manifest)))!=sha1.GetString())

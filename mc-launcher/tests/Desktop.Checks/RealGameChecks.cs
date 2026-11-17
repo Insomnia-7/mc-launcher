@@ -44,8 +44,8 @@ internal static class RealGameChecks
                     Console.WriteLine("Installing real game in isolated D: directory...");
                     await model.Download.InstallVersionCommand.ExecuteAsync(null);
                     Check("真实游戏安装完成且出现在实例列表",model.Instances.Any(i=>i.VersionId==version));
-                    model.SelectedInstance=model.Instances.Single(i=>i.VersionId==version);
                     model.ShowHomeCommand.Execute(null);await Task.Delay(200);
+                    model.SelectedInstance=model.Instances.Single(i=>i.VersionId==version);
                     await model.LaunchCommand.ExecuteAsync(null);
                 }
                 else
