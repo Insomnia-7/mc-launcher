@@ -4,6 +4,8 @@
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.25)。
 
+[源码 75842c9](https://github.com/Insomnia-7/mc-launcher/commit/75842c9bacae2f7bd1e9445c5267307266233c82)。Windows 单文件 25756591 字节，SHA-256：ad21970f1056e4491ac864100d24f28314cf187c41ae03d97a43f0ded5d00d9d。1825 项检查、架构护栏、实际发布程序集、单文件启动和生产更新验签通过。
+
 - 同时识别加载器的继承和合并父版本标记；加载器及整合包只显示可玩实例，原版依赖角色持久保存，删除后不再复活为原版条目。
 - 删除最后一个引用者时回收未共享的基础版本和对应解压库；明确安装的纯原版、其他实例需要的依赖、共享 libraries 与 assets 保留。
 - 删除实例时可选择同时清理自动下载的 Java，默认不勾选；检查已记录游戏库的共享引用和正在运行的 Java，外部手动安装的 Java 不在清理范围。
