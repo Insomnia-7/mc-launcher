@@ -4,6 +4,8 @@
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.24)。
 
+[源码 6ad649f](https://github.com/Insomnia-7/mc-launcher/commit/6ad649f596891456fee0777f86d27b796c2452ab)。Windows 单文件 25748732 字节，SHA-256：5f64e143fb5fdfd5fc575233e459700d1ea6e8cc0f456a0963f5d712c88f1635。1775 项检查、架构护栏、实际发布程序集、单文件启动和生产更新验签通过。
+
 - 内存改为自动分配或滑块选择，分段显示系统已用、游戏分配和预计剩余；自动模式持久保存，旧的明确数值保留为自定义。
 - 加载器的原版依赖不再显示为多余实例；明确安装的纯原版仍保留，依赖文件继续共享。
 - 整合包暂存改到游戏盘，修复跨卷以及 Windows 长路径前缀不一致引发的目录移动错误；修复取消后的断点清理误报，保留需要恢复的文件。
