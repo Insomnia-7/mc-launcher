@@ -1,5 +1,15 @@
 # 方隅版本记录
 
+## 1.0.0-preview.25 · 实例依赖清理与 Java 删除选项
+
+2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.25)。
+
+- 同时识别加载器的继承和合并父版本标记；加载器及整合包只显示可玩实例，原版依赖角色持久保存，删除后不再复活为原版条目。
+- 删除最后一个引用者时回收未共享的基础版本和对应解压库；明确安装的纯原版、其他实例需要的依赖、共享 libraries 与 assets 保留。
+- 删除实例时可选择同时清理自动下载的 Java，默认不勾选；检查已记录游戏库的共享引用和正在运行的 Java，外部手动安装的 Java 不在清理范围。
+- 修正下载数量气泡的位置与数字居中，适配展开、收起及两位数量；修正整合包任务误显示当前选中实例的版本。
+
+
 ## 1.0.0-preview.24 · 内存与模组管理、安装存储修复
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.24)。

@@ -95,6 +95,7 @@ internal static class VersionInstallChecks
             if(kind==LoaderKind.Fabric) capture("install-fabric",true);
             Wait(vm.InstallVersionCommand.ExecuteAsync(null));
             check(kind+" 安装使用用户所选版本并回到可操作状态",fixture.LastInstall==(kind,"1.21.4","9.1.0") && vm.Status.Contains("安装完成") && !vm.IsBusy && model.Instances.Any(i=>i.VersionId.Contains("9.1.0")));
+            check(kind+" 安装完成后不显示多余原版实例",model.Instances.All(i=>i.InstanceId!="1.21.4"));
             // 删过同一加载器版本后重装：墓碑必须被清除，重新扫描能看到它（Forge/NeoForge 走独立 Runner）。
             var loaderId=model.Instances.Select(i=>i.VersionId).First(id=>id.Contains(kind.ToString().ToLowerInvariant(),StringComparison.OrdinalIgnoreCase)&&id.Contains("9.1.0",StringComparison.OrdinalIgnoreCase));
             Launcher.Application.Instances.InstanceRegistry.HideVersion(model.GameRoot,loaderId);
@@ -106,6 +107,7 @@ internal static class VersionInstallChecks
         var before=fixture.Profiles; fixture.LastInstall=null;
         vm.ChooseInstallLoaderCommand.Execute(vm.InstallLoaders[0]); Wait(vm.InstallVersionCommand.ExecuteAsync(null));
         check("原版路径不安装加载器",fixture.Profiles==before && fixture.LastInstall is null && vm.Status.Contains("安装完成"));
+        check("明确选择原版安装后显示独立原版实例",model.Instances.Any(i=>i.InstanceId=="1.21.4"));
         fixture.Empty=true;
         vm.ChooseInstallLoaderCommand.Execute(vm.InstallLoaders.Single(c=>c.Kind==LoaderKind.Fabric)); pump(50);
         check("无兼容版本时禁用安装并给出提示",vm.InstallLoaderVersions.Count==0 && !vm.InstallVersionCommand.CanExecute(null) && vm.LoaderVersionStatus.Contains("暂无"));

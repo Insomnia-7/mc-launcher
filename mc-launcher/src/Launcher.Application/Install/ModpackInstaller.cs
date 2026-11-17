@@ -195,6 +195,7 @@ public sealed class ModpackInstaller(
             // 索引与 instance.json 同源：instance.json 是事实，index.json 只是"有哪些实例"的索引，
             // 丢了/写坏了下次 LoadOrMigrate 会按磁盘重建，界面不用再扫 versions/ 目录。
             registry.Register(targetInstanceId, loaderVersionId, metadata);
+            if(!loaderVersionId.Equals(minecraft,StringComparison.OrdinalIgnoreCase))InstanceRegistry.RecordDependency(gameRoot,minecraft);
             staging.Complete();
 
             if (missing.Count > 0)

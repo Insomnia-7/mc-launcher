@@ -528,6 +528,9 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _confirmMessage = string.Empty;
     [ObservableProperty] private string _confirmDetail = string.Empty;
     [ObservableProperty] private string _confirmOkText = "确定";
+    [ObservableProperty] private bool _confirmOffersJavaCleanup;
+    [ObservableProperty] private bool _confirmDeleteManagedJava;
+    [ObservableProperty] private string _confirmJavaCleanupText = string.Empty;
 
     private Action? _confirmAction;
     [ObservableProperty] private bool _confirmShowCancel = true;
@@ -541,6 +544,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void AskConfirm(string title, string message, string detail, string okText, Action? action = null, bool showCancel = true, bool danger = false)
     {
+        ConfirmOffersJavaCleanup=false;
+        ConfirmDeleteManagedJava=false;
         ConfirmTitle = title;
         ConfirmMessage = message;
         ConfirmDetail = detail;
@@ -1556,16 +1561,23 @@ public sealed partial class MainViewModel : ObservableObject
         if (ResolveInstancePath(instance, "instances") is not { } instancePath) return;
         if (ResolveInstancePath(instance, "versions") is not { } versionPath) return;
 
+        ManagedJavaRuntime? managedJava=null;
+        try { managedJava=ManagedJavaCleanup.ForInstance(AppPaths.DataDirectory,GameRoot,instance.InstanceId,instance.VersionId); }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException){_logger.LogWarning(ex,"无法确定可清理的 Java");}
+        var root=GameRoot;
+
         AskConfirm(
             $"删除「{instance.DisplayName}」？",
             "mods、config、存档都会一起删掉，删完找不回来。共享的 libraries 和 assets 会保留。",
             instancePath + Environment.NewLine + versionPath,
             "删除",
-            () => DeleteInstanceCore(instance, instancePath, versionPath),
+            () => {if(GameRoot==root)DeleteInstanceCore(instance, instancePath, versionPath,ConfirmDeleteManagedJava?managedJava:null);},
             danger: true);
+        ConfirmOffersJavaCleanup=managedJava is not null;
+        ConfirmJavaCleanupText=managedJava is null?string.Empty:$"同时删除自动下载的 Java {managedJava.Major}（其他实例仍需使用时保留）";
     }
 
-    private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath)
+    private void DeleteInstanceCore(InstanceCard instance, string instancePath, string versionPath,ManagedJavaRuntime? managedJava=null)
     {
         if(!CanDeleteInstance()) {StatusText="当前任务结束后再删除版本。";return;}
 
@@ -1596,8 +1608,13 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText = stillUsed
                 ? $"已删除版本 {instance.DisplayName}（版本文件仍被其他实例或加载器依赖，已保留）"
                 : $"已删除版本 {instance.DisplayName}";
+            if(result.CleanupWarning is {} warning)StatusText+=" · "+warning;
             _logger.LogInformation("删除版本 {InstanceId}（version {VersionId}，共用={Shared}）",
                 instance.InstanceId, instance.VersionId, stillUsed);
+            if(managedJava is not null)
+                try { StatusText+=" · "+ManagedJavaCleanup.RemoveIfUnused(AppPaths.DataDirectory,GameRoot,managedJava,ManagedJavaIsRunning); }
+                catch(Exception javaEx)when(javaEx is IOException or UnauthorizedAccessException or JsonException)
+                {StatusText+=" · Java 清理未完成："+ErrorText.Describe(javaEx);}
 
             // 删除已经成功：桌面端界面收尾（关详情/提示/清理偏好）单独容错，
             // 它抛异常不能把业务结果改写成「删除失败」，也不能跳过列表刷新（大纲 4.6）。
@@ -1611,6 +1628,20 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.LogError(ex, "删除版本失败");
             StatusText = "删除失败：" + ErrorText.Describe(ex);
         }
+    }
+
+    private bool ManagedJavaIsRunning(string directory)
+    {
+        lock(_running)if(_running.Count>0)return true;
+        foreach(var name in new[]{"java","javaw"})
+            foreach(var process in Process.GetProcessesByName(name))
+                using(process)
+                    try
+                    {
+                        if(process.MainModule?.FileName is {} file&&file.StartsWith(directory+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))return true;
+                    }
+                    catch(Exception ex)when(ex is System.ComponentModel.Win32Exception or InvalidOperationException){return true;}
+        return false;
     }
 
 
@@ -1819,6 +1850,8 @@ public sealed partial class MainViewModel : ObservableObject
         var previousId = SelectedInstance?.InstanceId;
         Instances.Clear();
         if (!AppPaths.IsGameRootConfirmed || !Directory.Exists(GameRoot)) return;
+        try { ManagedJavaCleanup.RememberLibrary(AppPaths.DataDirectory,GameRoot); }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){_logger.LogWarning(ex,"记录 Java 共享游戏库失败");}
 
         // 实例列表以 instances/index.json 为准（旧数据 LoadOrMigrate 会顺手补建）。
         // 注意：实例目录名不一定等于版本目录名——同一个加载器版本可以被多个整合包共用

@@ -1,8 +1,9 @@
 using System.Text.Json;
+using Launcher.Application.Install;
 
 namespace Launcher.Application.Instances;
 
-public sealed record InstanceDeletionResult(bool VersionRetained);
+public sealed record InstanceDeletionResult(bool VersionRetained,string? CleanupWarning=null);
 
 /// <summary>Delete private data and unreferenced version/native files. Shared assets/libraries remain.</summary>
 public static class InstanceDeletion
@@ -13,7 +14,15 @@ public static class InstanceDeletion
         var versionPath = Child(gameRoot, "versions", versionId);
         var nativePath = Child(gameRoot, "natives", versionId);
         // Snapshot BEFORE deleting: re-scanning versions afterwards would resurrect a virtual instance.
-        var registry = InstanceRegistry.Load(gameRoot);
+        var registry = InstanceRegistry.LoadOrMigrate(gameRoot);
+        var dependencies=new List<string>();
+        void Visit(string id)
+        {
+            foreach(var parent in InstanceRegistry.Parents(gameRoot,id))
+                if(!parent.Equals(versionId,StringComparison.OrdinalIgnoreCase)&&!dependencies.Contains(parent,StringComparer.OrdinalIgnoreCase))
+                { dependencies.Add(parent);Visit(parent); }
+        }
+        Visit(versionId);
         var retained = registry.Instances.Any(r => !r.Id.Equals(instanceId, StringComparison.OrdinalIgnoreCase)
             && r.VersionId.Equals(versionId, StringComparison.OrdinalIgnoreCase)
             && Directory.Exists(Child(gameRoot, "instances", r.Id)));
@@ -43,6 +52,28 @@ public static class InstanceDeletion
         // 实例墓碑始终保留：防止半删残留的 instances/<id> 复活，重装时由 UnhideVersion 清除。
         if (!retained && !Directory.Exists(versionPath)) InstanceRegistry.UnhideVersion(gameRoot, versionId);
         registry.Remove(instanceId);
+        // Only dependency versions are collected. Explicit vanilla installations and
+        // ancestors referenced by another surviving loader/pack remain intact.
+        foreach(var dependency in dependencies)
+        {
+            try
+            {
+            if(InstanceMetadata.TryRead(gameRoot,dependency) is not null)continue;
+            InstanceRegistry.RecordDependency(gameRoot,dependency);
+            var used=InstanceRegistry.Load(gameRoot).Instances.Any(r=>r.VersionId.Equals(dependency,StringComparison.OrdinalIgnoreCase));
+            if(!used&&Directory.Exists(versionsRoot))
+                used=Directory.EnumerateDirectories(versionsRoot).Any(d=>
+                    !Path.GetFileName(d).Equals(dependency,StringComparison.OrdinalIgnoreCase)
+                    &&InstanceRegistry.Parents(gameRoot,Path.GetFileName(d)).Contains(dependency,StringComparer.OrdinalIgnoreCase));
+            if(!used)
+            {
+                DeleteDirectory(Child(gameRoot,"versions",dependency));
+                DeleteDirectory(Child(gameRoot,"natives",dependency));
+            }
+            }
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException)
+            {return new(retained,"实例已删除，基础版本清理未完成："+ex.Message);}
+        }
         return new(retained);
     }
 

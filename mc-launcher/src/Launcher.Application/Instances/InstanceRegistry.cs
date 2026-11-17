@@ -95,6 +95,8 @@ public sealed class InstanceRegistry
 
     public static void RegisterStandaloneVersion(string gameRoot,string versionId)
     {
+        var dependencies=new HashSet<string>(ReadDependencyVersions(gameRoot),StringComparer.OrdinalIgnoreCase);
+        if(dependencies.Remove(versionId))WriteHidden(DependencyVersionsPathFor(gameRoot),dependencies);
         var metadata=InstanceMetadata.TryRead(gameRoot,versionId)??new InstanceMetadata(versionId,null,null,null,versionId,DateTimeOffset.UtcNow.ToString("o"),versionId,IsModpack:false);
         metadata.Write(gameRoot,versionId);
         LoadOrMigrate(gameRoot).Register(versionId,versionId,metadata);
@@ -107,6 +109,29 @@ public sealed class InstanceRegistry
     public static string HiddenVersionsPathFor(string gameRoot) => Path.Combine(gameRoot, "instances", "hidden-versions.json");
     /// <summary>实例墓碑：已删（或半删残留）的 instanceId，只用于过滤 ScanDisk 出来的真实目录。</summary>
     public static string HiddenInstancesPathFor(string gameRoot) => Path.Combine(gameRoot, "instances", "hidden-instances.json");
+
+    // Persist the role independently of a loader's lifetime: removing its JSON must not
+    // turn the retained client JAR back into a playable vanilla instance.
+    private static string DependencyVersionsPathFor(string gameRoot) => Path.Combine(gameRoot,"instances","dependency-versions.json");
+    public static IReadOnlySet<string> ReadDependencyVersions(string gameRoot) => ReadHidden(DependencyVersionsPathFor(gameRoot));
+    public static void RecordDependency(string gameRoot,string versionId)
+    {
+        if(InstanceMetadata.TryRead(gameRoot,versionId) is not null)return;
+        var ids=new HashSet<string>(ReadDependencyVersions(gameRoot),StringComparer.OrdinalIgnoreCase);
+        if(ids.Add(versionId))WriteHidden(DependencyVersionsPathFor(gameRoot),ids);
+    }
+    public static IReadOnlyList<string> Parents(string gameRoot,string versionId)
+    {
+        if(string.IsNullOrWhiteSpace(versionId)||versionId is "." or ".."||versionId.IndexOfAny(['/', '\\', ':'])>=0)throw new InvalidDataException("版本 ID 非法");
+        var path=Path.Combine(gameRoot,"versions",versionId,versionId+".json");
+        if(!File.Exists(path))return [];
+        using var json=JsonDocument.Parse(File.ReadAllText(path));
+        return json.RootElement.EnumerateObject().Where(p=>
+            (p.Name.Equals("inheritsFrom",StringComparison.OrdinalIgnoreCase)||p.Name.Equals("x-launcher-parent",StringComparison.OrdinalIgnoreCase))
+            &&p.Value.ValueKind==JsonValueKind.String).Select(p=>p.Value.GetString()!)
+            .Where(id=>!string.IsNullOrWhiteSpace(id)&&id!=versionId&&id is not "." and not ".."&&id.IndexOfAny(['/', '\\', ':'])<0)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
 
     private static IReadOnlySet<string> ReadHidden(string path)
     {
@@ -344,6 +369,12 @@ public sealed class InstanceRegistry
         var entries = new List<InstanceRegistration>();
         var hiddenVersions = ReadHiddenVersions(gameRoot);
         var hiddenInstances = ReadHiddenInstances(gameRoot);
+        var dependencies=new HashSet<string>(ReadDependencyVersions(gameRoot),StringComparer.OrdinalIgnoreCase);
+        foreach(var versionId in versionIds)
+            try { foreach(var parent in Parents(gameRoot,versionId))dependencies.Add(parent); }
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException){}
+        if(persist)
+            foreach(var dependency in dependencies)RecordDependency(gameRoot,dependency);
 
         // ① 实例目录（有 instance.json 的优先，没有的算"孤儿目录"也要登记，否则界面上会豁一块）
         foreach (var (id, metadata) in onDisk)
@@ -353,7 +384,7 @@ public sealed class InstanceRegistry
             if (string.IsNullOrWhiteSpace(versionId)) versionId = DeriveVersionId(id, versionIds);
             // 只按实例 id 过滤：删掉共享 versionId 的一个实例时，其它实例仍指向同一 versionId，
             // 绝不能因 hiddenVersions 把它们一起隐藏（13.1「删除多个版本中的一个，其他版本不受影响」）。
-            if (hiddenInstances.Contains(id)) continue;
+            if (hiddenInstances.Contains(id) || metadata is null && dependencies.Contains(versionId!)) continue;
 
             entries.Add(new InstanceRegistration(
                 id,
@@ -371,16 +402,6 @@ public sealed class InstanceRegistry
         // 会被这里补成一条虚拟实例，看起来像没删掉（大纲 13.1）。
         var knownVersions = new HashSet<string>(
             entries.Select(e => e.VersionId), StringComparer.OrdinalIgnoreCase);
-        var dependencies=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach(var versionId in versionIds)
-            try
-            {
-                using var json=JsonDocument.Parse(File.ReadAllText(Path.Combine(gameRoot,"versions",versionId,versionId+".json")));
-                foreach(var property in json.RootElement.EnumerateObject())
-                    if(property.Name.Equals("inheritsFrom",StringComparison.OrdinalIgnoreCase)&&property.Value.ValueKind==JsonValueKind.String&&property.Value.GetString() is {Length:>0} parent)
-                        dependencies.Add(parent);
-            }
-            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException){}
         foreach (var versionId in versionIds.OrderBy(v => v, StringComparer.OrdinalIgnoreCase))
         {
             if (knownVersions.Contains(versionId) || hiddenVersions.Contains(versionId) || dependencies.Contains(versionId)) continue;

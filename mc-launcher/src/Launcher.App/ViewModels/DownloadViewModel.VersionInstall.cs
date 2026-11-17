@@ -148,6 +148,7 @@ public sealed partial class DownloadViewModel
         // 加载器版本（尤其 Forge/NeoForge 由独立 Runner 写 versions/<id>/<id>.json，不经过
         // GameInstaller.InstallVersionAsync）重装时必须清掉删除时留下的墓碑，否则游戏库不显示。
         Launcher.Application.Instances.InstanceRegistry.UnhideVersion(root, installedId);
+        Launcher.Application.Instances.InstanceRegistry.RecordDependency(root,game);
         return installedId;
     }
 }

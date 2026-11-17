@@ -13,6 +13,10 @@
     <Style Selector="Border#SidebarPanel.nav-compact icons|IconLabel TextBlock"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Border#SidebarPanel.nav-compact icons|IconLabel StackPanel"><Setter Property="Spacing" Value="0"/></Style>
     <Style Selector="Border#SidebarPanel.nav-compact Button.nav"><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="Padding" Value="10"/></Style>
+    <Style Selector="icons|IconLabel#TaskNavLabel"><Setter Property="Margin" Value="0,0,28,0"/></Style>
+    <Style Selector="Border#SidebarPanel.nav-compact Grid#TaskNavContent"><Setter Property="Width" Value="18"/><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+    <Style Selector="Border#SidebarPanel.nav-compact icons|IconLabel#TaskNavLabel"><Setter Property="Margin" Value="0"/></Style>
+    <Style Selector="Border#SidebarPanel.nav-compact Border#SidebarTaskBadge"><Setter Property="RenderTransform" Value="translate(8px, -9px)"/></Style>
     <Style Selector="Button.shell-nav"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/></Style>
     <Style Selector="Button.shell-nav.active"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/><Setter Property="Background" Value="Transparent"/></Style>
     <Style Selector="Button.shell-nav.active /template/ Border#Surface"><Setter Property="Background" Value="Transparent"/></Style>
@@ -75,7 +79,14 @@
               <Button x:Name="MultiplayerNav" Classes="nav shell-nav" ToolTip.Tip="联机" Classes.active="{Binding IsMultiplayerPage}" Command="{Binding OpenMultiplayerCommand}" AutomationProperties.Name="联机大厅"><icons:IconLabel Icon="NavPeople" Text="联机大厅" IconSize="18"/></Button>
               <Button x:Name="NetworkNav" Classes="nav shell-nav" ToolTip.Tip="网络与连接" Classes.active="{Binding IsNetworkSettingsPage}" Command="{Binding OpenNetworkCommand}" AutomationProperties.Name="网络与连接"><icons:IconLabel Icon="NetworkWifi" Text="网络与连接" IconSize="18"/></Button>
               <Button x:Name="DiscoverNav" Classes="nav shell-nav" ToolTip.Tip="资源" Classes.active="{Binding IsDiscoverPage}" Command="{Binding ShowDownloadsCommand}" AutomationProperties.Name="资源管理"><icons:IconLabel Icon="ActionFolder" Text="资源管理" IconSize="18"/></Button>
-              <Button x:Name="TaskCenterEntry" Classes="nav shell-nav" ToolTip.Tip="下载" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载中心"><Grid><icons:IconLabel Icon="NavDownload" Text="下载中心" IconSize="18"/><Border x:Name="SidebarTaskBadge" IsVisible="{Binding HasSidebarTasks}" Background="{DynamicResource AccentFillBrush}" CornerRadius="6" MinWidth="16" Height="16" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Top"><TextBlock Text="{Binding SidebarTaskCount}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="10"/></Border></Grid></Button>
+              <Button x:Name="TaskCenterEntry" Classes="nav shell-nav" HorizontalContentAlignment="Stretch" ToolTip.Tip="下载" Classes.active="{Binding IsTaskPage}" Command="{Binding OpenTaskCenterCommand}" AutomationProperties.Name="下载中心">
+                <Grid x:Name="TaskNavContent">
+                  <icons:IconLabel x:Name="TaskNavLabel" Icon="NavDownload" Text="下载中心" IconSize="18" HorizontalAlignment="Left"/>
+                  <Border x:Name="SidebarTaskBadge" IsVisible="{Binding HasSidebarTasks}" Background="{DynamicResource AccentFillBrush}" CornerRadius="8" MinWidth="16" Height="16" Padding="4,0" HorizontalAlignment="Right" VerticalAlignment="Center" IsHitTestVisible="False">
+                    <TextBlock x:Name="SidebarTaskCountText" Text="{Binding SidebarTaskCount}" Foreground="White" FontSize="10" LineHeight="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"/>
+                  </Border>
+                </Grid>
+              </Button>
               <Button x:Name="SettingsEntry" Classes="nav shell-nav" ToolTip.Tip="设置" Classes.active="{Binding IsGeneralSettingsPage}" Command="{Binding OpenAppearanceCommand}" AutomationProperties.Name="设置"><icons:IconLabel Icon="NavGear" Text="设置" IconSize="18"/></Button>
               <Button x:Name="WardrobeEntry" IsVisible="False" Command="{Binding OpenWardrobeCommand}"/>
               <Button x:Name="ShowcaseNav" Classes="nav shell-nav" IsVisible="{Binding IsDevShowcaseEnabled}" Command="{Binding OpenShowcaseCommand}" Content="开发预览"/>

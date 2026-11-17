@@ -1,9 +1,13 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Launcher.App.ViewModels;
 using Launcher.Application.Experience;
 using Launcher.Application.Install;
 using Launcher.Application.Mods;
+using Launcher.Application.Operations;
+using Launcher.Desktop.Controls;
+using Launcher.App;
 
 internal static class InstanceStorageUiChecks
 {
@@ -74,5 +78,38 @@ internal static class InstanceStorageUiChecks
         model.ManagedModQuery="beta";pump(100);window.Width=900;window.Height=640;model.SelectedTheme=model.ThemeChoices.Single(t=>t.Id=="aurora");pump(120);
         capture("mod-controls-dark-small",true);
         check("小窗口暗色主题仍显示全部单行操作",model.VisibleManagedMods.Count==1&&list.Bounds.Width>350);
+        window.Width=1280;window.Height=820;model.IsSidebarCollapsed=false;pump(400);
+        var java=Path.Combine(AppPaths.DataDirectory,"java","21","bin",OperatingSystem.IsWindows()?"java.exe":"java");
+        Directory.CreateDirectory(Path.GetDirectoryName(java)!);File.WriteAllText(java,"fixture managed Java; never executed");
+        model.DeleteInstanceCommand.Execute(null);pump(150);
+        check("删除实例提供自动 Java 清理选项且默认不勾选",model.IsConfirmOpen&&model.ConfirmOffersJavaCleanup&&!model.ConfirmDeleteManagedJava&&model.ConfirmJavaCleanupText.Contains("21"));
+        var javaOption=window.GetVisualDescendants().OfType<CheckBox>().Single(c=>Avalonia.Automation.AutomationProperties.GetName(c)=="同时删除自动下载的 Java");
+        javaOption.IsChecked=true;pump(50);check("Java 清理选项双向绑定",model.ConfirmDeleteManagedJava);
+        capture("delete-instance-java-option",true);
+        model.ConfirmCancelCommand.Execute(null);check("取消删除保留实例与 Java",File.Exists(java)&&Directory.Exists(Path.Combine(model.GameRoot,"instances",id)));
+        model.DeleteInstanceCommand.Execute(null);check("下次删除不沿用上次勾选",!model.ConfirmDeleteManagedJava);model.ConfirmCancelCommand.Execute(null);
+
+        var tasks=(PersistentTasks)typeof(MainViewModel).GetField("_tasks",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(model)!;
+        foreach(var old in tasks.List().Where(t=>t.CanCancel))tasks.Cancel(old.Id);
+        var created=new List<string>();
+        created.Add(tasks.Add(new("fixture","下载气泡检查",model.GameRoot,null,new())).Id);
+        model.OpenTaskCenterCommand.Execute(null);pump(450);
+        var badge=Find<Border>("SidebarTaskBadge");var number=Find<TextBlock>("SidebarTaskCountText");var label=Find<IconLabel>("TaskNavLabel");
+        Avalonia.Rect Box(Control c){var point=c.TranslatePoint(default,window)!.Value;return new(point,c.Bounds.Size);}
+        void BadgeChecks(string state)
+        {
+            var b=Box(badge);var n=Box(number);var icon=label.GetVisualDescendants().OfType<UiIcon>().Single();var i=Box(icon);
+            check(state+"气泡数字水平垂直居中",Math.Abs(b.Center.X-n.Center.X)<1&&Math.Abs(b.Center.Y-n.Center.Y)<1);
+            check(state+"气泡不遮挡图标中心",!b.Contains(i.Center));
+            check(state+"气泡仍位于导航按钮范围",Box(Find<Button>("TaskCenterEntry")).Contains(b));
+        }
+        check("一项下载显示数字 1",badge.IsVisible&&number.Text=="1");BadgeChecks("展开");
+        var labelText=label.GetVisualDescendants().OfType<TextBlock>().Single();check("展开气泡与导航文字没有重叠",Box(badge).Left>Box(labelText).Right);
+        capture("download-badge-expanded",true);
+        model.IsSidebarCollapsed=true;pump(500);BadgeChecks("收起");capture("download-badge-compact",true);
+        for(var i=0;i<11;i++)created.Add(tasks.Add(new("fixture","队列 "+i,model.GameRoot,null,new())).Id);
+        pump(150);check("两位下载数量完整显示",number.Text=="12"&&badge.Bounds.Width>=number.Bounds.Width+7);BadgeChecks("收起两位数");
+        model.IsSidebarCollapsed=false;pump(500);BadgeChecks("重新展开两位数");
+        foreach(var task in created)tasks.Cancel(task);pump(100);check("没有下载任务时隐藏气泡",!badge.IsVisible);
     }
 }

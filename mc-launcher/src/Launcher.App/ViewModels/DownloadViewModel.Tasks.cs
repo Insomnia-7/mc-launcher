@@ -48,7 +48,7 @@ public sealed partial class DownloadViewModel
         }
         if(release is null){Status="找不到兼容的发布版本。";return true;}
         if(root!=_gameRoot()||instance!=_currentInstance()){Status="安装目标已变化，请重新确认。";return true;}
-        await QueueTask(new("resource",item.DisplayTitle,root,instance,new(){{"source",item.Source},{"project",item.Id},{"category",item.Category.ToString()},{"release",release}}));return true;
+        await QueueTask(new("resource",item.DisplayTitle,root,item.Category==DownloadCategory.Modpack?null:instance,new(){{"source",item.Source},{"project",item.Id},{"category",item.Category.ToString()},{"release",release}}));return true;
     }
     private async Task<bool> QueueSelectedVersionAsync()
     {

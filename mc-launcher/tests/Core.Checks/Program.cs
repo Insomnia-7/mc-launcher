@@ -1693,6 +1693,10 @@ Console.WriteLine("== 27. 实例身份解耦：同加载器两个包 / 旧数据
         // 每次导入都要合一次 profile（第三个包是同包重复导入，也照装一遍加载器），3 次正好
         Check("实例：加载器 profile 每个包各合一次（3 次），没有重复放大",
             loaderMeta.ProfileCalls == 3, loaderMeta.ProfileCalls.ToString());
+        Check("实例：实际整合包导入后只显示整合包，不显示原版依赖",index.Instances.Count==2);
+        InstanceDeletion.Delete(root,first.InstanceId,first.VersionId);
+        InstanceDeletion.Delete(root,second.InstanceId,second.VersionId);
+        Check("实例：实际整合包删除后重建索引为空且无原版残留",InstanceRegistry.LoadOrMigrate(root).Instances.Count==0&&!Directory.Exists(Path.Combine(root,"versions","1.21.4")));
     }
     finally { TryDelete(root); }
 }
@@ -1859,6 +1863,7 @@ Console.WriteLine("== 30. 被安全软件拦截：异常识别与处置步骤 ==
 Console.WriteLine();
 await FirstRunChecks.RunAsync(Check);
 await InstanceStorageChecks.RunAsync(Check,BuildModpackInstaller(new FakeDownloader((_,_)=>null),new ThrowingForgeInstaller(),new ThrowingNeoForgeInstaller()));
+InstanceLifecycleChecks.Run(Check);
 await OptimizationChecks.RunAsync(Check);
 await FollowupChecks.RunAsync(Check);
 await ResourceBrowserChecks.RunAsync(Check);

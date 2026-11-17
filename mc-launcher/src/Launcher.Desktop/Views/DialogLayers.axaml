@@ -116,6 +116,7 @@
           <TextBlock Text="{Binding ConfirmTitle}" Classes="heading" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ConfirmMessage}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ConfirmDetail}" Classes="muted" IsVisible="{Binding HasConfirmDetail}" TextWrapping="Wrap" />
+          <CheckBox IsVisible="{Binding ConfirmOffersJavaCleanup}" IsChecked="{Binding ConfirmDeleteManagedJava}" AutomationProperties.Name="同时删除自动下载的 Java"><TextBlock Text="{Binding ConfirmJavaCleanupText}" TextWrapping="Wrap"/></CheckBox>
           <Grid ColumnDefinitions="*,Auto">
             <Button Command="{Binding ConfirmCancelCommand}" IsVisible="{Binding ConfirmShowCancel}" HorizontalAlignment="Left" AutomationProperties.Name="取消">
               <icons:IconLabel Icon="ActionClose" Text="取消" Foreground="{Binding $parent[Button].Foreground}" />
