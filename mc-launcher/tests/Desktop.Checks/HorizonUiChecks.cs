@@ -22,6 +22,13 @@ internal static class HorizonUiChecks
         check("未选择构建不能创建实例",model.HorizonInstances.Count==0&&model.HorizonHint.Contains("构建"));
         var directory=HorizonFixture.CreateBuild(Path.Combine(root,"native-fixture"));Complete(model.ImportHorizonBuildAsync(directory));
         check("导入完整构建会检测接口",model.HorizonBuilds.Count==1&&model.SelectedHorizonBuild?.Minecraft=="26.3");
+        check("Rust 页面提供本地扫描和清理按钮",Find<Button>("ScanHorizonButton").Command==model.ScanHorizonCommand&&Find<Button>("ClearHorizonCacheButton").Command==model.ClearHorizonCacheCommand);
+        Complete(model.ScanHorizonCommand.ExecuteAsync(null));
+        check("本地扫描刷新已导入构建且不重复",model.HorizonBuilds.Count==1&&model.HorizonHint.Contains("1 个"));
+        model.ClearHorizonCacheCommand.Execute(null);pump(40);
+        check("缓存清理先说明保留存档并请求确认",model.HasOverlay);
+        model.ConfirmCancelCommand.Execute(null);pump(40);
+        check("取消清理保留本地构建",model.HorizonBuilds.Count==1&&File.Exists(Path.Combine(directory,HorizonClient.ClientName)));
         model.HorizonName=" ";model.CreateHorizonInstanceCommand.Execute(null);check("空白名称不会保存",model.HorizonInstances.Count==0);
         model.HorizonName="Rust 生存世界";model.CreateHorizonInstanceCommand.Execute(null);model.CreateHorizonInstanceCommand.Execute(null);
         check("同名 Rust 实例保持不同标识",model.HorizonInstances.Count==2&&model.HorizonInstances[0].Id!=model.HorizonInstances[1].Id);

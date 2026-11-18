@@ -152,12 +152,13 @@ public sealed class ModpackUpdateService(GameInstaller gameInstaller, ModpackIns
             .Concat(Directory.Exists(System.IO.Path.Combine(commit, ".minecraft", "mods")) ? Directory.EnumerateFiles(System.IO.Path.Combine(commit, ".minecraft", "mods")) : []);
         var pack = source.Pack;
         var slug = pack.ForgeVersion is not null ? "forge" : pack.NeoForgeVersion is not null ? "neoforge" : pack.FabricVersion is not null ? "fabric" : pack.QuiltVersion is not null ? "quilt" : null;
-        var compatibility = ModCompatibility.Inspect(projected, plan.MinecraftVersion, slug,
-            pack.ForgeVersion ?? pack.NeoForgeVersion ?? pack.FabricVersion ?? pack.QuiltVersion, ct: ct);
-        if (compatibility.Any(i => i.IsError)) throw new InvalidOperationException("更新后的模组需要先处理：" + string.Join("；", compatibility.Where(i => i.IsError).Take(4).Select(i => i.Title)));
         var vanillaJson = System.IO.Path.Combine(plan.GameRoot, "versions", plan.MinecraftVersion, plan.MinecraftVersion + ".json");
         if (!File.Exists(vanillaJson)) await gameInstaller.InstallAsync(plan.MinecraftVersion, plan.GameRoot, includeAssets: true, ct: ct).ConfigureAwait(false);
         var loader = await installer.InstallLoaderAsync(plan.MinecraftVersion, source.Pack, plan.GameRoot, progress, ct).ConfigureAwait(false);
+        var compatibility = ModCompatibility.Inspect(projected, plan.MinecraftVersion, slug,
+            pack.ForgeVersion ?? pack.NeoForgeVersion ?? pack.FabricVersion ?? pack.QuiltVersion, ct: ct,
+            runtimeFiles:InstanceEnvironment.RuntimeModFiles(plan.GameRoot,loader.InstanceId));
+        if (compatibility.Any(i => i.IsError)) throw new InvalidOperationException("更新后的模组需要先处理：" + string.Join("；", compatibility.Where(i => i.IsError).Take(4).Select(i => i.Title)));
         // Preparing shared dependencies may take time. Detect edits made while it was running.
         if (await FingerprintAsync(instance, plan.Changes.Select(c => c.Path), ct).ConfigureAwait(false) != plan.Fingerprint)
             throw new InvalidOperationException("准备依赖期间实例发生变化，请重新预览。");

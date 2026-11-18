@@ -404,7 +404,7 @@ public sealed partial class MainViewModel
             if(settings.MemoryMb>InstanceSettings.AdaptiveMemoryMb()*2)InspectionIssues.Add(new("分配内存偏高",$"当前分配 {settings.MemoryMb} MiB。","请结合整合包要求与系统剩余内存调整。"));
             var scan=InstalledModScanner.Scan(Path.Combine(GameRoot,"instances",instance.InstanceId,".minecraft","mods"),ct);
             var environment=InstanceEnvironment.Resolve(GameRoot,instance.InstanceId);
-            var compatibility = await Task.Run(() => ModCompatibility.Inspect(scan.Mods.Where(m=>m.Enabled).Select(m=>m.FullPath), environment.GameVersion, environment.LoaderSlug, environment.LoaderVersion, ct:ct), ct);
+            var compatibility = await Task.Run(() => ModCompatibility.Inspect(scan.Mods.Where(m=>m.Enabled).Select(m=>m.FullPath), environment.GameVersion, environment.LoaderSlug, environment.LoaderVersion, ct:ct, runtimeFiles:InstanceEnvironment.RuntimeModFiles(root,instance.InstanceId)), ct);
             if(root!=GameRoot||SelectedInstance?.InstanceId!=instance.InstanceId)return;
             foreach(var issue in compatibility) InspectionIssues.Add(issue);
             var log=Path.Combine(GameRoot,"instances",instance.InstanceId,".minecraft","logs","latest.log");

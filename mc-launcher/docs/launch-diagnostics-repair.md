@@ -1,0 +1,25 @@
+# 整合包前置识别与 Rust 启动复查
+
+## 诊断与修复
+
+用户提供的诊断中，Lithium 要求 MixinExtras >=0.5.5，但启动器只识别了 mods 中的 0.5.4。核对官方 Fabric 0.20.1 的实际 JAR，其 fabric.mod.json 声明内嵌 mixinextras-fabric-0.5.5.jar。检查现已读取当前实例版本继承链中的实际加载器运行库，按已安装版本选择内嵌前置；不硬编码“某加载器一定提供某版本”。启动前、实例诊断和整合包更新均使用相同来源。真实缺失和版本冲突仍保留拦截。
+
+版本比较补齐 Fabric 使用的预发布形式，包括 26.3-、beta、rc 和构建后缀，减少诊断中无法比较的条目。无法识别的语法仍返回未知，不猜测结果。
+
+Rust 截图明确报告 languages missing。此前元数据缓存仅按索引 ID 保存；不同内容的索引都可能使用 ID 34，缓存会跨版本复用。现在资源索引缓存按其 SHA-1 区分，无哈希时按 URL 区分，不再读取仅有 ID 的旧索引缓存。另对旧 Nightly 已完成导出但缺语言资源的特定结果，调用官方 languages 子命令补齐后重新检查；其他准备失败不被吞掉。
+
+本地扫描检查受管 builds 目录及已登记的导入目录，发现已有完整 Nightly 后更新列表，避免只依赖下载时保存的登记记录。其他位置继续使用原有本地导入选择。
+
+缓存清理有确认步骤，删除可重新生成的 prepared、minecraft、temp 和受管构建的 .local；客户端、实例和存档保留，外部导入构建目录不被清理。运行 Rust 实例时拒绝清理。下一次需重新准备资源。
+
+Rust 启动状态区分进程创建和可见窗口，Windows 尝试显示原生游戏窗口，退出后报告实际退出码。产品仍保留微软正版身份和拥有权检查、标准输入会话交接及独立实例存档。
+
+## 验收范围
+
+使用官方新下载的 D 盘隔离资源，不复制用户游戏、账号和存档。覆盖 Fabulously Optimized 26.3、官方签名 Horizon Nightly 的真实资源准备、旧索引缓存和缺失语言输入/输出的恢复，以及真实 Horizon 窗口和正常退出。
+
+原生 Rust 窗口验收使用单独测试宿主的合成会话，仅验证正式进程适配器、窗口和退出链路；产品登录检查未关闭。未使用用户微软凭据，不宣称完成微软在线认证、联网服务器或世界游玩验收。
+
+参考：[Fabric 官方加载器源码](https://github.com/FabricMC/fabric-loader)、[Fabric 0.20.1 官方分发](https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.20.1/)、[Horizon Launch API](https://github.com/horizon-rust/horizon/blob/main/docs/api/launch.md)、[Horizon 资源准备器](https://github.com/horizon-rust/horizon/blob/main/crates/horizon-prepare/src/main.rs)。
+
+现阶段优先 Windows；保留平台无关核心和其他平台入口，不宣称 Linux/macOS 获得本批实测。

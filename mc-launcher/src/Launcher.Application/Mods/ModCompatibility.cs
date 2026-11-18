@@ -12,11 +12,11 @@ public static class ModCompatibility
     private sealed record Entry(string File, string Id, string? Version, List<Dependency> Dependencies, bool Nested = false);
 
     public static IReadOnlyList<InspectionIssue> Inspect(IEnumerable<string> files, string gameVersion, string? loader,
-        string? loaderVersion = null, int? javaVersion = null, CancellationToken ct = default)
+        string? loaderVersion = null, int? javaVersion = null, CancellationToken ct = default, IEnumerable<string>? runtimeFiles = null)
     {
         var entries = new List<Entry>();
         var issues = new List<InspectionIssue>();
-        foreach (var file in files.Where(p => p.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)))
+        foreach (var file in files.Concat(runtimeFiles??[]).Distinct().Where(p => p.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)))
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -188,12 +188,12 @@ public static class ModCompatibility
         var tokens = constraint.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (tokens.Length > 1)
         { var values = tokens.Select(c => Satisfies(version, c)).ToArray(); return values.Contains(false) ? false : values.Contains(null) ? null : true; }
-        var match = Regex.Match(constraint, @"^(>=|<=|>|<|=|\^|~)?(\d+(?:\.(?:\d+|[xX*]))*)(?:\+[^\s]+)?$");
+        var match = Regex.Match(constraint, @"^(>=|<=|>|<|=|\^|~)?(\d+(?:\.(?:\d+|[xX*]))*)(-[0-9A-Za-z.-]*)?(?:\+[^\s]+)?$");
         if (!match.Success) return version == constraint ? true : null;
         var operation = match.Groups[1].Value; var wanted = match.Groups[2].Value;
         if (wanted.IndexOfAny(['x', 'X', '*']) >= 0)
         { if(operation.Length>0)return null; var prefix = wanted.Split('.').TakeWhile(p => p is not ("x" or "X" or "*")).ToArray(); var actual = version.Split('.'); return actual.Length >= prefix.Length && actual.Take(prefix.Length).SequenceEqual(prefix); }
-        var compared = Compare(version, wanted);
+        var compared = Compare(version, wanted+match.Groups[3].Value);
         if (compared is null) return null;
         if (operation is "^" or "~")
         {
@@ -207,13 +207,26 @@ public static class ModCompatibility
     private static int? Compare(string left, string right)
     {
         var a = left.Split('+')[0]; var b = right.Split('+')[0];
-        if (!Regex.IsMatch(a, @"^\d+(\.\d+)*$") || !Regex.IsMatch(b, @"^\d+(\.\d+)*$")) return a == b ? 0 : null;
-        var aa = a.Split('.'); var bb = b.Split('.');
+        if (!Regex.IsMatch(a, @"^\d+(\.\d+)*(-[0-9A-Za-z.-]*)?$") || !Regex.IsMatch(b, @"^\d+(\.\d+)*(-[0-9A-Za-z.-]*)?$")) return a == b ? 0 : null;
+        var ap=a.Split('-',2);var bp=b.Split('-',2);
+        var aa = ap[0].Split('.'); var bb = bp[0].Split('.');
         for (var i = 0; i < Math.Max(aa.Length, bb.Length); i++)
         {
             if (!int.TryParse(i < aa.Length ? aa[i] : "0", out var x) || !int.TryParse(i < bb.Length ? bb[i] : "0", out var y)) return null;
             if (x != y) return x.CompareTo(y);
         }
-        return 0;
+        if(ap.Length!=bp.Length)return ap.Length==1?1:-1;
+        if(ap.Length==1)return 0;
+        var preA=ap[1].Split('.');var preB=bp[1].Split('.');
+        for(var i=0;i<Math.Min(preA.Length,preB.Length);i++)
+        {
+            var x=preA[i];var y=preB[i];
+            if(x==y)continue;
+            var numericA=Regex.IsMatch(x,@"^\d+$");var numericB=Regex.IsMatch(y,@"^\d+$");
+            if(numericA!=numericB)return numericA?-1:1;
+            if(numericA&&x.Length!=y.Length)return x.Length.CompareTo(y.Length);
+            return string.CompareOrdinal(x,y);
+        }
+        return preA.Length.CompareTo(preB.Length);
     }
 }

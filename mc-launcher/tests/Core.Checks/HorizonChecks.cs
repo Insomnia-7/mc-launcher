@@ -45,6 +45,8 @@ internal static class HorizonChecks
             var progress=new List<string>();await client.PrepareAsync(build,root,Path.Combine(root,"server.jar"),root,new Immediate(progress.Add),default);
             Check("完整准备后重新检查通过",(await client.CheckAsync(build,default)).ExitCode==0);
             Check("解析准备进度及文字",progress.Count==2&&progress.Contains("fixture prepared"));
+            File.WriteAllText(mode,"languages");await client.PrepareAsync(build,root,Path.Combine(root,"server.jar"),root,null,default);
+            Check("旧 Nightly 缺语言资源时补齐并重新验收",File.Exists(Path.Combine(client.Resources(build),"languages"))&&(await client.CheckAsync(build,default)).ExitCode==0);File.Delete(mode);
             using(var game=await client.StartAsync(first,account,default))Check("会话通过标准输入并正常退出",await game.WaitForExitAsync()==0);
             var gameRoot=client.GameDirectory(first);var argv=File.ReadAllText(Path.Combine(gameRoot,"argv.json"));
             Check("访问令牌不进入进程参数",!argv.Contains(account.AccessToken)&&argv.Contains("--session-stdin")&&!argv.Contains("--session-file"));
@@ -65,7 +67,20 @@ internal static class HorizonChecks
                 Check("取消准备会终止子进程",cancelled&&!alive);
                 Check("取消保留已有完整资源",File.Exists(Path.Combine(client.Resources(build),"ready")));
             }
-            File.Delete(mode);File.AppendAllText(Path.Combine(directory,HorizonClient.ClientName),"changed");
+            File.Delete(mode);
+            var managed=Path.Combine(client.Root,"builds","nightly-fixture");Directory.CreateDirectory(managed);
+            foreach(var file in new[]{HorizonClient.ClientName,HorizonClient.PreparerName,"research-lock.json"})File.WriteAllText(Path.Combine(managed,file),"fixture");
+            Directory.CreateDirectory(Path.Combine(client.Root,"builds","install-incomplete"));
+            Check("本地扫描只返回完整构建目录",client.LocalBuildDirectories().SequenceEqual(new[]{managed}));
+            var world=Path.Combine(client.GameDirectory(first),"saves","world","level.dat");Directory.CreateDirectory(Path.GetDirectoryName(world)!);File.WriteAllText(world,"keep");
+            var importedCache=Path.Combine(directory,".local");Directory.CreateDirectory(importedCache);File.WriteAllText(Path.Combine(importedCache,"keep"),"keep");
+            var managedCache=Path.Combine(managed,".local");Directory.CreateDirectory(managedCache);File.WriteAllText(Path.Combine(managedCache,"scratch"),"remove");
+            var bytes=client.ClearCache([build,build with{Directory=managed}]);
+            Check("缓存清理移除转换资源和受管转换缓存",bytes>0&&!Directory.Exists(client.Resources(build))&&!Directory.Exists(managedCache));
+            Check("缓存清理保留客户端和实例存档",File.Exists(Path.Combine(managed,HorizonClient.ClientName))&&File.ReadAllText(world)=="keep");
+            Check("缓存清理不删除外部导入构建的文件",File.Exists(Path.Combine(importedCache,"keep")));
+            Check("重复清理空缓存不会误删实例",client.ClearCache([build])==0&&File.Exists(world));
+            File.AppendAllText(Path.Combine(directory,HorizonClient.ClientName),"changed");
             await Reject("构建内容变化须重新导入",()=>client.ValidateBuildAsync(build,default));
         }
         finally{Directory.Delete(root,true);}

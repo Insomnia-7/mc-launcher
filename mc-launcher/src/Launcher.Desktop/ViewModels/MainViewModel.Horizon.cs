@@ -72,6 +72,29 @@ public sealed partial class MainViewModel
         AskConfirm("导入本地 Rust 构建","导入时会运行构建的接口检测。请只选择你自行编译或可信来源的程序。",directory,"导入并检测",async()=>await ImportHorizonBuildAsync(directory));
     }
     public Task ImportHorizonBuildAsync(string directory)=>HorizonOperation(async ct=>AddHorizonBuild(await _horizon.InspectAsync(directory,ct)));
+    [RelayCommand] private Task ScanHorizonAsync()=>HorizonOperation(async ct=>
+    {
+        var directories=_horizon.LocalBuildDirectories().Concat(HorizonBuilds.Select(b=>b.Directory)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var count=0;var errors=new List<string>();
+        foreach(var directory in directories)
+        {
+            ct.ThrowIfCancellationRequested();
+            try{AddHorizonBuild(await _horizon.InspectAsync(directory,ct));count++;}
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException){errors.Add(Path.GetFileName(directory)+"："+ErrorText.Describe(ex));}
+        }
+        HorizonHint=$"扫描完成，识别到 {count} 个本地构建。"+(errors.Count>0?"\n"+string.Join("\n",errors):count==0?" 其他位置的构建可通过“导入本地构建”选择。":"");
+    });
+    [RelayCommand] private void ClearHorizonCache()
+    {
+        if(HorizonBusy)return;
+        if(_horizonRunning.Count>0){HorizonHint="请先退出所有正在运行的 Rust 实例，再清理缓存。";return;}
+        AskConfirm("清理 Rust 缓存？","清理已转换资源、下载的原版转换文件和受管构建的转换缓存。客户端、实例与存档保留；下次启动前需要重新准备资源。",_horizon.Root,"清理缓存",async()=>await HorizonOperation(async ct=>
+        {
+            if(_horizonRunning.Count>0){HorizonHint="Rust 实例正在运行，未清理。";return;}
+            var builds=HorizonBuilds.ToArray();var bytes=await Task.Run(()=>{ct.ThrowIfCancellationRequested();return _horizon.ClearCache(builds);},ct);
+            HorizonHint=$"已清理 {bytes/1048576d:F1} MB 缓存，客户端、实例和存档已保留。";
+        }));
+    }
     [RelayCommand] private void CreateHorizonInstance()
     {
         if(HorizonBusy)return;
@@ -118,12 +141,20 @@ public sealed partial class MainViewModel
         var account=await HorizonOwner(ct);
         HorizonHint="正在检查资源并启动 Rust 客户端…";
         var process=await _horizon.StartAsync(instance,account,ct);
-        _horizonRunning.Add(instance.Id);HorizonHint=$"{instance.Name} 已启动。";
+        _horizonRunning.Add(instance.Id);HorizonHint=$"正在打开 {instance.Name} 的游戏窗口…";
         _=WatchHorizon(process,instance);
     });
     private async Task WatchHorizon(Launcher.Application.Abstractions.IGameProcess process,HorizonInstance instance)
     {
-        try{var code=await process.WaitForExitAsync();HorizonHint=code==0?$"{instance.Name} 已退出。":$"Rust 客户端退出（{code}）。请查看实例目录中的 fangyu-launch.log 和 crash-reports。";}
+        try
+        {
+            while(!process.HasExited)
+            {
+                if(process.TryShowWindow()){HorizonHint=$"{instance.Name} 的游戏窗口已打开。";break;}
+                await Task.Delay(200);
+            }
+            var code=await process.WaitForExitAsync();HorizonHint=code==0?$"{instance.Name} 已退出。":$"Rust 客户端退出（{code}）。请查看实例目录中的 fangyu-launch.log 和 crash-reports。";
+        }
         catch(Exception ex){HorizonHint="读取 Rust 客户端退出结果失败："+ErrorText.Describe(ex);}
         finally{_horizonRunning.Remove(instance.Id);process.Dispose();}
     }

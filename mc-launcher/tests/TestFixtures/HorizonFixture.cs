@@ -16,7 +16,15 @@ internal static class HorizonFixture
             string[] options=["--resources","--game-dir","--home","--session-stdin","--prepare","--check","--output","--complete","--progress","--minecraft-dir","--server-jar","--java-home"];
             Console.WriteLine(JsonSerializer.Serialize(new {launch_api=mode=="api"?"9.0.0":"0.1.0",horizon="fixture",minecraft="26.3",java_major=25,options=options.Where(x=>mode!="option"||x!="--session-stdin").Select(name=>new{name})}));return 0;
         }
-        if(args.Contains("--check"))return File.Exists(Path.Combine(Value("--output"),"ready"))?0:1;
+        if(args.Contains("--check"))
+        {
+            if(mode=="languages"&&!File.Exists(Path.Combine(Value("--output"),"languages"))){Console.WriteLine("languages missing: horizon-prepare languages");return 1;}
+            return File.Exists(Path.Combine(Value("--output"),"ready"))?0:1;
+        }
+        if(args.Contains("languages"))
+        {
+            var output=Value("--output");Directory.CreateDirectory(output);File.WriteAllText(Path.Combine(output,"languages"),"complete");return 0;
+        }
         if(args.Contains("--prepare"))
         {
             using var research=JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"research-lock.json")));
@@ -28,6 +36,8 @@ internal static class HorizonFixture
             }
             if(mode=="hang"){File.WriteAllText(Path.Combine(AppContext.BaseDirectory,"child.pid"),Environment.ProcessId.ToString());Thread.Sleep(30000);return 1;}
             var output=Value("--output");Directory.CreateDirectory(output);
+            if(mode=="languages"&&!File.Exists(Path.Combine(output,"languages")))
+            {File.WriteAllText(Path.Combine(output,"ready"),"complete");Console.Error.WriteLine("error: the resources are not complete: the languages missing: horizon-prepare languages");return 1;}
             Console.WriteLine("{\"fraction\":0.5}");Console.WriteLine("{\"message\":\"fixture prepared\"}");
             if(mode=="fail"){Console.Error.WriteLine("fixture conversion failed");return 1;}
             File.WriteAllText(Path.Combine(output,"ready"),"complete");return 0;

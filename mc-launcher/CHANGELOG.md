@@ -1,5 +1,15 @@
 # 方隅版本记录
 
+## 1.0.0-preview.27 · 整合包前置误拦截与 Rust 资源缓存修复
+
+2026-11-18。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.27)。
+
+- 启动前、实例诊断及整合包更新读取当前加载器实际内嵌前置，修复 Fabric 0.20.1 提供 MixinExtras 0.5.5 却被 mods 中的 0.5.4 误拦截。
+- 支持 Fabric 预发布版本比较，减少 26.3-、beta、rc 等版本条件的错误诊断；保留真实缺失与冲突检查。
+- 资源索引缓存按内容哈希区分，修复同名索引 34 复用旧内容导致 Horizon 缺少语言资源；旧 Nightly 的特定缺语言结果可补齐后重新检查。
+- Rust 页面增加本地 Nightly 扫描和缓存清理按钮，保留客户端、实例、存档及外部导入目录；运行实例时拒绝清理。
+- Rust 启动等待实际窗口，报告真实退出结果。官方签名客户端已实测打开原生窗口并正常关闭，因此保留 Rust 支持。
+
 ## 1.0.0-preview.26 · 整合包启动、Rust 转换与资源流程修复
 
 2026-11-17。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.26)。

@@ -54,4 +54,27 @@ public sealed record InstanceEnvironment(
         var gameVersion = metadata?.MinecraftVersion ?? parsed.GameVersion;
         return new InstanceEnvironment(instanceId, gameVersion, parsed.Loader, parsed.LoaderVersion);
     }
+
+    public static IReadOnlyList<string> RuntimeModFiles(string gameRoot,string instanceId)
+    {
+        var result=new List<string>();var seen=new HashSet<string>(StringComparer.Ordinal);
+        var id=InstanceMetadata.TryRead(gameRoot,instanceId)?.LoaderVersionId??instanceId;
+        while(id is not null&&seen.Add(id))
+        {
+            var path=Launcher.Application.Experience.ExperienceFiles.Child(Path.Combine(gameRoot,"versions"),$"{id}/{id}.json");
+            if(!File.Exists(path))break;
+            using var document=JsonDocument.Parse(File.ReadAllText(path));var root=document.RootElement;
+            if(root.TryGetProperty("libraries",out var libraries))
+                foreach(var library in libraries.EnumerateArray())
+                {
+                    var name=library.GetProperty("name").GetString()??"";
+                    if(!name.StartsWith("net.fabricmc:fabric-loader:",StringComparison.Ordinal)&&!name.StartsWith("org.quiltmc:quilt-loader:",StringComparison.Ordinal))continue;
+                    var model=new Library{Name=name};
+                    var file=Launcher.Application.Experience.ExperienceFiles.Child(Path.Combine(gameRoot,"libraries"),model.MavenPath());
+                    if(File.Exists(file))result.Add(file);
+                }
+            id=root.TryGetProperty("inheritsFrom",out var parent)?parent.GetString():null;
+        }
+        return result.Distinct().ToArray();
+    }
 }

@@ -51,10 +51,14 @@ internal static class RealGameChecks
                 else
                 {
                     var vm=model.Download;vm.SelectedCategory=vm.Categories.First(c=>c.Category==DownloadCategory.Modpack);
-                    vm.SelectedSource=DownloadViewModel.ModrinthSource;vm.Query="Fresh & Smooth";
+                    var packTitle=Environment.GetEnvironmentVariable("FANGYU_REAL_MODPACK_TITLE")??"Fresh & Smooth";
+                    vm.SelectedSource=DownloadViewModel.ModrinthSource;vm.Query=packTitle;
+                    vm.GameVersionFilter=version;vm.LoaderFilter="fabric";
                     await vm.SearchCommand.ExecuteAsync(null);var item=vm.Results.Single(r=>r.Id==project);
-                    Check("官方搜索找到指定整合包",item.Title=="Fresh & Smooth");
+                    Check("官方搜索找到指定整合包",item.Title==packTitle);
                     await vm.OpenResourceCommand.ExecuteAsync(item);vm.ShowPackVersionsCommand.Execute(null);
+                    vm.ResourceReleaseChannel="全部版本";
+                    if(vm.ResourceReleaseGroups.Count==0)throw new InvalidOperationException("没有读取到目标整合包发布版本："+vm.ResourceVersionsStatus);
                     var release=vm.ResourceReleaseGroups.SelectMany(g=>g.Releases).First(r=>r.GameVersions.Contains(version)&&r.Loaders.Contains("fabric"));
                     vm.SelectResourceReleaseCommand.Execute(release);
                     Console.WriteLine("Installing official pack release: "+release.Name);

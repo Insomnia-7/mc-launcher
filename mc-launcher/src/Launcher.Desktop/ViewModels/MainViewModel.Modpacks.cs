@@ -56,7 +56,7 @@ public sealed partial class MainViewModel
             var root = GameRoot;
             var environment = InstanceEnvironment.Resolve(root, id);
             var mods = Path.Combine(root, "instances", id, ".minecraft", "mods");
-            var issues = await Task.Run(() => ModCompatibility.Inspect(Directory.Exists(mods) ? Directory.EnumerateFiles(mods) : [], environment.GameVersion, environment.LoaderSlug, environment.LoaderVersion, ct: ct), ct);
+            var issues = await Task.Run(() => ModCompatibility.Inspect(Directory.Exists(mods) ? Directory.EnumerateFiles(mods) : [], environment.GameVersion, environment.LoaderSlug, environment.LoaderVersion, ct: ct, runtimeFiles:InstanceEnvironment.RuntimeModFiles(root,id)), ct);
             if (issues.Any(i => i.IsError))
             {
                 InspectionIssues.Clear(); foreach (var issue in issues) InspectionIssues.Add(issue);

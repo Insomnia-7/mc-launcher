@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Launcher.Application.Abstractions;
 using Launcher.Domain.Versions;
@@ -40,7 +42,7 @@ public sealed class MojangMetaClient : IVersionMetaClient
         }, ct);
 
     public Task<AssetIndex> GetAssetIndexAsync(AssetIndexRef reference, CancellationToken ct = default) => GetAsync<AssetIndex>(
-        $"assets-{Sanitize(reference.Id)}.json", VersionTtl, _ => Task.FromResult(reference.Url), ct);
+        $"assets-{Sanitize(reference.Id)}-{Sanitize(reference.Sha1??Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reference.Url))))}.json", VersionTtl, _ => Task.FromResult(reference.Url), ct);
 
     private async Task<T> GetAsync<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<string>> url, CancellationToken ct) where T : class
     {

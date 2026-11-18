@@ -44,6 +44,8 @@ void Check(string name, bool condition, string? detail = null)
     else { failures.Add(detail is null ? name : $"{name} —— {detail}"); Console.WriteLine($"  [FAIL] {name}{(detail is null ? "" : " —— " + detail)}"); }
 }
 
+if(args.Contains("--runtime-mods")){RuntimeModChecks.Run(Check);Console.WriteLine($"Runtime mods: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;}
+
 if(args.Contains("--horizon"))
 {
     await HorizonChecks.RunAsync(Check);Console.WriteLine($"Horizon: {passes} passed, {failures.Count} failed");return failures.Count==0?0:1;
@@ -1867,6 +1869,8 @@ InstanceLifecycleChecks.Run(Check);
 await HorizonManifestChecks.RunAsync(Check);
 await ArgumentArrayChecks.RunAsync(Check);
 ModMetadataChecks.Run(Check);
+RuntimeModChecks.Run(Check);
+await AssetIndexIdentityChecks.RunAsync(Check);
 await OptimizationChecks.RunAsync(Check);
 await FollowupChecks.RunAsync(Check);
 await ResourceBrowserChecks.RunAsync(Check);

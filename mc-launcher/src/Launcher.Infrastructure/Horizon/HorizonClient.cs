@@ -151,6 +151,16 @@ public sealed partial class HorizonClient(HttpClient http, string dataRoot)
     public async Task PrepareAsync(HorizonBuild build,string minecraftDirectory,string serverJar,string javaHome,IProgress<string>? progress,CancellationToken ct)
     {
         var result=await RunAsync(build.Directory,PreparerName,["--prepare","--minecraft-dir",minecraftDirectory,"--server-jar",serverJar,"--java-home",javaHome,"--output",Resources(build),"--complete","--progress","json"],progress,ct).ConfigureAwait(false);
+        // Older Nightlies can reuse completed exports without importing newly required languages.
+        // Repair that specific incomplete-resource result through the preparer's documented command.
+        if(result.ExitCode!=0&&result.Error.Contains("the resources are not complete:",StringComparison.Ordinal)
+            &&result.Error.Contains("languages missing",StringComparison.Ordinal))
+        {
+            progress?.Report("正在补齐缺失的语言资源…");
+            var languages=await RunAsync(build.Directory,PreparerName,["languages","--minecraft-dir",minecraftDirectory,"--output",Resources(build),"--progress","json"],progress,ct).ConfigureAwait(false);
+            if(languages.ExitCode!=0)throw new InvalidOperationException("Horizon 语言资源准备未完成："+languages.Error+"\n"+languages.Output);
+            result=await CheckAsync(build,ct).ConfigureAwait(false);
+        }
         if(result.ExitCode!=0)throw new InvalidOperationException("Horizon 资源准备未完成："+result.Error+"\n"+result.Output);
         if((await CheckAsync(build,ct).ConfigureAwait(false)).ExitCode!=0)throw new InvalidDataException("Horizon 资源完整性检查未通过。");
     }
@@ -212,6 +222,7 @@ public sealed partial class HorizonClient(HttpClient http, string dataRoot)
             _logs=Drain();
         }
         public int Id=>_process.Id;public bool HasExited=>_process.HasExited;
+        public bool TryShowWindow()=>Launcher.Infrastructure.Processes.GameWindow.TryShow(_process);
         public async Task<int> WaitForExitAsync(CancellationToken ct=default){await _process.WaitForExitAsync(ct).ConfigureAwait(false);await _logs.ConfigureAwait(false);return _process.ExitCode;}
         public void Kill(){if(!_process.HasExited)_process.Kill(true);}
         public void Dispose()=>_process.Dispose();
