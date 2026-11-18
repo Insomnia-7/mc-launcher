@@ -23,3 +23,7 @@ Rust 启动状态区分进程创建和可见窗口，Windows 尝试显示原生�
 参考：[Fabric 官方加载器源码](https://github.com/FabricMC/fabric-loader)、[Fabric 0.20.1 官方分发](https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.20.1/)、[Horizon Launch API](https://github.com/horizon-rust/horizon/blob/main/docs/api/launch.md)、[Horizon 资源准备器](https://github.com/horizon-rust/horizon/blob/main/crates/horizon-prepare/src/main.rs)。
 
 现阶段优先 Windows；保留平台无关核心和其他平台入口，不宣称 Linux/macOS 获得本批实测。
+
+## 发布包验证
+
+版本 1.0.0-preview.27；构建提交 41304e02a6b42576edcffb92bbef9a0cad1a9a8f。Windows 单文件 25755388 字节，SHA-256：9abfe678c55edb90528cb22b7d608fb58b2be1e357365ed324d7a31617c1b5df。1902 项检查通过（Core 1049、Horizon 协议 36、UI 810、真实整合包 7），另通过架构护栏、单文件启动退出、Horizon 实际转换、旧缓存/缺语言恢复、真实原生窗口和生产更新客户端本地验签。

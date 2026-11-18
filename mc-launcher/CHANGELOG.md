@@ -4,6 +4,8 @@
 
 2026-11-18。预览版；[Release](https://github.com/Insomnia-7/mc-launcher/releases/tag/desktop-v1.0.0-preview.27)。
 
+[源码 41304e0](https://github.com/Insomnia-7/mc-launcher/commit/41304e02a6b42576edcffb92bbef9a0cad1a9a8f)。Windows 单文件 25755388 字节，SHA-256：9abfe678c55edb90528cb22b7d608fb58b2be1e357365ed324d7a31617c1b5df。1902 项检查、架构护栏、真实整合包和 Horizon 原生窗口、资源转换及故障恢复、单文件启动和生产更新验签通过。
+
 - 启动前、实例诊断及整合包更新读取当前加载器实际内嵌前置，修复 Fabric 0.20.1 提供 MixinExtras 0.5.5 却被 mods 中的 0.5.4 误拦截。
 - 支持 Fabric 预发布版本比较，减少 26.3-、beta、rc 等版本条件的错误诊断；保留真实缺失与冲突检查。
 - 资源索引缓存按内容哈希区分，修复同名索引 34 复用旧内容导致 Horizon 缺少语言资源；旧 Nightly 的特定缺语言结果可补齐后重新检查。
